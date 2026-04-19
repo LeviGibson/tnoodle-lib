@@ -374,14 +374,25 @@ public class FullFto {
         }
     }
 
+    /**
+     * Parse an algorithm string and apply each move.
+     * Format: space-separated moves, e.g. "R D' F BL' U"
+     * @param alg algorithm string
+     */
+    public void parseAlg(String alg){
+        String[] tokens = alg.trim().split("\\s+");
+        for (String token : tokens) {
+            if (token.isEmpty()) continue;
+            boolean isPrime = token.endsWith("'");
+            String base = isPrime ? token.substring(0, token.length() - 1) + "P" : token;
+            Move move = Move.valueOf(base);
+            turn(move);
+        }
+    }
+
     //--------------- Main method for development ---------------//
     //TODO remove before PR
     public static void main(String[] args){
-        FullFto fto = new FullFto();
-        fto.turn(Move.BL);
-        fto.turn(Move.BL);
-        fto.turn(Move.BL);
-        System.out.println(fto.isSolved());
 
     }
 
