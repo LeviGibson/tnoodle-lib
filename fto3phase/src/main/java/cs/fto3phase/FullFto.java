@@ -1,6 +1,5 @@
 package cs.fto3phase;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 /**
@@ -21,7 +20,29 @@ public class FullFto {
     public enum Move{R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
 
 
-    //--------------- Nitty-Gritty performance related stuff ---------------//
+    //--------------- Nitty-Gritty stuff ---------------//
+
+    private enum Corners{
+        U_L, U_R, U_F, D_L, D_R, D_B
+    }
+
+    private enum Edges{
+        U_B, U_R, U_L, //U face edges
+        D_F, D_BR, D_BL, //D face edges
+        F_L, F_R, R_BR, B_BL, B_BR, L_BL //Middle slice edges
+    }
+
+
+    private enum Centers {
+        U_BL, U_BR, U_F,
+        F_U, F_BR, F_BL,
+        BR_U, BR_BL, BR_F,
+        BL_U, BL_F, BL_BR,
+        L_B, L_R, L_D,
+        R_L, R_B, R_D,
+        B_R, B_L, B_D,
+        D_L, D_R, D_B
+    }
 
     //Solved state saved for speed
     private static final int[] SOLVED_CORNERS = new int[6];
@@ -88,6 +109,8 @@ public class FullFto {
         corners[i] = encodeCorner(getCornerIndex(corners[i]), (getCornerOrientation(corners[i])+dir)%4);
     }
 
+
+
     //--------------- Main Public Functions ---------------//
 
     /**
@@ -116,28 +139,11 @@ public class FullFto {
             Arrays.equals(centers, SOLVED_CENTERS);
     }
 
-    private enum Corners{
-        U_L, U_R, U_F, D_L, D_R, D_B
-    }
 
-    private enum Edges{
-        U_B, U_R, U_L, //U face edges
-        D_F, D_BR, D_BL, //D face edges
-        F_L, F_R, R_BL, B_BL, B_BR, L_BL //Middle slice edges
-    }
-
-    private enum Centers {
-        U_BL, U_BR, U_F,
-        L_B, L_R, L_D,
-        F_U, F_BR, F_BL,
-        R_L, R_B, R_D,
-        BR_U, BR_BL, BR_F,
-        B_R, B_L, B_D,
-        BL_U, BL_F, BL_BR,
-        D_L, D_R, D_B
-    }
-
-
+    /**
+     * Turn the FTO!
+     * @param move move
+     */
     public void turn(Move move){
         switch (move){
             case R:
@@ -150,7 +156,7 @@ public class FullFto {
                 twistCorner(Corners.D_R.ordinal(), 3);
 
                 cycleEdges(Edges.U_R.ordinal(),
-                    Edges.R_BL.ordinal(),
+                    Edges.R_BR.ordinal(),
                     Edges.F_R.ordinal());
 
                 cycleThreeCenters(Centers.R_L.ordinal(),
@@ -164,14 +170,207 @@ public class FullFto {
                 cycleThreeCenters(Centers.F_BR.ordinal(),
                     Centers.U_F.ordinal(),
                     Centers.BR_U.ordinal());
+                break;
 
             case L:
+                cycleCorners(Corners.U_L.ordinal(),
+                    Corners.U_F.ordinal(),
+                    Corners.D_L.ordinal());
+
+                twistCorner(Corners.U_L.ordinal(), 3);
+                twistCorner(Corners.U_F.ordinal(), 2);
+                twistCorner(Corners.D_L.ordinal(), 3);
+
+                cycleEdges(Edges.U_L.ordinal(),
+                    Edges.F_L.ordinal(),
+                    Edges.L_BL.ordinal());
+
+                cycleThreeCenters(Centers.L_B.ordinal(),
+                    Centers.L_R.ordinal(),
+                    Centers.L_D.ordinal());
+
+                cycleThreeCenters(Centers.U_BL.ordinal(),
+                    Centers.F_U.ordinal(),
+                    Centers.BL_F.ordinal());
+
+                cycleThreeCenters(Centers.U_F.ordinal(),
+                    Centers.F_BL.ordinal(),
+                    Centers.BL_U.ordinal());
+                break;
             case U:
+                cycleCorners(Corners.U_L.ordinal(),
+                    Corners.U_R.ordinal(),
+                    Corners.U_F.ordinal());
+
+                cycleEdges(Edges.U_B.ordinal(),
+                    Edges.U_R.ordinal(),
+                    Edges.U_L.ordinal());
+
+                cycleThreeCenters(Centers.U_BL.ordinal(),
+                    Centers.U_BR.ordinal(),
+                    Centers.U_F.ordinal());
+
+                cycleThreeCenters(Centers.R_L.ordinal(),
+                    Centers.L_B.ordinal(),
+                    Centers.B_R.ordinal());
+
+                cycleThreeCenters(Centers.R_B.ordinal(),
+                    Centers.L_R.ordinal(),
+                    Centers.BR_BL.ordinal());
+                break;
             case D:
+                cycleCorners(Corners.D_L.ordinal(),
+                    Corners.D_R.ordinal(),
+                    Corners.D_B.ordinal());
+
+                cycleEdges(Edges.D_F.ordinal(),
+                    Edges.D_BR.ordinal(),
+                    Edges.D_BL.ordinal());
+
+                cycleThreeCenters(Centers.D_L.ordinal(),
+                    Centers.D_R.ordinal(),
+                    Centers.D_B.ordinal());
+
+                cycleThreeCenters(Centers.F_BL.ordinal(),
+                    Centers.BR_F.ordinal(),
+                    Centers.BL_BR.ordinal());
+
+                cycleThreeCenters(Centers.F_BR.ordinal(),
+                    Centers.BR_BL.ordinal(),
+                    Centers.BL_F.ordinal());
+                break;
             case F:
+                cycleCorners(Corners.U_F.ordinal(),
+                    Corners.D_R.ordinal(),
+                    Corners.D_L.ordinal());
+
+                twistCorner(Corners.U_F.ordinal(), 3);
+                twistCorner(Corners.D_R.ordinal(), 3);
+                twistCorner(Corners.D_L.ordinal(), 2);
+
+                cycleEdges(Edges.F_R.ordinal(),
+                    Edges.D_F.ordinal(),
+                    Edges.F_L.ordinal());
+
+                cycleThreeCenters(Centers.F_U.ordinal(),
+                    Centers.F_BR.ordinal(),
+                    Centers.F_BL.ordinal());
+
+                cycleThreeCenters(Centers.U_F.ordinal(),
+                    Centers.R_D.ordinal(),
+                    Centers.D_L.ordinal());
+
+                cycleThreeCenters(Centers.R_L.ordinal(),
+                    Centers.D_R.ordinal(),
+                    Centers.L_D.ordinal());
+                break;
             case B:
+                cycleCorners(Corners.U_R.ordinal(),
+                    Corners.U_L.ordinal(),
+                    Corners.D_B.ordinal());
+
+                twistCorner(Corners.U_R.ordinal(), 3);
+                twistCorner(Corners.U_L.ordinal(), 2);
+                twistCorner(Corners.D_B.ordinal(), 3);
+
+                cycleEdges(Edges.U_B.ordinal(),
+                    Edges.B_BL.ordinal(),
+                    Edges.B_BR.ordinal());
+
+                cycleThreeCenters(Centers.B_R.ordinal(),
+                    Centers.B_L.ordinal(),
+                    Centers.B_D.ordinal());
+
+                cycleThreeCenters(Centers.U_BR.ordinal(),
+                    Centers.BL_U.ordinal(),
+                    Centers.BR_BL.ordinal());
+
+                cycleThreeCenters(Centers.U_BL.ordinal(),
+                    Centers.BL_BR.ordinal(),
+                    Centers.BR_U.ordinal());
+                break;
             case BR:
+                cycleCorners(Corners.U_R.ordinal(),
+                    Corners.D_B.ordinal(),
+                    Corners.D_R.ordinal());
+
+                twistCorner(Corners.U_R.ordinal(), 3);
+                twistCorner(Corners.D_B.ordinal(), 3);
+                twistCorner(Corners.D_R.ordinal(), 2);
+
+                cycleEdges(Edges.R_BR.ordinal(),
+                    Edges.B_BR.ordinal(),
+                    Edges.D_BR.ordinal());
+
+                cycleThreeCenters(Centers.BR_U.ordinal(),
+                    Centers.BR_BL.ordinal(),
+                    Centers.BR_F.ordinal());
+
+                cycleThreeCenters(Centers.R_B.ordinal(),
+                    Centers.B_D.ordinal(),
+                    Centers.D_R.ordinal());
+
+                cycleThreeCenters(Centers.R_D.ordinal(),
+                    Centers.B_R.ordinal(),
+                    Centers.D_B.ordinal());
+                break;
             case BL:
+                cycleCorners(Corners.U_L.ordinal(),
+                    Corners.D_L.ordinal(),
+                    Corners.D_B.ordinal());
+
+                twistCorner(Corners.U_L.ordinal(), 3);
+                twistCorner(Corners.D_L.ordinal(), 3);
+                twistCorner(Corners.D_B.ordinal(), 2);
+
+                cycleEdges(Edges.L_BL.ordinal(),
+                    Edges.D_BL.ordinal(),
+                    Edges.B_BL.ordinal());
+
+                cycleThreeCenters(Centers.BL_U.ordinal(),
+                    Centers.BL_F.ordinal(),
+                    Centers.BL_BR.ordinal());
+
+                cycleThreeCenters(Centers.B_L.ordinal(),
+                    Centers.L_D.ordinal(),
+                    Centers.D_B.ordinal());
+
+                cycleThreeCenters(Centers.L_B.ordinal(),
+                    Centers.D_L.ordinal(),
+                    Centers.B_D.ordinal());
+                break;
+            case RP:
+                turn(Move.R);
+                turn(Move.R);
+                break;
+            case LP:
+                turn(Move.L);
+                turn(Move.L);
+                break;
+            case UP:
+                turn(Move.U);
+                turn(Move.U);
+                break;
+            case DP:
+                turn(Move.D);
+                turn(Move.D);
+                break;
+            case FP:
+                turn(Move.F);
+                turn(Move.F);
+                break;
+            case BP:
+                turn(Move.B);
+                turn(Move.B);
+                break;
+            case BRP:
+                turn(Move.BR);
+                turn(Move.BR);
+                break;
+            case BLP:
+                turn(Move.BL);
+                turn(Move.BL);
+                break;
         }
     }
 
@@ -179,9 +378,9 @@ public class FullFto {
     //TODO remove before PR
     public static void main(String[] args){
         FullFto fto = new FullFto();
-        fto.turn(Move.R);
-        fto.turn(Move.R);
-        fto.turn(Move.R);
+        fto.turn(Move.BL);
+        fto.turn(Move.BL);
+        fto.turn(Move.BL);
         System.out.println(fto.isSolved());
 
     }
