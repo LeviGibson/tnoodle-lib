@@ -1,5 +1,8 @@
 package org.worldcubeassociation.tnoodle.puzzle;
 
+import cs.fto3phase.FullFto;
+import cs.sq12phase.FullCube;
+import cs.sq12phase.Search;
 import org.worldcubeassociation.tnoodle.scrambles.*;
 import org.worldcubeassociation.tnoodle.svglite.Color;
 import org.worldcubeassociation.tnoodle.svglite.Dimension;
@@ -17,7 +20,7 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
 
 //    private static final int radius = 32;
 
-//    private final ThreadLocal<Search> twoPhaseSearcher;
+//    private final ThreadLocal<Search> threePhaseSearcher;
 
     public FaceTurningOctohedronPuzzle() {
         wcaMinScrambleDistance = 9;
@@ -25,12 +28,11 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
 //        twoPhaseSearcher = ThreadLocal.withInitial(Search::new);
     }
 
-    //TODO
 //    @Override
 //    public PuzzleStateAndGenerator generateRandomMoves(Random r) {
-//        FullCube randomState = FullCube.randomCube(r);
+//        FullFto randomState = FullFto.randomCube(r);
 //
-//        String scramble = twoPhaseSearcher.get().solution(randomState, Search.INVERSE_SOLUTION).trim();
+//        String scramble = threePhaseSearcher.get().solution(randomState, Search.INVERSE_SOLUTION).trim();
 //        PuzzleState state;
 //        try {
 //            state = getSolvedState().applyAlgorithm(scramble);
@@ -38,7 +40,6 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
 //            throw new RuntimeException(e);
 //        }
 //        return new PuzzleStateAndGenerator(state, scramble);
-
 //    }
 
     private static final Map<String, Color> defaultColorScheme = new HashMap<>();

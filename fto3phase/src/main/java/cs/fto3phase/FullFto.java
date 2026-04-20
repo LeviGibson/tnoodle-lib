@@ -1,6 +1,8 @@
 package cs.fto3phase;
 
 import java.util.Arrays;
+import java.util.Random;
+import java.util.Stack;
 
 /**
  * Three-phase solver for the FTO puzzle.
@@ -16,6 +18,15 @@ public class FullFto {
     private int[] edges = new int[12];
     //Only permutation
     private int[] centers = new int[24];
+
+    private Stack<Move> moveStack;
+
+    public void ughhhhh() {
+        for (Move m : moveStack){
+            System.out.println(m);
+        }
+    }
+
 
     public enum Move{R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
 
@@ -86,6 +97,24 @@ public class FullFto {
         corners[i1] = tmp;
     }
 
+    private void swapCorners(int i1, int i2){
+        int tmp = corners[i2];
+        corners[i2] = corners[i1];
+        corners[i1] = tmp;
+    }
+
+    private void swapEdges(int i1, int i2){
+        int tmp = edges[i2];
+        edges[i2] = edges[i1];
+        edges[i1] = tmp;
+    }
+
+    private void swapCenters(int i1, int i2){
+        int tmp = centers[i2];
+        centers[i2] = centers[i1];
+        centers[i1] = tmp;
+    }
+
     private void cycleEdges(int i1, int i2, int i3){
         int tmp = edges[i3];
         edges[i3] = edges[i2];
@@ -127,6 +156,19 @@ public class FullFto {
         for (int i = 0; i < 24; i++) {
             centers[i] = i;
         }
+
+        moveStack = new Stack<>();
+    }
+
+    private static final Move[] INVERT_MOVE = {Move.RP, Move.LP, Move.UP, Move.DP, Move.FP, Move.BP, Move.BRP, Move.BLP,
+        Move.R, Move.L, Move.U, Move.D, Move.F, Move.B, Move.BR, Move.BL};
+
+    /**
+     * Undo the last move performed on FTO
+     */
+    public void undo() {
+        turn(INVERT_MOVE[moveStack.pop().ordinal()]);
+        moveStack.pop();
     }
 
     /**
@@ -139,12 +181,89 @@ public class FullFto {
             Arrays.equals(centers, SOLVED_CENTERS);
     }
 
+    public String history(){
+        StringBuilder builder = new StringBuilder();
+
+        for (Move move : moveStack){
+            builder.append(move.toString().replace("P", "'") + " ");
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Clears all history. pop() will no longer do anything (until you make more moves)
+     */
+    public void clearMoveStack(){
+        moveStack.clear();
+    }
+
+    /**
+     * Phase one is centers and edges solved on the D face
+     * @return t/f
+     */
+    public boolean isPhaseOne(){
+        return centers[Centers.D_L.ordinal()] == Centers.D_L.ordinal() &&
+            centers[Centers.D_R.ordinal()] == Centers.D_R.ordinal() &&
+            centers[Centers.D_B.ordinal()] == Centers.D_B.ordinal() &&
+            edges[Edges.D_F.ordinal()] == Edges.D_F.ordinal() &&
+            edges[Edges.D_BR.ordinal()] == Edges.D_BR.ordinal() &&
+            edges[Edges.D_BL.ordinal()] == Edges.D_BL.ordinal();
+    }
+
+    /**
+     * Turns self into a random state
+     * @param r secure random
+     */
+    public void scrambleRandomState(Random r){
+        //Randomize corner permutation
+        //Swap each corner with a random corner (can be itself)
+        for (int i = 0; i < 6; i++) {
+            swapCorners(i, r.nextInt() % 6);
+        }
+
+        //Randomize corner orientation
+        int coParity = 0;
+        for (int i = 0; i < 5; i++) {
+            int twist = r.nextInt()%4;
+            twistCorner(i, twist);
+            coParity += twist;
+        }
+        //Account for unsolvable states
+        twistCorner(5, coParity % 4);
+
+        //Randomize edge permutation
+        //Swap each corner with a random corner (can be itself)
+        for (int i = 0; i < 12; i++) {
+            swapEdges(i, r.nextInt() % 12);
+        }
+
+        //Randomize center permutation
+        //Swap each corner with a random corner (can be itself)
+        for (int i = 0; i < 12; i++) {
+            swapEdges(i, r.nextInt() % 12);
+        }
+    }
+
+
+    /**
+     * Returns random state FTO. Fast function, no searches performed.
+     * @param r seeded random
+     * @return random state FTO
+     */
+    public static FullFto randomCube(Random r){
+        FullFto fto = new FullFto();
+        fto.scrambleRandomState(r);
+        return fto;
+    }
+
 
     /**
      * Turn the FTO!
      * @param move move
      */
     public void turn(Move move){
+        moveStack.push(move);
         switch (move){
             case R:
                 cycleCorners(Corners.U_F.ordinal(),
@@ -342,34 +461,50 @@ public class FullFto {
             case RP:
                 turn(Move.R);
                 turn(Move.R);
+                moveStack.pop();
+                moveStack.pop();
                 break;
             case LP:
                 turn(Move.L);
                 turn(Move.L);
+                moveStack.pop();
+                moveStack.pop();
                 break;
             case UP:
                 turn(Move.U);
                 turn(Move.U);
+                moveStack.pop();
+                moveStack.pop();
                 break;
             case DP:
                 turn(Move.D);
                 turn(Move.D);
+                moveStack.pop();
+                moveStack.pop();
                 break;
             case FP:
                 turn(Move.F);
                 turn(Move.F);
+                moveStack.pop();
+                moveStack.pop();
                 break;
             case BP:
                 turn(Move.B);
                 turn(Move.B);
+                moveStack.pop();
+                moveStack.pop();
                 break;
             case BRP:
                 turn(Move.BR);
                 turn(Move.BR);
+                moveStack.pop();
+                moveStack.pop();
                 break;
             case BLP:
                 turn(Move.BL);
                 turn(Move.BL);
+                moveStack.pop();
+                moveStack.pop();
                 break;
         }
     }
