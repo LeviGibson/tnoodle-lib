@@ -12,6 +12,7 @@ public class FtoSearch {
             System.out.print("Found Phase 1 Solution: ");
             System.out.println(fto.history());
             solution += fto.history();
+            return true;
         }
 
         if (depth == 0){

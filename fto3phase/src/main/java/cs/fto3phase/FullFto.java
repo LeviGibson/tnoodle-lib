@@ -67,8 +67,10 @@ public class FullFto {
         for (int i = 0; i < 12; i++) {
             SOLVED_EDGES[i] = i;
         }
-        for (int i = 0; i < 24; i++) {
-            SOLVED_CENTERS[i] = i;
+        for (int i = 0; i < 24/3; i++) {
+            for (int j = 0; j < 3; j++){
+                SOLVED_CENTERS[(i*3)+j] = i;
+            }
         }
     }
 
@@ -153,8 +155,11 @@ public class FullFto {
         for (int i = 0; i < 12; i++) {
             edges[i] = i;
         }
-        for (int i = 0; i < 24; i++) {
-            centers[i] = i;
+
+        for (int i = 0; i < 24/3; i++) {
+            for (int j = 0; j < 3; j++){
+                centers[(i*3)+j] = i;
+            }
         }
 
         moveStack = new Stack<>();
@@ -203,9 +208,9 @@ public class FullFto {
      * @return t/f
      */
     public boolean isPhaseOne(){
-        return centers[Centers.D_L.ordinal()] == Centers.D_L.ordinal() &&
-            centers[Centers.D_R.ordinal()] == Centers.D_R.ordinal() &&
-            centers[Centers.D_B.ordinal()] == Centers.D_B.ordinal() &&
+        return centers[Centers.D_L.ordinal()] == 7 &&
+            centers[Centers.D_R.ordinal()] == 7 &&
+            centers[Centers.D_B.ordinal()] == 7 &&
             edges[Edges.D_F.ordinal()] == Edges.D_F.ordinal() &&
             edges[Edges.D_BR.ordinal()] == Edges.D_BR.ordinal() &&
             edges[Edges.D_BL.ordinal()] == Edges.D_BL.ordinal();
@@ -528,7 +533,8 @@ public class FullFto {
     //--------------- Main method for development ---------------//
     //TODO remove before PR
     public static void main(String[] args){
-
+        FullFto fto = new FullFto();
+        System.out.println(fto.isPhaseOne());
     }
 
 }
