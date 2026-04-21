@@ -43,8 +43,20 @@ public class FullFto {
         F_L, F_R, R_BR, B_BL, B_BR, L_BL //Middle slice edges
     }
 
+    /**
+     * Ordinal values of the centers
+     * internal representation of centers is {U, U, U, F, F, F ...}
+     */
+    private enum CenterOrd {
+        U, F, BR, BL, L, R, B, D
+    }
 
-    private enum Centers {
+    /**
+     * Indices values of the centers
+     * Not actually what is stored in centers[]
+     * see above ordinals
+     */
+    private enum CenterInd {
         U_BL, U_BR, U_F,
         F_U, F_BR, F_BL,
         BR_U, BR_BL, BR_F,
@@ -140,7 +152,49 @@ public class FullFto {
         corners[i] = encodeCorner(getCornerIndex(corners[i]), (getCornerOrientation(corners[i])+dir)%4);
     }
 
+    /**
+     * Array that shows what centers need to match up with which corners to make a triple
+     * MATCHING_CENTERS[getCornerIndex(corner)][corner orientation]
+     */
+    int[][] MATCHING_CENTERS =  {
+        {CenterOrd.U.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.U.ordinal()}, // U_L
+        {CenterOrd.U.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.U.ordinal()}, // U_R
+        {CenterOrd.U.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.U.ordinal()}, // U_F
+        {CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal()}, // D_L
+        {CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal()}, // D_R
+        {CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal()} // D_B
+    };
 
+    /**
+     * for each corner, where should the matching centers be to make a triple?
+     */
+    int[][] TRIPLE_LOCATIONS =  {
+        {CenterInd.U_BL.ordinal(), CenterInd.BL_U.ordinal()}, // U_L
+        {CenterInd.U_BR.ordinal(), CenterInd.BR_U.ordinal()}, // U_R
+        {CenterInd.U_F.ordinal(), CenterInd.F_U.ordinal()}, // U_F
+        {CenterInd.F_BL.ordinal(), CenterInd.BL_F.ordinal()}, // D_L
+        {CenterInd.BR_F.ordinal(), CenterInd.F_BR.ordinal()}, // D_R
+        {CenterInd.BL_BR.ordinal(), CenterInd.BR_BL.ordinal()} // D_B
+    };
+
+    /**
+     * Tests if there is a triple (two centers connected to corner) at location
+     * @param cornerLocation location on fto
+     * @return is there a triple T/F
+     */
+    private boolean isTriple(int cornerLocation){
+        int cornerIndex = getCornerIndex(corners[cornerLocation]);
+        int cornerOrientation = getCornerOrientation(corners[cornerLocation]);
+
+        int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
+        int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation+2)%4];
+
+        int testSpotOne = TRIPLE_LOCATIONS[cornerLocation][0];
+        int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
+
+        return centers[testSpotOne] == matchingCenterOne &&
+                centers[testSpotTwo] == matchingCenterTwo;
+    }
 
     //--------------- Main Public Functions ---------------//
 
@@ -208,12 +262,26 @@ public class FullFto {
      * @return t/f
      */
     public boolean isPhaseOne(){
-        return centers[Centers.D_L.ordinal()] == 7 &&
-            centers[Centers.D_R.ordinal()] == 7 &&
-            centers[Centers.D_B.ordinal()] == 7 &&
+        return centers[CenterInd.D_L.ordinal()] == CenterOrd.D.ordinal() &&
+            centers[CenterInd.D_R.ordinal()] == CenterOrd.D.ordinal() &&
+            centers[CenterInd.D_B.ordinal()] == CenterOrd.D.ordinal() &&
             edges[Edges.D_F.ordinal()] == Edges.D_F.ordinal() &&
             edges[Edges.D_BR.ordinal()] == Edges.D_BR.ordinal() &&
             edges[Edges.D_BL.ordinal()] == Edges.D_BL.ordinal();
+    }
+
+    /**
+     * Phase two is Octominx reduction
+     * Can be solved with moveset [D B R L]
+     * @return t/f
+     */
+    public boolean isPhaseTwo(){
+        for (int i = 0; i < 6; i++) {
+            if (!isTriple(i))
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -247,6 +315,11 @@ public class FullFto {
         //Swap each corner with a random corner (can be itself)
         for (int i = 0; i < 12; i++) {
             swapEdges(i, r.nextInt() % 12);
+        }
+
+        for (int i = 0; i < 12; i++) {
+            swapEdges(i, r.nextInt() % 12);
+            swapCenters(i+12, (r.nextInt() % 12)+12);
         }
     }
 
@@ -283,17 +356,17 @@ public class FullFto {
                     Edges.R_BR.ordinal(),
                     Edges.F_R.ordinal());
 
-                cycleThreeCenters(Centers.R_L.ordinal(),
-                    Centers.R_B.ordinal(),
-                    Centers.R_D.ordinal());
+                cycleThreeCenters(CenterInd.R_L.ordinal(),
+                    CenterInd.R_B.ordinal(),
+                    CenterInd.R_D.ordinal());
 
-                cycleThreeCenters(Centers.F_U.ordinal(),
-                    Centers.U_BR.ordinal(),
-                    Centers.BR_F.ordinal());
+                cycleThreeCenters(CenterInd.F_U.ordinal(),
+                    CenterInd.U_BR.ordinal(),
+                    CenterInd.BR_F.ordinal());
 
-                cycleThreeCenters(Centers.F_BR.ordinal(),
-                    Centers.U_F.ordinal(),
-                    Centers.BR_U.ordinal());
+                cycleThreeCenters(CenterInd.F_BR.ordinal(),
+                    CenterInd.U_F.ordinal(),
+                    CenterInd.BR_U.ordinal());
                 break;
 
             case L:
@@ -309,17 +382,17 @@ public class FullFto {
                     Edges.F_L.ordinal(),
                     Edges.L_BL.ordinal());
 
-                cycleThreeCenters(Centers.L_B.ordinal(),
-                    Centers.L_R.ordinal(),
-                    Centers.L_D.ordinal());
+                cycleThreeCenters(CenterInd.L_B.ordinal(),
+                    CenterInd.L_R.ordinal(),
+                    CenterInd.L_D.ordinal());
 
-                cycleThreeCenters(Centers.U_BL.ordinal(),
-                    Centers.F_U.ordinal(),
-                    Centers.BL_F.ordinal());
+                cycleThreeCenters(CenterInd.U_BL.ordinal(),
+                    CenterInd.F_U.ordinal(),
+                    CenterInd.BL_F.ordinal());
 
-                cycleThreeCenters(Centers.U_F.ordinal(),
-                    Centers.F_BL.ordinal(),
-                    Centers.BL_U.ordinal());
+                cycleThreeCenters(CenterInd.U_F.ordinal(),
+                    CenterInd.F_BL.ordinal(),
+                    CenterInd.BL_U.ordinal());
                 break;
             case U:
                 cycleCorners(Corners.U_L.ordinal(),
@@ -330,17 +403,17 @@ public class FullFto {
                     Edges.U_R.ordinal(),
                     Edges.U_L.ordinal());
 
-                cycleThreeCenters(Centers.U_BL.ordinal(),
-                    Centers.U_BR.ordinal(),
-                    Centers.U_F.ordinal());
+                cycleThreeCenters(CenterInd.U_BL.ordinal(),
+                    CenterInd.U_BR.ordinal(),
+                    CenterInd.U_F.ordinal());
 
-                cycleThreeCenters(Centers.R_L.ordinal(),
-                    Centers.L_B.ordinal(),
-                    Centers.B_R.ordinal());
+                cycleThreeCenters(CenterInd.R_L.ordinal(),
+                    CenterInd.L_B.ordinal(),
+                    CenterInd.B_R.ordinal());
 
-                cycleThreeCenters(Centers.R_B.ordinal(),
-                    Centers.L_R.ordinal(),
-                    Centers.BR_BL.ordinal());
+                cycleThreeCenters(CenterInd.R_B.ordinal(),
+                    CenterInd.L_R.ordinal(),
+                    CenterInd.BR_BL.ordinal());
                 break;
             case D:
                 cycleCorners(Corners.D_L.ordinal(),
@@ -351,17 +424,17 @@ public class FullFto {
                     Edges.D_BR.ordinal(),
                     Edges.D_BL.ordinal());
 
-                cycleThreeCenters(Centers.D_L.ordinal(),
-                    Centers.D_R.ordinal(),
-                    Centers.D_B.ordinal());
+                cycleThreeCenters(CenterInd.D_L.ordinal(),
+                    CenterInd.D_R.ordinal(),
+                    CenterInd.D_B.ordinal());
 
-                cycleThreeCenters(Centers.F_BL.ordinal(),
-                    Centers.BR_F.ordinal(),
-                    Centers.BL_BR.ordinal());
+                cycleThreeCenters(CenterInd.F_BL.ordinal(),
+                    CenterInd.BR_F.ordinal(),
+                    CenterInd.BL_BR.ordinal());
 
-                cycleThreeCenters(Centers.F_BR.ordinal(),
-                    Centers.BR_BL.ordinal(),
-                    Centers.BL_F.ordinal());
+                cycleThreeCenters(CenterInd.F_BR.ordinal(),
+                    CenterInd.BR_BL.ordinal(),
+                    CenterInd.BL_F.ordinal());
                 break;
             case F:
                 cycleCorners(Corners.U_F.ordinal(),
@@ -376,17 +449,17 @@ public class FullFto {
                     Edges.D_F.ordinal(),
                     Edges.F_L.ordinal());
 
-                cycleThreeCenters(Centers.F_U.ordinal(),
-                    Centers.F_BR.ordinal(),
-                    Centers.F_BL.ordinal());
+                cycleThreeCenters(CenterInd.F_U.ordinal(),
+                    CenterInd.F_BR.ordinal(),
+                    CenterInd.F_BL.ordinal());
 
-                cycleThreeCenters(Centers.U_F.ordinal(),
-                    Centers.R_D.ordinal(),
-                    Centers.D_L.ordinal());
+                cycleThreeCenters(CenterInd.U_F.ordinal(),
+                    CenterInd.R_D.ordinal(),
+                    CenterInd.D_L.ordinal());
 
-                cycleThreeCenters(Centers.R_L.ordinal(),
-                    Centers.D_R.ordinal(),
-                    Centers.L_D.ordinal());
+                cycleThreeCenters(CenterInd.R_L.ordinal(),
+                    CenterInd.D_R.ordinal(),
+                    CenterInd.L_D.ordinal());
                 break;
             case B:
                 cycleCorners(Corners.U_R.ordinal(),
@@ -401,17 +474,17 @@ public class FullFto {
                     Edges.B_BL.ordinal(),
                     Edges.B_BR.ordinal());
 
-                cycleThreeCenters(Centers.B_R.ordinal(),
-                    Centers.B_L.ordinal(),
-                    Centers.B_D.ordinal());
+                cycleThreeCenters(CenterInd.B_R.ordinal(),
+                    CenterInd.B_L.ordinal(),
+                    CenterInd.B_D.ordinal());
 
-                cycleThreeCenters(Centers.U_BR.ordinal(),
-                    Centers.BL_U.ordinal(),
-                    Centers.BR_BL.ordinal());
+                cycleThreeCenters(CenterInd.U_BR.ordinal(),
+                    CenterInd.BL_U.ordinal(),
+                    CenterInd.BR_BL.ordinal());
 
-                cycleThreeCenters(Centers.U_BL.ordinal(),
-                    Centers.BL_BR.ordinal(),
-                    Centers.BR_U.ordinal());
+                cycleThreeCenters(CenterInd.U_BL.ordinal(),
+                    CenterInd.BL_BR.ordinal(),
+                    CenterInd.BR_U.ordinal());
                 break;
             case BR:
                 cycleCorners(Corners.U_R.ordinal(),
@@ -426,17 +499,17 @@ public class FullFto {
                     Edges.B_BR.ordinal(),
                     Edges.D_BR.ordinal());
 
-                cycleThreeCenters(Centers.BR_U.ordinal(),
-                    Centers.BR_BL.ordinal(),
-                    Centers.BR_F.ordinal());
+                cycleThreeCenters(CenterInd.BR_U.ordinal(),
+                    CenterInd.BR_BL.ordinal(),
+                    CenterInd.BR_F.ordinal());
 
-                cycleThreeCenters(Centers.R_B.ordinal(),
-                    Centers.B_D.ordinal(),
-                    Centers.D_R.ordinal());
+                cycleThreeCenters(CenterInd.R_B.ordinal(),
+                    CenterInd.B_D.ordinal(),
+                    CenterInd.D_R.ordinal());
 
-                cycleThreeCenters(Centers.R_D.ordinal(),
-                    Centers.B_R.ordinal(),
-                    Centers.D_B.ordinal());
+                cycleThreeCenters(CenterInd.R_D.ordinal(),
+                    CenterInd.B_R.ordinal(),
+                    CenterInd.D_B.ordinal());
                 break;
             case BL:
                 cycleCorners(Corners.U_L.ordinal(),
@@ -451,17 +524,17 @@ public class FullFto {
                     Edges.D_BL.ordinal(),
                     Edges.B_BL.ordinal());
 
-                cycleThreeCenters(Centers.BL_U.ordinal(),
-                    Centers.BL_F.ordinal(),
-                    Centers.BL_BR.ordinal());
+                cycleThreeCenters(CenterInd.BL_U.ordinal(),
+                    CenterInd.BL_F.ordinal(),
+                    CenterInd.BL_BR.ordinal());
 
-                cycleThreeCenters(Centers.B_L.ordinal(),
-                    Centers.L_D.ordinal(),
-                    Centers.D_B.ordinal());
+                cycleThreeCenters(CenterInd.B_L.ordinal(),
+                    CenterInd.L_D.ordinal(),
+                    CenterInd.D_B.ordinal());
 
-                cycleThreeCenters(Centers.L_B.ordinal(),
-                    Centers.D_L.ordinal(),
-                    Centers.B_D.ordinal());
+                cycleThreeCenters(CenterInd.L_B.ordinal(),
+                    CenterInd.D_L.ordinal(),
+                    CenterInd.B_D.ordinal());
                 break;
             case RP:
                 turn(Move.R);
@@ -534,7 +607,10 @@ public class FullFto {
     //TODO remove before PR
     public static void main(String[] args){
         FullFto fto = new FullFto();
-        System.out.println(fto.isPhaseOne());
+        fto.parseAlg("R L D B R L D B D' B' R L");
+        for (int i = 0; i < 6; i++) {
+            System.out.println(fto.isTriple(i));
+        }
     }
 
 }
