@@ -219,8 +219,42 @@ public class FullFto {
         moveStack = new Stack<>();
     }
 
+    /**
+     * Copy constructor - creates a deep copy of another FullFto
+     * @param other the FullFto to copy
+     */
+    public FullFto(FullFto other) {
+        System.arraycopy(other.corners, 0, this.corners, 0, other.corners.length);
+        System.arraycopy(other.edges, 0, this.edges, 0, other.edges.length);
+        System.arraycopy(other.centers, 0, this.centers, 0, other.centers.length);
+        this.moveStack = new Stack<>();
+        this.moveStack.addAll(other.moveStack);
+    }
+
     private static final Move[] INVERT_MOVE = {Move.RP, Move.LP, Move.UP, Move.DP, Move.FP, Move.BP, Move.BRP, Move.BLP,
         Move.R, Move.L, Move.U, Move.D, Move.F, Move.B, Move.BR, Move.BL};
+
+    /**
+     * Used for detecting repetitions
+     */
+    private static final Move[][] PARALLEL_MOVES = {
+        {Move.BL, Move.BLP}, // R
+        {Move.BR, Move.BRP}, // L
+        {Move.D, Move.DP}, // U
+        {Move.U, Move.UP}, // D
+        {Move.B, Move.BP}, // F
+        {Move.F, Move.FP}, // B
+        {Move.L, Move.LP}, // BR
+        {Move.R, Move.RP}, // BL
+        {Move.BL, Move.BLP}, // RP
+        {Move.BR, Move.BRP}, // LP
+        {Move.D, Move.DP}, // UP
+        {Move.U, Move.UP}, // DP
+        {Move.B, Move.BP}, // FP
+        {Move.F, Move.FP}, // BP
+        {Move.L, Move.LP}, // BRP
+        {Move.R, Move.RP}, // BLP
+    };
 
     /**
      * Undo the last move performed on FTO
@@ -262,12 +296,19 @@ public class FullFto {
      * @return t/f
      */
     public boolean isPhaseOne(){
-        return centers[CenterInd.D_L.ordinal()] == CenterOrd.D.ordinal() &&
-            centers[CenterInd.D_R.ordinal()] == CenterOrd.D.ordinal() &&
-            centers[CenterInd.D_B.ordinal()] == CenterOrd.D.ordinal() &&
-            edges[Edges.D_F.ordinal()] == Edges.D_F.ordinal() &&
+        if (centers[CenterInd.D_L.ordinal()] != CenterOrd.D.ordinal() ||
+            centers[CenterInd.D_R.ordinal()] != CenterOrd.D.ordinal() ||
+            centers[CenterInd.D_B.ordinal()] != CenterOrd.D.ordinal())
+            return false;
+        return (edges[Edges.D_F.ordinal()] == Edges.D_F.ordinal() &&
             edges[Edges.D_BR.ordinal()] == Edges.D_BR.ordinal() &&
-            edges[Edges.D_BL.ordinal()] == Edges.D_BL.ordinal();
+            edges[Edges.D_BL.ordinal()] == Edges.D_BL.ordinal()) ||
+                (edges[Edges.D_F.ordinal()] == Edges.D_BL.ordinal() &&
+                    edges[Edges.D_BR.ordinal()] == Edges.D_F.ordinal() &&
+                    edges[Edges.D_BL.ordinal()] == Edges.D_BR.ordinal()) ||
+                (edges[Edges.D_F.ordinal()] == Edges.D_BR.ordinal() &&
+                    edges[Edges.D_BR.ordinal()] == Edges.D_BL.ordinal() &&
+                    edges[Edges.D_BL.ordinal()] == Edges.D_F.ordinal());
     }
 
     /**
@@ -282,6 +323,18 @@ public class FullFto {
         }
 
         return true;
+    }
+
+    public int tripleCount(){
+        int count = 0;
+
+        for (int i = 0; i < 6; i++) {
+            if (isTriple(i)) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     /**
@@ -333,6 +386,36 @@ public class FullFto {
         FullFto fto = new FullFto();
         fto.scrambleRandomState(r);
         return fto;
+    }
+
+    /**
+     * Detects redundent move sequences like R R, R R', R BL R
+     * @param move
+     * @return
+     */
+    public boolean isRepetition(Move move){
+
+        if (moveStack.isEmpty())
+            return false;
+
+        Move lastMove = moveStack.peek();
+        if (move == lastMove || INVERT_MOVE[move.ordinal()] == lastMove) {
+            return true;
+        }
+
+        if (moveStack.size() < 2){
+            return false;
+        }
+
+        Move lastLastmove = moveStack.get(moveStack.size()-2);
+
+        if (move == lastLastmove || INVERT_MOVE[move.ordinal()] == lastLastmove) {
+            if (PARALLEL_MOVES[lastLastmove.ordinal()][0] == move || PARALLEL_MOVES[lastLastmove.ordinal()][1] == move){
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
@@ -413,7 +496,7 @@ public class FullFto {
 
                 cycleThreeCenters(CenterInd.R_B.ordinal(),
                     CenterInd.L_R.ordinal(),
-                    CenterInd.BR_BL.ordinal());
+                    CenterInd.B_L.ordinal());
                 break;
             case D:
                 cycleCorners(Corners.D_L.ordinal(),
@@ -607,10 +690,9 @@ public class FullFto {
     //TODO remove before PR
     public static void main(String[] args){
         FullFto fto = new FullFto();
-        fto.parseAlg("R L D B R L D B D' B' R L");
-        for (int i = 0; i < 6; i++) {
-            System.out.println(fto.isTriple(i));
-        }
+        fto.parseAlg("U R U");
+        System.out.println(fto.tripleCount());
+
     }
 
 }
