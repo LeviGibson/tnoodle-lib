@@ -268,12 +268,162 @@ public class FullFto {
 
     //--------------- Hash Functions ---------------//
 
+    private static long[][][] PHASE2_TRIPLE_HASH_KEYS = new long[6][2][24];
+    private static long[][] PHASE2_CENTER_KEYS = new long[8][24];
+    private static long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
+
+    //Initialize keys for hash functions
+    static {
+        // This random is not used for generating random states.
+        // If you're looking at it suspiciously I know what you're thinking.
+        // Don't worry about it
+        Random r =  new Random();
+
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 24; k++) {
+                    PHASE2_TRIPLE_HASH_KEYS[i][j][k] = r.nextLong();
+                }
+            }
+        }
+
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 24; j++) {
+                PHASE2_CENTER_KEYS[i][j] = r.nextLong();
+            }
+        }
+
+        for (int i = 0; i < 12; i++) {
+            for (int j = 0; j < 3; j++) {
+                for (int k = 0; k < 12; k++) {
+                    PHASE2_EDGE_KEYS[i][j][k] = r.nextLong();
+                }
+            }
+        }
+    }
+
+    private long tripleHash(int cornerLocation){
+        int cornerIndex = getCornerIndex(corners[cornerLocation]);
+        int cornerOrientation = getCornerOrientation(corners[cornerLocation]);
+
+        int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
+        int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation+2)%4];
+
+        long hash = 0;
+
+        for (int i = 0; i < 24; i++) {
+            if (centers[i] == matchingCenterOne){
+                hash ^= PHASE2_TRIPLE_HASH_KEYS[cornerLocation][0][i];
+            }
+            if (centers[i] == matchingCenterTwo){
+                hash ^= PHASE2_TRIPLE_HASH_KEYS[cornerLocation][1][i];
+            }
+        }
+
+        return hash;
+    }
+
+    private long centerHash(CenterOrd center){
+        long hash = 0;
+
+        for (int i = 0; i < 24; i++) {
+            if (centers[i] == center.ordinal()){
+                hash ^= PHASE2_CENTER_KEYS[center.ordinal()][i];
+            }
+        }
+
+        return hash;
+    }
+
+    private static boolean contains(int[] arr, int target) {
+        for (int num : arr) {
+            if (num == target) return true;
+        }
+        return false;
+    }
+
+    private static int indexOf(int[] arr, int target) {
+        for (int i = 0; i < arr.length; i++) {
+            if (target == arr[i]) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Internal function - generates hash of three edges on specific face.
+     * This function doesn't hash the permutation
+     * rather, it hashes the 3-cycle
+     *
+     * @param center center
+     * @return hash
+     */
+    private long edgeHash(CenterOrd center){
+        //This function needs to return the same hash for any version of the same 3-cycle of edges
+
+        //Get edges we're looking for
+        int[] e = Arrays.copyOf(EDGES_ON_FACE[center.ordinal()], 3);
+
+        int firstMachingEdge = -1;
+
+        //Find first matching edge
+        for (int i = 0; i < 24; i++){
+            if (contains(e, edges[i])){
+                firstMachingEdge = edges[i];
+                break;
+            }
+        }
+
+        if (firstMachingEdge == -1){
+            throw new IllegalStateException("Cannot find matching edge in edgeHash()");
+        }
+
+        //Cycle e until the first edge is the first in the sequence
+        while (e[0] != firstMachingEdge){
+            int tmp = e[2];
+            e[2] = e[1];
+            e[1] = e[0];
+            e[0] = tmp;
+        }
+
+        //Find the indicies of the edges
+        e[0] = indexOf(edges, e[0]);
+        e[1] = indexOf(edges, e[1]);
+        e[2] = indexOf(edges, e[2]);
+
+        if (contains(e, -1)){
+            throw new IllegalStateException("Cannot find matching edge in edgeHash()");
+        }
+
+        //Generate hash
+        long hash = 0;
+        for (int i = 0; i < 3; i++){
+            hash ^= PHASE2_EDGE_KEYS[center.ordinal()][i][e[i]];
+        }
+
+        //Return hash
+        return hash;
+    }
+
     public long phaseOneHash(){
-        return 0;
+        return edgeHash(CenterOrd.D) ^ centerHash(CenterOrd.D);
     }
 
     public long phaseTwoHash(){
-        return 0;
+        long hash = 0;
+
+        for (int i = 0; i < 6; i++) {
+            hash ^= tripleHash(i);
+        }
+
+        hash ^= centerHash(CenterOrd.R);
+        hash ^= centerHash(CenterOrd.L);
+        hash ^= centerHash(CenterOrd.B);
+
+        hash ^= edgeHash(CenterOrd.R);
+        hash ^= edgeHash(CenterOrd.L);
+        hash ^= edgeHash(CenterOrd.B);
+
+        return hash;
     }
 
     public long phaseThreeHash(){
@@ -774,13 +924,12 @@ public class FullFto {
 
     //--------------- Main method for development ---------------//
     //TODO remove before PR
-    public static void main(String[] args){
+    public static void main(String[] args) {
         FullFto fto = new FullFto();
-        for (CenterOrd face : CenterOrd.values()){
-            System.out.print(face);
-            System.out.print(": ");
-            System.out.println(fto.isFaceSolved(face));
-        }
+        System.out.println(fto.phaseOneHash());
+        fto.parseAlg("R D F");
+        System.out.println(fto.phaseOneHash());
+
     }
 
 }
