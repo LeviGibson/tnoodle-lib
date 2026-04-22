@@ -14,6 +14,27 @@ public class FtoSearch {
         solution = new String[3];
     }
 
+
+
+//    void phaseThreePruningSearch(int depth, FullFto fto){
+//        if (depth == 0){
+//            return;
+//        }
+//
+//        for (Move move : PHASE_THREE_MOVES){
+//            if (fto.isRepetition(move))
+//                continue;
+//
+//            fto.turn(move);
+//            phaseThreePruningSearch(depth-1, fto);
+//            fto.undo();
+//        }
+//    }
+//
+//    static{
+//
+//    }
+
     private boolean searchPhaseOne(int depth, FullFto fto){
         if (fto.isPhaseOne()){
             System.out.print("Found Phase 1 Solution: ");
@@ -80,7 +101,7 @@ public class FtoSearch {
         if (fto.isSolved()){
             System.out.print("Found Phase 3 Solution: ");
             solution[2] = fto.history();
-            System.out.println(solution);
+            System.out.println(fto.history());
             return true;
         }
 
@@ -160,7 +181,7 @@ public class FtoSearch {
     public static void main(String[] args) {
         FullFto fto = new FullFto();
 //        fto.parseAlg("B D R' B D' L' B R' U' L D' U' B U R D U' B' U' L R BL BR' BL U B U'");
-        fto.parseAlg("R' D L' B' D B' L' B' R' F R D L' R F' R' L R' F D R' F R' BR' U L' B BR' D U");
+        fto.parseAlg("R L D B D B L R R D' R' B' L R R L D B D B U R D L BL BR");
         fto.clearMoveStack();
         FtoSearch search = new FtoSearch();
         search.solution(fto);
