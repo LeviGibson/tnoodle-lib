@@ -4,9 +4,6 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.Stack;
 
-/**
- * Three-phase solver for the FTO puzzle.
- */
 public class FullFto {
 
     //--------------- State ---------------//
@@ -18,26 +15,20 @@ public class FullFto {
     private int[] edges = new int[12];
     //Only permutation
     private int[] centers = new int[24];
+    //Used for pruning table generation
+    private int[] centerIndices = new int[24];
 
-    private Stack<Move> moveStack;
-
-    public void ughhhhh() {
-        for (Move m : moveStack){
-            System.out.println(m);
-        }
-    }
-
+    Stack<Move> moveStack;
 
     public enum Move{R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
 
-
     //--------------- Nitty-Gritty stuff ---------------//
 
-    private enum Corner {
+    enum Corner {
         U_L, U_R, U_F, D_L, D_R, D_B
     }
 
-    private enum Edge {
+    enum Edge {
         U_B, U_R, U_L, //U face edges
         D_F, D_BR, D_BL, //D face edges
         F_L, F_R, R_BR, B_BL, B_BR, L_BL //Middle slice edges
@@ -86,15 +77,15 @@ public class FullFto {
         }
     }
 
-    private static int encodeCorner(int perm, int orientation){
+    static int encodeCorner(int perm, int orientation){
         return ((perm << 2) | orientation);
     }
 
-    private static int getCornerIndex(int corner){
+    static int getCornerIndex(int corner){
         return corner>>2;
     }
 
-    private static int getCornerOrientation(int corner){
+    static int getCornerOrientation(int corner){
         return corner&0b11;
     }
 
@@ -141,6 +132,11 @@ public class FullFto {
         centers[i3] = centers[i2];
         centers[i2] = centers[i1];
         centers[i1] = tmp;
+
+        tmp = centerIndices[i3];
+        centerIndices[i3] = centerIndices[i2];
+        centerIndices[i2] = centerIndices[i1];
+        centerIndices[i1] = tmp;
     }
 
     /**
@@ -163,6 +159,15 @@ public class FullFto {
         {CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal()}, // D_L
         {CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal()}, // D_R
         {CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal()} // D_B
+    };
+
+    int[][] MATCHING_CENTER_INDICES =  {
+        {CenterInd.U_BL.ordinal(), CenterInd.BL_U.ordinal(), CenterInd.BL_U.ordinal(), CenterInd.U_BL.ordinal()}, // U_L
+        {CenterInd.U_BR.ordinal(), CenterInd.BR_U.ordinal(), CenterInd.BR_U.ordinal(), CenterInd.U_BR.ordinal()}, // U_R
+        {CenterInd.U_F.ordinal(), CenterInd.F_U.ordinal(), CenterInd.F_U.ordinal(), CenterInd.U_F.ordinal()}, // U_F
+        {CenterInd.F_BL.ordinal(), CenterInd.F_BL.ordinal(), CenterInd.BL_F.ordinal(), CenterInd.BL_F.ordinal()}, // D_L
+        {CenterInd.BR_F.ordinal(), CenterInd.BR_F.ordinal(), CenterInd.F_BR.ordinal(), CenterInd.F_BR.ordinal()}, // D_R
+        {CenterInd.BL_BR.ordinal(), CenterInd.BL_BR.ordinal(), CenterInd.BR_BL.ordinal(), CenterInd.BR_BL.ordinal()} // D_B
     };
 
     /**
@@ -213,7 +218,7 @@ public class FullFto {
     /**
      * Index with [CenterOrd][-]
      */
-    int[][] CENTERS_ON_FACE = {
+    private static final int[][] CENTERS_ON_FACE = {
         {CenterInd.U_BL.ordinal(), CenterInd.U_BR.ordinal(), CenterInd.U_F.ordinal()},
         {CenterInd.F_BL.ordinal(), CenterInd.F_BR.ordinal(), CenterInd.F_U.ordinal()},
         {CenterInd.BR_BL.ordinal(), CenterInd.BR_F.ordinal(), CenterInd.BR_U.ordinal()},
@@ -222,6 +227,17 @@ public class FullFto {
         {CenterInd.R_B.ordinal(), CenterInd.R_D.ordinal(), CenterInd.R_L.ordinal()},
         {CenterInd.B_L.ordinal(), CenterInd.B_D.ordinal(), CenterInd.B_R.ordinal()},
         {CenterInd.D_B.ordinal(), CenterInd.D_L.ordinal(), CenterInd.D_R.ordinal()},
+    };
+
+    private static final int[][] CORNERS_ON_FACE = {
+        {Corner.U_F.ordinal(), Corner.U_L.ordinal(), Corner.U_R.ordinal()}, // U
+        {Corner.U_F.ordinal(), Corner.D_R.ordinal(), Corner.D_L.ordinal()}, // F
+        {Corner.U_R.ordinal(), Corner.D_R.ordinal(), Corner.D_B.ordinal()}, // BR
+        {Corner.U_L.ordinal(), Corner.D_L.ordinal(), Corner.D_B.ordinal()}, // BL
+        {Corner.U_F.ordinal(), Corner.U_L.ordinal(), Corner.D_L.ordinal()}, // L
+        {Corner.U_F.ordinal(), Corner.U_R.ordinal(), Corner.D_R.ordinal()}, // R
+        {Corner.D_B.ordinal(), Corner.U_L.ordinal(), Corner.U_R.ordinal()}, // B
+        {Corner.D_L.ordinal(), Corner.D_R.ordinal(), Corner.D_B.ordinal()}, // D
     };
 
     /**
@@ -258,7 +274,7 @@ public class FullFto {
      * @param face
      * @return t/f
      */
-    private boolean isFaceSolved(CenterOrd face){
+    boolean isFaceSolved(CenterOrd face){
 
         return areCentersSolvedOnFace(face) &&
             (areEdgesSolvedOnFace(face, 0) ||
@@ -268,7 +284,6 @@ public class FullFto {
 
     //--------------- Hash Functions ---------------//
 
-    private static long[][][] PHASE2_TRIPLE_HASH_KEYS = new long[6][2][24];
     private static long[][] PHASE2_CENTER_KEYS = new long[8][24];
     private static long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
 
@@ -278,14 +293,6 @@ public class FullFto {
         // If you're looking at it suspiciously I know what you're thinking.
         // Don't worry about it
         Random r =  new Random();
-
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 2; j++) {
-                for (int k = 0; k < 24; k++) {
-                    PHASE2_TRIPLE_HASH_KEYS[i][j][k] = r.nextLong();
-                }
-            }
-        }
 
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 24; j++) {
@@ -302,26 +309,6 @@ public class FullFto {
         }
     }
 
-    private long tripleHash(int cornerLocation){
-        int cornerIndex = getCornerIndex(corners[cornerLocation]);
-        int cornerOrientation = getCornerOrientation(corners[cornerLocation]);
-
-        int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
-        int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation+2)%4];
-
-        long hash = 0;
-
-        for (int i = 0; i < 24; i++) {
-            if (centers[i] == matchingCenterOne){
-                hash ^= PHASE2_TRIPLE_HASH_KEYS[cornerLocation][0][i];
-            }
-            if (centers[i] == matchingCenterTwo){
-                hash ^= PHASE2_TRIPLE_HASH_KEYS[cornerLocation][1][i];
-            }
-        }
-
-        return hash;
-    }
 
     private long centerHash(CenterOrd center){
         long hash = 0;
@@ -408,12 +395,8 @@ public class FullFto {
         return edgeHash(CenterOrd.D) ^ centerHash(CenterOrd.D);
     }
 
-    public long phaseTwoHash(){
+    public long phaseTwoCentersHash(){
         long hash = 0;
-
-        for (int i = 0; i < 6; i++) {
-            hash ^= tripleHash(i);
-        }
 
         hash ^= centerHash(CenterOrd.R);
         hash ^= centerHash(CenterOrd.L);
@@ -424,6 +407,78 @@ public class FullFto {
         hash ^= edgeHash(CenterOrd.B);
 
         return hash;
+    }
+
+    /**
+     * Packs all triple relations into 64-bit integer for later lookup
+     * While this is called phaseTwoTripleHash, it is not actually a hash function
+     * @return long for lookup
+     */
+    public long packPhaseTwoTripleData(){
+        long hash = 0;
+        for (int cid = 0; cid < 6; cid++) {
+            for (int cside = 0; cside < 2; cside++){
+                int corner = corners[cid];
+                int ci = getCornerIndex(corner);
+                int co = getCornerOrientation(corner);
+                int matchingCenter = MATCHING_CENTER_INDICES[ci][(co+(2*cside))%4];
+                for (long i = 0; i < 24; i++) {
+                    if (matchingCenter == centerIndices[(int)i]){
+                        hash |= (i << (10*cid + 5*cside));
+                    }
+                }
+            }
+        }
+
+        return hash;
+    }
+
+    public boolean checkPhaseTwoTripleData(long hash){
+        //Loop over all 6 corner locations
+        for (int cid = 0; cid < 6; cid++) {
+            //Each triple must have two matching centers
+            for (int cside = 0; cside < 2; cside++){
+                //Get information about the corner in locaiton `cid`
+                int corner = corners[cid];
+                int ci = getCornerIndex(corner);
+                int co = getCornerOrientation(corner);
+
+                //hash consists of a bunch of packed 5-bit integers
+                //These 5-bit integers tell us where the centers should be in relation to the corner
+                //This code unpacks them
+                long targetIndex = hash & 0b11111;
+                hash >>= 5;
+
+                int matchingCenter = MATCHING_CENTERS[ci][(co + (2 * cside))%4];
+
+                //If it doesn't match, then the hash doesn't hit
+                if (centers[(int)targetIndex] != matchingCenter){
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Hash with phase index
+     * NOTE: 0 = phase 1
+     * 1 = phase 2
+     * 2 = phase 3
+     * 3 = invalid (will throw error)
+     * @param phaseId index from zero
+     * @return hash
+     */
+    public long hash(int phaseId){
+        switch (phaseId){
+            case 0:
+                return phaseOneHash();
+            case 1:
+                return phaseTwoCentersHash();
+        }
+
+        throw new RuntimeException("Invalid Phase: " + Integer.toString(phaseId));
     }
 
     public long phaseThreeHash(){
@@ -450,6 +505,10 @@ public class FullFto {
             }
         }
 
+        for (int i = 0; i < 24; i++) {
+            centerIndices[i] = i;
+        }
+
         moveStack = new Stack<>();
     }
 
@@ -465,13 +524,17 @@ public class FullFto {
         this.moveStack.addAll(other.moveStack);
     }
 
-    private static final Move[] INVERT_MOVE = {Move.RP, Move.LP, Move.UP, Move.DP, Move.FP, Move.BP, Move.BRP, Move.BLP,
+    public int historyLength(){
+        return this.moveStack.size();
+    }
+
+    static final Move[] INVERT_MOVE = {Move.RP, Move.LP, Move.UP, Move.DP, Move.FP, Move.BP, Move.BRP, Move.BLP,
         Move.R, Move.L, Move.U, Move.D, Move.F, Move.B, Move.BR, Move.BL};
 
     /**
      * Used for detecting repetitions
      */
-    private static final Move[][] PARALLEL_MOVES = {
+    static final Move[][] PARALLEL_MOVES = {
         {Move.BL, Move.BLP}, // R
         {Move.BR, Move.BRP}, // L
         {Move.D, Move.DP}, // U
@@ -581,13 +644,13 @@ public class FullFto {
         //Randomize corner permutation
         //Swap each corner with a random corner (can be itself)
         for (int i = 0; i < 6; i++) {
-            swapCorners(i, r.nextInt() % 6);
+            swapCorners(i, r.nextInt(6));
         }
 
         //Randomize corner orientation
         int coParity = 0;
         for (int i = 0; i < 5; i++) {
-            int twist = r.nextInt()%4;
+            int twist = r.nextInt(4);
             twistCorner(i, twist);
             coParity += twist;
         }
@@ -597,18 +660,18 @@ public class FullFto {
         //Randomize edge permutation
         //Swap each corner with a random corner (can be itself)
         for (int i = 0; i < 12; i++) {
-            swapEdges(i, r.nextInt() % 12);
+            swapEdges(i, r.nextInt(12));
         }
 
         //Randomize center permutation
         //Swap each corner with a random corner (can be itself)
         for (int i = 0; i < 12; i++) {
-            swapEdges(i, r.nextInt() % 12);
+            swapEdges(i, r.nextInt(12));
         }
 
         for (int i = 0; i < 12; i++) {
-            swapEdges(i, r.nextInt() % 12);
-            swapCenters(i+12, (r.nextInt() % 12)+12);
+            swapEdges(i, r.nextInt(12));
+            swapCenters(i+12, (r.nextInt(12))+12);
         }
     }
 
@@ -629,7 +692,7 @@ public class FullFto {
      * @param move
      * @return
      */
-    public boolean isRepetition(Move move){
+    boolean isRepetition(Move move){
 
         if (moveStack.isEmpty())
             return false;
@@ -926,9 +989,11 @@ public class FullFto {
     //TODO remove before PR
     public static void main(String[] args) {
         FullFto fto = new FullFto();
-        System.out.println(fto.phaseOneHash());
-        fto.parseAlg("R D F");
-        System.out.println(fto.phaseOneHash());
+        long hash = fto.packPhaseTwoTripleData();
+
+        fto.parseAlg("R D B L");
+
+        System.out.println(fto.checkPhaseTwoTripleData(hash));
 
     }
 
