@@ -1,5 +1,6 @@
 package cs.fto3phase;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static cs.fto3phase.FullFto.Move;
@@ -12,52 +13,105 @@ public class FtoSearch {
     private static final int PHASE_ONE_PRUNING_DEPTH = 4;
     private static final int PHASE_TWO_PRUNING_DEPTH = 7;
     private static final int PHASE_THREE_PRUNING_DEPTH = 5;
-    private static HashMap<Long, Integer>[] pruningTables;
+    private static HashMap<Long, Integer> phaseOnePruningTable;
+    private static HashMap<Long, ArrayList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
+
+
+
+    private static class PhaseTwoPruningEntry{
+        public int distanceToSolved;
+        public long triples;
+        public PhaseTwoPruningEntry(int distanceToSolved, long triples){
+            this.distanceToSolved = distanceToSolved;
+            this.triples = triples;
+        }
+    }
 
     public FtoSearch(){
         solution = new String[3];
     }
 
-    private static void pruningSearch(int depth, FullFto fto, int phase, Move[] generator){
+    //--------------- Static Pruning Table Generation ---------------//
 
-        long hash = fto.hash(phase);
-        Integer lookup = pruningTables[phase].get(hash);
+    private static final Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
+    private static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
+
+    private static void phaseOnePruningSearch(int depth, FullFto fto){
+
+        long hash = fto.phaseOneHash();
+        Integer lookup = phaseOnePruningTable.get(hash);
 
         if (lookup == null || fto.historyLength() < lookup){
-            pruningTables[phase].put(hash, fto.historyLength());
+            phaseOnePruningTable.put(hash, fto.historyLength());
         }
 
         if (depth == 0){
             return;
         }
 
-        for (Move move : generator){
+        for (Move move : Move.values()){
             if (fto.isRepetition(move))
                 continue;
 
             fto.turn(move);
-            pruningSearch(depth-1, fto, phase, generator);
+            phaseOnePruningSearch(depth-1, fto);
             fto.undo();
         }
     }
 
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
+        long centerHash = fto.phaseTwoCentersHash();
+        long triples = fto.packPhaseTwoTripleData();
+        ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(centerHash);
 
+        if (lookup == null){
+            ArrayList<PhaseTwoPruningEntry> entry = new ArrayList<>();
+            entry.add(new PhaseTwoPruningEntry(fto.historyLength(), triples));
+            phaseTwoPruningTable.put(centerHash, entry);
+        } else {
+            boolean foundMatchingEntry = false;
+
+            for (PhaseTwoPruningEntry e : lookup){
+                if (e.triples == triples){
+                    foundMatchingEntry = true;
+                    if (e.distanceToSolved > fto.historyLength()){
+                        e.distanceToSolved = fto.historyLength();
+                    }
+                }
+            }
+
+            if (!foundMatchingEntry){
+                lookup.add(new PhaseTwoPruningEntry(fto.historyLength(), triples));
+            }
+        }
+
+        if (depth == 0){
+            return;
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            //Don't look at moves that don't break phase 2 as a first move
+            if (fto.historyLength() == 0 && move != Move.U && move != Move.UP){
+                continue;
+            }
+
+            fto.turn(move);
+            phaseTwoPruningSearch(depth-1, fto);
+            fto.undo();
+        }
     }
 
-    private static final Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
-    private static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
-
     static{
-        pruningTables = new HashMap[3];
-        pruningTables[0] = new HashMap<Long, Integer>();
-        pruningTables[1] = new HashMap<Long, Integer>();
-        pruningTables[2] = new HashMap<Long, Integer>();
+        phaseOnePruningTable = new HashMap<Long, Integer>();
+        phaseTwoPruningTable = new HashMap<Long, ArrayList<PhaseTwoPruningEntry>>();
 
         long startTime = System.nanoTime();
 
-        pruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto(), 0, Move.values());
-//        pruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto(), 1, PHASE_TWO_MOVES);
+        phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
+        phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
 //        pruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto(), 2, PHASE_THREE_MOVES);
 
         long endTime = System.nanoTime();
@@ -81,7 +135,7 @@ public class FtoSearch {
         }
 
         if (depth <= PHASE_ONE_PRUNING_DEPTH){
-            Integer lookup = pruningTables[0].get(fto.phaseOneHash());
+            Integer lookup = phaseOnePruningTable.get(fto.phaseOneHash());
             if (lookup == null || lookup > depth){
                 return false;
             }
@@ -116,9 +170,22 @@ public class FtoSearch {
         }
 
         if (depth <= PHASE_TWO_PRUNING_DEPTH){
-            Integer lookup = pruningTables[1].get(fto.phaseTwoCentersHash());
-            if (lookup == null || lookup > depth){
+            ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
+            if (lookup == null){
                 return false;
+            } else {
+                boolean hashHit = false;
+
+                for (PhaseTwoPruningEntry e : lookup) {
+                    if (fto.checkPhaseTwoTripleData(e.triples) && e.distanceToSolved <= depth){
+                        hashHit = true;
+                        break;
+                    }
+                }
+
+                if (!hashHit){
+                    return false;
+                }
             }
         }
 
