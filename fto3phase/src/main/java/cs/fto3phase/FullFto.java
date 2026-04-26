@@ -202,6 +202,30 @@ public class FullFto {
     }
 
     /**
+     * Tests how many centers are paired to corner for a triple
+     * @param cornerLocation location on fto
+     * @return 0, 1, 2
+     */
+    private int triplePairsOnCorner(int cornerLocation){
+        int cornerIndex = getCornerIndex(corners[cornerLocation]);
+        int cornerOrientation = getCornerOrientation(corners[cornerLocation]);
+
+        int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
+        int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation+2)%4];
+
+        int testSpotOne = TRIPLE_LOCATIONS[cornerLocation][0];
+        int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
+
+        int count = 0;
+        if (centers[testSpotOne] == matchingCenterOne)
+            count++;
+        if (centers[testSpotTwo] == matchingCenterTwo)
+            count++;
+
+        return count;
+    }
+
+    /**
      * Index with [CenterOrd][-]
      */
     int[][] EDGES_ON_FACE = {
@@ -227,17 +251,6 @@ public class FullFto {
         {CenterInd.R_B.ordinal(), CenterInd.R_D.ordinal(), CenterInd.R_L.ordinal()},
         {CenterInd.B_L.ordinal(), CenterInd.B_D.ordinal(), CenterInd.B_R.ordinal()},
         {CenterInd.D_B.ordinal(), CenterInd.D_L.ordinal(), CenterInd.D_R.ordinal()},
-    };
-
-    private static final int[][] CORNERS_ON_FACE = {
-        {Corner.U_F.ordinal(), Corner.U_L.ordinal(), Corner.U_R.ordinal()}, // U
-        {Corner.U_F.ordinal(), Corner.D_R.ordinal(), Corner.D_L.ordinal()}, // F
-        {Corner.U_R.ordinal(), Corner.D_R.ordinal(), Corner.D_B.ordinal()}, // BR
-        {Corner.U_L.ordinal(), Corner.D_L.ordinal(), Corner.D_B.ordinal()}, // BL
-        {Corner.U_F.ordinal(), Corner.U_L.ordinal(), Corner.D_L.ordinal()}, // L
-        {Corner.U_F.ordinal(), Corner.U_R.ordinal(), Corner.D_R.ordinal()}, // R
-        {Corner.D_B.ordinal(), Corner.U_L.ordinal(), Corner.U_R.ordinal()}, // B
-        {Corner.D_L.ordinal(), Corner.D_R.ordinal(), Corner.D_B.ordinal()}, // D
     };
 
     /**
@@ -636,43 +649,65 @@ public class FullFto {
         return count;
     }
 
+    public int triplePairCount(){
+        int count = 0;
+
+        for (int i = 0; i < 6; i++) {
+            count += triplePairsOnCorner(i);
+        }
+
+        return count;
+    }
+
     /**
      * Turns self into a random state
      * @param r secure random
      */
     public void scrambleRandomState(Random r){
-        //Randomize corner permutation
-        //Swap each corner with a random corner (can be itself)
-        for (int i = 0; i < 6; i++) {
-            swapCorners(i, r.nextInt(6));
-        }
 
-        //Randomize corner orientation
-        int coParity = 0;
-        for (int i = 0; i < 5; i++) {
-            int twist = r.nextInt(4);
-            twistCorner(i, twist);
-            coParity += twist;
+        for (int i = 0; i < 20; i++) {
+            Move move = Move.values()[r.nextInt(16)];
+            turn(move);
+            System.out.print(move);
+            System.out.print(" ");
         }
-        //Account for unsolvable states
-        twistCorner(5, coParity % 4);
+        System.out.println();
+        clearMoveStack();
 
-        //Randomize edge permutation
-        //Swap each corner with a random corner (can be itself)
-        for (int i = 0; i < 12; i++) {
-            swapEdges(i, r.nextInt(12));
-        }
-
-        //Randomize center permutation
-        //Swap each corner with a random corner (can be itself)
-        for (int i = 0; i < 12; i++) {
-            swapEdges(i, r.nextInt(12));
-        }
-
-        for (int i = 0; i < 12; i++) {
-            swapEdges(i, r.nextInt(12));
-            swapCenters(i+12, (r.nextInt(12))+12);
-        }
+        return;
+//
+//        //Randomize corner permutation
+//        //Swap each corner with a random corner (can be itself)
+//        for (int i = 0; i < 6; i++) {
+//            swapCorners(i, r.nextInt(6));
+//        }
+//
+//        //Randomize corner orientation
+//        int coParity = 0;
+//        for (int i = 0; i < 5; i++) {
+//            int twist = r.nextInt(4);
+//            twistCorner(i, twist);
+//            coParity += twist;
+//        }
+//        //Account for unsolvable states
+//        twistCorner(5, coParity % 4);
+//
+//        //Randomize edge permutation
+//        //Swap each corner with a random corner (can be itself)
+//        for (int i = 0; i < 12; i++) {
+//            swapEdges(i, r.nextInt(12));
+//        }
+//
+//        //Randomize center permutation
+//        //Swap each corner with a random corner (can be itself)
+//        for (int i = 0; i < 12; i++) {
+//            swapEdges(i, r.nextInt(12));
+//        }
+//
+//        for (int i = 0; i < 12; i++) {
+//            swapEdges(i, r.nextInt(12));
+//            swapCenters(i+12, (r.nextInt(12))+12);
+//        }
     }
 
 
@@ -919,52 +954,196 @@ public class FullFto {
                     CenterInd.B_D.ordinal());
                 break;
             case RP:
-                turn(Move.R);
-                turn(Move.R);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.U_F.ordinal(),
+                    Corner.D_R.ordinal(),
+                    Corner.U_R.ordinal());
+
+                twistCorner(Corner.U_F.ordinal(), 2);
+                twistCorner(Corner.U_R.ordinal(), 1);
+                twistCorner(Corner.D_R.ordinal(), 1);
+
+                cycleEdges(Edge.U_R.ordinal(),
+                    Edge.F_R.ordinal(),
+                    Edge.R_BR.ordinal());
+
+                cycleThreeCenters(CenterInd.R_L.ordinal(),
+                    CenterInd.R_D.ordinal(),
+                    CenterInd.R_B.ordinal());
+
+                cycleThreeCenters(CenterInd.F_U.ordinal(),
+                    CenterInd.BR_F.ordinal(),
+                    CenterInd.U_BR.ordinal());
+
+                cycleThreeCenters(CenterInd.F_BR.ordinal(),
+                    CenterInd.BR_U.ordinal(),
+                    CenterInd.U_F.ordinal());
                 break;
             case LP:
-                turn(Move.L);
-                turn(Move.L);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.U_L.ordinal(),
+                    Corner.D_L.ordinal(),
+                    Corner.U_F.ordinal());
+
+                twistCorner(Corner.U_L.ordinal(), 2);
+                twistCorner(Corner.U_F.ordinal(), 1);
+                twistCorner(Corner.D_L.ordinal(), 1);
+
+                cycleEdges(Edge.U_L.ordinal(),
+                    Edge.L_BL.ordinal(),
+                    Edge.F_L.ordinal());
+
+                cycleThreeCenters(CenterInd.L_B.ordinal(),
+                    CenterInd.L_D.ordinal(),
+                    CenterInd.L_R.ordinal());
+
+                cycleThreeCenters(CenterInd.U_BL.ordinal(),
+                    CenterInd.BL_F.ordinal(),
+                    CenterInd.F_U.ordinal());
+
+                cycleThreeCenters(CenterInd.U_F.ordinal(),
+                    CenterInd.BL_U.ordinal(),
+                    CenterInd.F_BL.ordinal());
                 break;
             case UP:
-                turn(Move.U);
-                turn(Move.U);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.U_L.ordinal(),
+                    Corner.U_F.ordinal(),
+                    Corner.U_R.ordinal());
+
+                cycleEdges(Edge.U_B.ordinal(),
+                    Edge.U_L.ordinal(),
+                    Edge.U_R.ordinal());
+
+                cycleThreeCenters(CenterInd.U_BL.ordinal(),
+                    CenterInd.U_F.ordinal(),
+                    CenterInd.U_BR.ordinal());
+
+                cycleThreeCenters(CenterInd.R_L.ordinal(),
+                    CenterInd.B_R.ordinal(),
+                    CenterInd.L_B.ordinal());
+
+                cycleThreeCenters(CenterInd.R_B.ordinal(),
+                    CenterInd.B_L.ordinal(),
+                    CenterInd.L_R.ordinal());
                 break;
             case DP:
-                turn(Move.D);
-                turn(Move.D);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.D_L.ordinal(),
+                    Corner.D_B.ordinal(),
+                    Corner.D_R.ordinal());
+
+                cycleEdges(Edge.D_F.ordinal(),
+                    Edge.D_BL.ordinal(),
+                    Edge.D_BR.ordinal());
+
+                cycleThreeCenters(CenterInd.D_L.ordinal(),
+                    CenterInd.D_B.ordinal(),
+                    CenterInd.D_R.ordinal());
+
+                cycleThreeCenters(CenterInd.F_BL.ordinal(),
+                    CenterInd.BL_BR.ordinal(),
+                    CenterInd.BR_F.ordinal());
+
+                cycleThreeCenters(CenterInd.F_BR.ordinal(),
+                    CenterInd.BL_F.ordinal(),
+                    CenterInd.BR_BL.ordinal());
                 break;
             case FP:
-                turn(Move.F);
-                turn(Move.F);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.U_F.ordinal(),
+                    Corner.D_L.ordinal(),
+                    Corner.D_R.ordinal());
+
+                twistCorner(Corner.U_F.ordinal(), 1);
+                twistCorner(Corner.D_R.ordinal(), 2);
+                twistCorner(Corner.D_L.ordinal(), 1);
+
+                cycleEdges(Edge.F_R.ordinal(),
+                    Edge.F_L.ordinal(),
+                    Edge.D_F.ordinal());
+
+                cycleThreeCenters(CenterInd.F_U.ordinal(),
+                    CenterInd.F_BL.ordinal(),
+                    CenterInd.F_BR.ordinal());
+
+                cycleThreeCenters(CenterInd.U_F.ordinal(),
+                    CenterInd.D_L.ordinal(),
+                    CenterInd.R_D.ordinal());
+
+                cycleThreeCenters(CenterInd.R_L.ordinal(),
+                    CenterInd.L_D.ordinal(),
+                    CenterInd.D_R.ordinal());
                 break;
             case BP:
-                turn(Move.B);
-                turn(Move.B);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.U_R.ordinal(),
+                    Corner.D_B.ordinal(),
+                    Corner.U_L.ordinal());
+
+                twistCorner(Corner.U_R.ordinal(), 2);
+                twistCorner(Corner.U_L.ordinal(), 1);
+                twistCorner(Corner.D_B.ordinal(), 1);
+
+                cycleEdges(Edge.U_B.ordinal(),
+                    Edge.B_BR.ordinal(),
+                    Edge.B_BL.ordinal());
+
+                cycleThreeCenters(CenterInd.B_R.ordinal(),
+                    CenterInd.B_D.ordinal(),
+                    CenterInd.B_L.ordinal());
+
+                cycleThreeCenters(CenterInd.U_BR.ordinal(),
+                    CenterInd.BR_BL.ordinal(),
+                    CenterInd.BL_U.ordinal());
+
+                cycleThreeCenters(CenterInd.U_BL.ordinal(),
+                    CenterInd.BR_U.ordinal(),
+                    CenterInd.BL_BR.ordinal());
                 break;
             case BRP:
-                turn(Move.BR);
-                turn(Move.BR);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.U_R.ordinal(),
+                    Corner.D_R.ordinal(),
+                    Corner.D_B.ordinal());
+
+                twistCorner(Corner.U_R.ordinal(), 1);
+                twistCorner(Corner.D_B.ordinal(), 2);
+                twistCorner(Corner.D_R.ordinal(), 1);
+
+                cycleEdges(Edge.R_BR.ordinal(),
+                    Edge.D_BR.ordinal(),
+                    Edge.B_BR.ordinal());
+
+                cycleThreeCenters(CenterInd.BR_U.ordinal(),
+                    CenterInd.BR_F.ordinal(),
+                    CenterInd.BR_BL.ordinal());
+
+                cycleThreeCenters(CenterInd.R_B.ordinal(),
+                    CenterInd.D_R.ordinal(),
+                    CenterInd.B_D.ordinal());
+
+                cycleThreeCenters(CenterInd.R_D.ordinal(),
+                    CenterInd.D_B.ordinal(),
+                    CenterInd.B_R.ordinal());
                 break;
             case BLP:
-                turn(Move.BL);
-                turn(Move.BL);
-                moveStack.pop();
-                moveStack.pop();
+                cycleCorners(Corner.U_L.ordinal(),
+                    Corner.D_B.ordinal(),
+                    Corner.D_L.ordinal());
+
+                twistCorner(Corner.U_L.ordinal(), 1);
+                twistCorner(Corner.D_L.ordinal(), 2);
+                twistCorner(Corner.D_B.ordinal(), 1);
+
+                cycleEdges(Edge.L_BL.ordinal(),
+                    Edge.B_BL.ordinal(),
+                    Edge.D_BL.ordinal());
+
+                cycleThreeCenters(CenterInd.BL_U.ordinal(),
+                    CenterInd.BL_BR.ordinal(),
+                    CenterInd.BL_F.ordinal());
+
+                cycleThreeCenters(CenterInd.B_L.ordinal(),
+                    CenterInd.D_B.ordinal(),
+                    CenterInd.L_D.ordinal());
+
+                cycleThreeCenters(CenterInd.L_B.ordinal(),
+                    CenterInd.B_D.ordinal(),
+                    CenterInd.D_L.ordinal());
                 break;
         }
     }
@@ -989,11 +1168,20 @@ public class FullFto {
     //TODO remove before PR
     public static void main(String[] args) {
         FullFto fto = new FullFto();
-        long hash = fto.packPhaseTwoTripleData();
 
-        fto.parseAlg("R D B L");
 
-        System.out.println(fto.checkPhaseTwoTripleData(hash));
+        fto.parseAlg("F D D L B BL BR U' BR U' D B B' F L' D' L' F B' R'");
+        fto.parseAlg("F BL' U' D' F BL'");
+        System.out.println(fto.centers[CenterInd.D_R.ordinal()]);
+        System.out.println(fto.centers[CenterInd.D_L.ordinal()]);
+        System.out.println(fto.centers[CenterInd.D_B.ordinal()]);
+
+        System.out.println(fto.isPhaseOne());
+//        long hash = fto.packPhaseTwoTripleData();
+
+//        fto.parseAlg("R D B L");
+
+//        System.out.println(fto.checkPhaseTwoTripleData(hash));
 
     }
 
