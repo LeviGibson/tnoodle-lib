@@ -30,8 +30,8 @@ public class FullFto {
 
     enum Edge {
         U_B, U_R, U_L, //U face edges
-        D_F, D_BR, D_BL, //D face edges
-        F_L, F_R, R_BR, B_BL, B_BR, L_BL //Middle slice edges
+        F_L, F_R, R_BR, B_BL, B_BR, L_BL, //Middle slice edges,
+        D_F, D_BR, D_BL //D face edges
     }
 
     /**
@@ -402,6 +402,22 @@ public class FullFto {
 
         //Return hash
         return hash;
+    }
+
+    private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
+
+    public int phaseTwoEdgeIndex() {
+        int index = 0;
+        for (int i = 0; i < 8; i++) {
+            int smaller = 0;
+            for (int j = i + 1; j < 9; j++) {
+                if (edges[j] < edges[i]) {
+                    smaller++;
+                }
+            }
+            index += smaller * FACTORIAL[8 - i];
+        }
+        return index / 2;
     }
 
     public long phaseOneHash(){

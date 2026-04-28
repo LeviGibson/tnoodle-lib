@@ -1,5 +1,6 @@
 package cs.fto3phase;
 
+import  java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -33,8 +34,123 @@ public class FtoSearch {
 
     //--------------- Static Pruning Table Generation ---------------//
 
-    private static final Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
-    private static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
+    public static final Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
+    public static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
+
+    private static byte[] phaseTwoEdgePruningTable = new byte[362880/2];
+
+    private static void savePruningTable(byte[] table, String filename) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(filename);
+             BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+            bos.write(table);
+        }
+    }
+
+    private static byte[] loadPruningTable(String filename, int size) throws IOException {
+        byte[] table = new byte[size];
+        try (FileInputStream fis = new FileInputStream(filename);
+             BufferedInputStream bis = new BufferedInputStream(fis)) {
+            bis.read(table);
+        }
+        return table;
+    }
+
+
+    private static void phaseTwoEdgePruningSearch(int depth, FullFto fto){
+
+        if (depth == 0)
+            return;
+
+        int edgeIndex = fto.phaseTwoEdgeIndex();
+        int ply = fto.historyLength();
+
+        if (phaseTwoEdgePruningTable[edgeIndex] > ply){
+            phaseTwoEdgePruningTable[edgeIndex] = (byte)ply;
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            if (move == Move.D || move == Move.DP)
+                continue;
+
+            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
+                continue;
+
+            fto.turn(move);
+            phaseTwoEdgePruningSearch(depth-1, fto);
+            fto.undo();
+        }
+
+    }
+
+    private static void generateEdgePruning(){
+
+        for (int i = 0; i < 362880/2; i++) {
+            phaseTwoEdgePruningTable[i] = 25;
+        }
+
+        FullFto[] angles = new FullFto[3*3*3];
+        int anglesFound = 0;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                for (int k = 0; k < 3; k++) {
+                    angles[anglesFound] = new FullFto();
+
+                    for (int l = 0; l < i; l++) {
+                        angles[anglesFound].turn(Move.R);
+                    }
+                    for (int l = 0; l < j; l++) {
+                        angles[anglesFound].turn(Move.L);
+                    }
+                    for (int l = 0; l < k; l++) {
+                        angles[anglesFound].turn(Move.B);
+                    }
+
+                    anglesFound++;
+                }
+            }
+        }
+
+        for (int depth = 0; depth < 20; depth++) {
+            System.out.println("Searching depth " + Integer.toString(depth));
+
+            for (int i = 0; i < 3*3*3; i++) {
+                angles[i].clearMoveStack();
+                phaseTwoEdgePruningSearch(depth, angles[i]);
+            }
+
+            int capacity = 362880/2;
+            for (int i = 0; i < 362880/2; i++) {
+                if (phaseTwoEdgePruningTable[i] != 25){
+                    capacity--;
+                }
+            }
+
+            System.out.println("Left: " + Integer.toString(capacity));
+
+            try {
+                savePruningTable(phaseTwoEdgePruningTable, "edgeprun.dat");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    static{
+        try {
+            phaseTwoEdgePruningTable = loadPruningTable("edgeprun.dat", 362880/2);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        for (int i = 0; i < 362880/2; i++) {
+            if (phaseTwoEdgePruningTable[i] == 24){
+                phaseTwoEdgePruningTable[i] = 11;
+            }
+        }
+    }
 
     private static void phaseOnePruningSearch(int depth, FullFto fto){
 
@@ -156,7 +272,10 @@ public class FtoSearch {
         return false;
     }
 
+    int nodes;
+
     private boolean searchPhaseTwo(int depth, FullFto fto){
+        nodes++;
         if (fto.isPhaseTwo()){
             System.out.print("Found Phase 2 Solution: ");
             System.out.println(fto.history());
@@ -169,32 +288,36 @@ public class FtoSearch {
             return false;
         }
 
-        if (depth <= PHASE_TWO_PRUNING_DEPTH){
+        int edgeLookup = (int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]);
+        if (edgeLookup > depth) {
+            return false;
+        }
+
+        if (depth <= PHASE_TWO_PRUNING_DEPTH) {
             ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
-            if (lookup == null){
+            if (lookup == null) {
                 return false;
             } else {
                 boolean hashHit = false;
 
                 for (PhaseTwoPruningEntry e : lookup) {
-                    if (fto.checkPhaseTwoTripleData(e.triples) && e.distanceToSolved <= depth){
+                    if (fto.checkPhaseTwoTripleData(e.triples) && e.distanceToSolved <= depth) {
                         hashHit = true;
                         break;
                     }
                 }
 
-                if (!hashHit){
+                if (!hashHit) {
                     return false;
                 }
             }
         }
 
-        if (depth < 3 && fto.tripleCount() < 3){
-            return false;
-        }
-
         for (Move move : PHASE_TWO_MOVES){
             if (fto.isRepetition(move))
+                continue;
+
+            if (move == Move.D || move == Move.DP)
                 continue;
 
             fto.turn(move);
@@ -237,6 +360,7 @@ public class FtoSearch {
 
 
     public String solution(FullFto fto){
+        nodes = 0;
 
         fto.clearMoveStack();
         solution = new String[3];
@@ -292,6 +416,9 @@ public class FtoSearch {
                 throw new RuntimeException("Could not find FTO Phase 2 solution");
             }
         }
+
+        System.out.print("Nodes: ");
+        System.out.println(nodes);
 
         return solution[0] + solution[1] + solution[2];
     }
