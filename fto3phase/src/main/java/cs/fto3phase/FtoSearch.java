@@ -324,10 +324,11 @@ public class FtoSearch {
 
             double p = odds/(1+odds);
 
-            if (p < 0.05)
+//            System.out.println(depth);
+//            System.out.println(1/(1+Math.pow(1.5, (double)(-depth))));
+
+            if (p < 1/(1+Math.pow(1.6, (double)(depth-8))))
                 return false;
-            if (p < 0.1)
-                depth--;
         }
 
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
@@ -353,9 +354,9 @@ public class FtoSearch {
         for (Move move : PHASE_TWO_MOVES){
             if (fto.isRepetition(move))
                 continue;
-
-            if (move == Move.D || move == Move.DP)
-                continue;
+//
+//            if (move == Move.D || move == Move.DP)
+//                continue;
 
             fto.turn(move);
             boolean foundSolution = searchPhaseTwo(depth-1, fto);
@@ -493,20 +494,20 @@ public class FtoSearch {
     }
 
     public static void main(String[] args) {
-        FullFto fto = new FullFto();
-        fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
-        fto.clearMoveStack();
-        FtoSearch search = new FtoSearch();
-        search.solution(fto);
+//        FullFto fto = new FullFto();
+//        fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
+//        fto.clearMoveStack();
+//        FtoSearch search = new FtoSearch();
+//        search.solution(fto);
 
-        // FullFto fto = new FullFto();
-        ////        fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
-        ////        fto.clearMoveStack();
-        //        Random r = new Random();
-        //        for (int i = 0; i < 100; i++) {
-        //            fto.scrambleRandomState(r);
-        //            FtoSearch search = new FtoSearch();
-        //            search.solution(fto);
-        //        }
+         FullFto fto = new FullFto();
+        //        fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
+        //        fto.clearMoveStack();
+        Random r = new Random();
+        for (int i = 0; i < 100; i++) {
+            fto.scrambleRandomState(r);
+            FtoSearch search = new FtoSearch();
+            search.solution(fto);
+        }
     }
 }

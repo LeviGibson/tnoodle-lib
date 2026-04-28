@@ -701,7 +701,7 @@ public class FullFto {
      */
     public void scrambleRandomState(Random r){
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 1000; i++) {
             Move move = Move.values()[r.nextInt(16)];
             turn(move);
             System.out.print(move);
@@ -906,7 +906,7 @@ public class FullFto {
                     CenterInd.F_BR.ordinal(),
                     CenterInd.F_BL.ordinal());
 
-                cycleThreeCenters(CenterInd.U_F.ordinal(),
+                cycleThreeCenters(CenterInd.L_R.ordinal(),
                     CenterInd.R_D.ordinal(),
                     CenterInd.D_L.ordinal());
 
@@ -1098,7 +1098,7 @@ public class FullFto {
                     CenterInd.F_BL.ordinal(),
                     CenterInd.F_BR.ordinal());
 
-                cycleThreeCenters(CenterInd.U_F.ordinal(),
+                cycleThreeCenters(CenterInd.L_R.ordinal(),
                     CenterInd.D_L.ordinal(),
                     CenterInd.R_D.ordinal());
 
