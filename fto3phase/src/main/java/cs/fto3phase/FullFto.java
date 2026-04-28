@@ -675,6 +675,26 @@ public class FullFto {
         return count;
     }
 
+    public void scrambleRandomG2State(Random r){
+        scrambleRandomG2State(r, 500);
+    }
+
+    public void scrambleRandomG2State(Random r, int numMoves){
+        Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
+
+        for (int i = 0; i < numMoves; i++) {
+            Move move;
+
+            do{
+                move = PHASE_TWO_MOVES[r.nextInt(10)];
+            } while (isRepetition(move));
+
+            turn(move);
+        }
+
+        clearMoveStack();
+    }
+
     /**
      * Turns self into a random state
      * @param r secure random

@@ -3,12 +3,11 @@ package cs.fto3phase;
 import  java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 import static cs.fto3phase.FullFto.Move;
 
 public class FtoSearch {
-
-
     private String[] solution;
 
     private static final int PHASE_ONE_PRUNING_DEPTH = 4;
@@ -33,6 +32,29 @@ public class FtoSearch {
     }
 
     //--------------- Static Pruning Table Generation ---------------//
+
+    private static final double[][] BETAS = {
+        {0, 0, 0}, // 0
+        {0, 0, 0}, // 1
+        {0, 0, 0}, // 2
+        {0, 0, 0}, // 3
+        {0, 0, 0}, // 4
+        {0, 0, 0}, // 5
+        {0, 0, 0}, // 6
+        {0, 0, 0}, // 7
+        {-3.0228, 1.6976, -1.1361}, // 8
+        {-2.8937, 1.5726, -0.9234}, // 9
+        {-3.05216, 1.51510, -0.79536}, // 10
+        {-2.14743, 1.40091, -0.81680}, // 11
+        {-3.02457, 1.22228, -0.52262}, // 12
+        {-1.91284, 1.23967, -0.67062}, // 13
+        {-2.59936, 1.25072, -0.52469}, // 14
+        {-2.26634, 1.11097, -0.44942}, // 15
+        {-2.40757, 1.14014, -0.42935}, // 16
+        {-2.12963, 1.06413, -0.41900}, // 17
+        {-2.19083, 1.03216, -0.35640}, // 18
+        {-1.91584, 0.95119, -0.33685}, // 19
+    };
 
     public static final Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
     public static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
@@ -293,6 +315,21 @@ public class FtoSearch {
             return false;
         }
 
+        int ply = fto.historyLength();
+
+        if (depth > 7 && depth < 20 && ply > 0){
+            double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double)fto.triplePairCount() + BETAS[depth][2] * (float)edgeLookup;
+
+            double odds = Math.pow(2.71828182846, logOdds);
+
+            double p = odds/(1+odds);
+
+            if (p < 0.05)
+                return false;
+            if (p < 0.1)
+                depth--;
+        }
+
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
             ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
             if (lookup == null) {
@@ -423,11 +460,53 @@ public class FtoSearch {
         return solution[0] + solution[1] + solution[2];
     }
 
+    private void write(FullFto fto, int depth, boolean label){
+        System.out.print(fto.tripleCount());
+        System.out.print(",");
+        System.out.print(fto.triplePairCount());
+        System.out.print(",");
+        System.out.print((int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]));
+        System.out.print(",");
+        System.out.print(depth);
+        System.out.print(",");
+        System.out.print(label);
+        System.out.println();
+    }
+
+    public void genData(){
+
+        Random r = new Random();
+
+        for (int depth = 8; depth < 20; depth++) {
+            for (int iter = 0; iter < 1000; iter++) {
+                FullFto randomFto = new FullFto();
+                FullFto closeFto = new FullFto();
+
+                randomFto.scrambleRandomG2State(r);
+                closeFto.scrambleRandomG2State(r, depth);
+
+                write(randomFto, depth, false);
+                write(closeFto, depth, true);
+            }
+        }
+
+    }
+
     public static void main(String[] args) {
         FullFto fto = new FullFto();
         fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
         fto.clearMoveStack();
         FtoSearch search = new FtoSearch();
         search.solution(fto);
+
+        // FullFto fto = new FullFto();
+        ////        fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
+        ////        fto.clearMoveStack();
+        //        Random r = new Random();
+        //        for (int i = 0; i < 100; i++) {
+        //            fto.scrambleRandomState(r);
+        //            FtoSearch search = new FtoSearch();
+        //            search.solution(fto);
+        //        }
     }
 }
