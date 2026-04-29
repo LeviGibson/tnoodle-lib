@@ -20,6 +20,7 @@ public class FullFto {
 
     Stack<Move> moveStack;
 
+    //All possible moves
     public enum Move{R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
 
     //--------------- Nitty-Gritty stuff ---------------//
@@ -102,24 +103,12 @@ public class FullFto {
         corners[i1] = tmp;
     }
 
-    private void swapCorners(int i1, int i2){
-        int tmp = corners[i2];
-        corners[i2] = corners[i1];
-        corners[i1] = tmp;
-    }
-
-    private void swapEdges(int i1, int i2){
-        int tmp = edges[i2];
-        edges[i2] = edges[i1];
-        edges[i1] = tmp;
-    }
-
-    private void swapCenters(int i1, int i2){
-        int tmp = centers[i2];
-        centers[i2] = centers[i1];
-        centers[i1] = tmp;
-    }
-
+    /**
+     * Cycles edges without impacting orientation
+     * @param i1 first index
+     * @param i2 second index
+     * @param i3 third index
+     */
     private void cycleEdges(int i1, int i2, int i3){
         int tmp = edges[i3];
         edges[i3] = edges[i2];
@@ -127,6 +116,12 @@ public class FullFto {
         edges[i1] = tmp;
     }
 
+    /**
+     * Cycles centeds
+     * @param i1 first index
+     * @param i2 second index
+     * @param i3 third index
+     */
     private void cycleThreeCenters(int i1, int i2, int i3){
         int tmp = centers[i3];
         centers[i3] = centers[i2];
@@ -322,7 +317,11 @@ public class FullFto {
         }
     }
 
-
+    /**
+     * Get the hash of a specific center
+     * @param center center ordinal
+     * @return hash
+     */
     private long centerHash(CenterOrd center){
         long hash = 0;
 
@@ -335,6 +334,9 @@ public class FullFto {
         return hash;
     }
 
+    /**
+     * Static helper function
+     */
     private static boolean contains(int[] arr, int target) {
         for (int num : arr) {
             if (num == target) return true;
@@ -342,6 +344,9 @@ public class FullFto {
         return false;
     }
 
+    /**
+     * Static helper function
+     */
     private static int indexOf(int[] arr, int target) {
         for (int i = 0; i < arr.length; i++) {
             if (target == arr[i]) return i;
@@ -406,6 +411,11 @@ public class FullFto {
 
     private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
 
+    /**
+     * Turns the G2 edge state to an index (Edges on R, L, B faces)
+     * This used for looking up the optimal edge solution for G2
+     * @return
+     */
     public int phaseTwoEdgeIndex() {
         int index = 0;
         for (int i = 0; i < 8; i++) {
@@ -424,6 +434,11 @@ public class FullFto {
         return edgeHash(CenterOrd.D) ^ centerHash(CenterOrd.D);
     }
 
+    /**
+     * Hash used for lookup during Phase 2 IDA* search
+     * Does not contain triple data. That is handeled by `packPhaseTwoTripleData`
+     * @return hash
+     */
     public long phaseTwoCentersHash(){
         long hash = 0;
 
@@ -462,6 +477,12 @@ public class FullFto {
         return hash;
     }
 
+    /**
+     * Checks phase two triple data to see if it matches
+     * See `packPhaseTwoTripleData`
+     * @param hash phase two triple data
+     * @return t/f
+     */
     public boolean checkPhaseTwoTripleData(long hash){
         //Loop over all 6 corner locations
         for (int cid = 0; cid < 6; cid++) {
@@ -553,6 +574,10 @@ public class FullFto {
         this.moveStack.addAll(other.moveStack);
     }
 
+    /**
+     * Number of moves applied to the FTO
+     * @return num
+     */
     public int historyLength(){
         return this.moveStack.size();
     }
@@ -600,6 +625,11 @@ public class FullFto {
             Arrays.equals(centers, SOLVED_CENTERS);
     }
 
+    /**
+     * Get all previous moves as string
+     * Used for sending scramble to TNoodle
+     * @return scramble string
+     */
     public String history(){
         StringBuilder builder = new StringBuilder();
 
@@ -653,6 +683,10 @@ public class FullFto {
         return isFaceSolved(CenterOrd.R) && isFaceSolved(CenterOrd.L) && isFaceSolved(CenterOrd.B);
     }
 
+    /**
+     * Number of corner-center triples in G2 triple locations
+     * @return num
+     */
     public int tripleCount(){
         int count = 0;
 
@@ -665,6 +699,10 @@ public class FullFto {
         return count;
     }
 
+    /**
+     * Number of corner-center pairs in G2 triple locations
+     * @return num
+     */
     public int triplePairCount(){
         int count = 0;
 
@@ -675,10 +713,19 @@ public class FullFto {
         return count;
     }
 
+    /**
+     * Scramble `this` to a random G2 state
+     * @param r random
+     */
     public void scrambleRandomG2State(Random r){
         scrambleRandomG2State(r, 500);
     }
 
+    /**
+     * Scramble `this` to a random G2 state
+     * @param r random
+     * @param numMoves
+     */
     public void scrambleRandomG2State(Random r, int numMoves){
         Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
 
@@ -787,7 +834,9 @@ public class FullFto {
 
 
     /**
-     * Turn the FTO!
+     * Turn the FTO! This function
+     * 1. Cycles the pieces based on the move parameter
+     * 2. Adds the move to an internal stack
      * @param move move
      */
     public void turn(Move move){
@@ -1201,21 +1250,6 @@ public class FullFto {
     //TODO remove before PR
     public static void main(String[] args) {
         FullFto fto = new FullFto();
-
-
-        fto.parseAlg("F D D L B BL BR U' BR U' D B B' F L' D' L' F B' R'");
-        fto.parseAlg("F BL' U' D' F BL'");
-        System.out.println(fto.centers[CenterInd.D_R.ordinal()]);
-        System.out.println(fto.centers[CenterInd.D_L.ordinal()]);
-        System.out.println(fto.centers[CenterInd.D_B.ordinal()]);
-
-        System.out.println(fto.isPhaseOne());
-//        long hash = fto.packPhaseTwoTripleData();
-
-//        fto.parseAlg("R D B L");
-
-//        System.out.println(fto.checkPhaseTwoTripleData(hash));
-
     }
 
 }
