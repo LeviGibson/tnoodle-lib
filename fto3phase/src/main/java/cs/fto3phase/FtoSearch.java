@@ -66,6 +66,7 @@ public class FtoSearch {
     public static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
 
     private static byte[] phaseTwoEdgePruningTable;
+    private static byte[] phaseTwoCenterPruningTable;
 
     /**
      * saves edgeprun.dat
@@ -94,6 +95,59 @@ public class FtoSearch {
             bis.read(table);
         }
         return table;
+    }
+
+    private static void phaseTwoCenterPruningSearch(int depth, FullFto fto){
+        if (depth == 0)
+            return;
+
+        int centerIndex = fto.phaseTwoCenterIndex();
+        int ply = fto.historyLength();
+
+        if (phaseTwoCenterPruningTable[centerIndex] > ply){
+            phaseTwoCenterPruningTable[centerIndex] = (byte)ply;
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            if (move == Move.D || move == Move.DP)
+                continue;
+
+            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
+                continue;
+
+            fto.turn(move);
+            phaseTwoCenterPruningSearch(depth-1, fto);
+            fto.undo();
+        }
+    }
+
+    private static void generateCenterPruning(){
+        phaseTwoCenterPruningTable = new byte[1680];
+
+        for (int i = 0; i < 1680; i++) {
+            phaseTwoCenterPruningTable[i] = (byte) 25;
+        }
+
+        for (int depth = 0; depth < 11; depth++) {
+            System.out.println("Searching depth " + depth);
+            phaseTwoCenterPruningSearch(depth, new FullFto());
+
+            int remaining = 1680;
+            for (int i = 0; i < 1680; i++) {
+                if (phaseTwoCenterPruningTable[i] != 25)
+                    remaining--;
+            }
+            System.out.println("Remaining:" + remaining);
+        }
+
+        try {
+            saveEdgeTable(phaseTwoCenterPruningTable, "fto3phase/src/resources/centerprun.dat");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -189,6 +243,7 @@ public class FtoSearch {
     static{
         try {
             phaseTwoEdgePruningTable = loadEdgeTable("fto3phase/src/resources/edgeprun.dat", 362880/2);
+            phaseTwoCenterPruningTable = loadEdgeTable("fto3phase/src/resources/centerprun.dat", 1680);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -394,6 +449,11 @@ public class FtoSearch {
 
         int edgeLookup = (int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]);
         if (edgeLookup > depth) {
+            return false;
+        }
+
+        int centerLookup = (int)(phaseTwoCenterPruningTable[fto.phaseTwoCenterIndex()]);
+        if (centerLookup > depth){
             return false;
         }
 

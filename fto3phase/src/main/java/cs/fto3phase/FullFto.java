@@ -467,6 +467,58 @@ public class FullFto {
         return index / 2;
     }
 
+    static int[] fact = new int[10];
+    static {
+        fact[0] = 1;
+        for (int i = 1; i < fact.length; i++) {
+            fact[i] = fact[i - 1] * i;
+        }
+    }
+
+    // multinomial: n! / (a! b! c!)
+    static int multinomial(int a, int b, int c) {
+        int n = a + b + c;
+        return fact[n] / (fact[a] * fact[b] * fact[c]);
+    }
+
+    public int phaseTwoCenterIndex() {
+        int[] c = new int[9];
+
+        for (int i = 0; i < 9; i++) {
+            c[i] = centers[i + 12] - 4;
+        }
+
+        int count0 = 3, count1 = 3, count2 = 3;
+        int index = 0;
+
+        for (int i = 0; i < 9; i++) {
+            int current = c[i];
+
+            // Try placing smaller values
+            for (int v = 0; v < current; v++) {
+                if ((v == 0 && count0 > 0) ||
+                    (v == 1 && count1 > 0) ||
+                    (v == 2 && count2 > 0)) {
+
+                    int a = count0, b = count1, d = count2;
+
+                    if (v == 0) a--;
+                    if (v == 1) b--;
+                    if (v == 2) d--;
+
+                    index += multinomial(a, b, d);
+                }
+            }
+
+            // Consume the actual value
+            if (current == 0) count0--;
+            else if (current == 1) count1--;
+            else count2--;
+        }
+
+        return index;
+    }
+
     public long phaseOneHash(){
         return edgeHash(CenterOrd.D) ^ centerHash(CenterOrd.D);
     }
