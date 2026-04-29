@@ -528,8 +528,6 @@ public class FtoSearch {
         fto.parseAlg(solution[1]);
         fto.clearMoveStack();
 
-        long startTime = System.nanoTime();
-
         //IDA* search for phase 3
         for (int depth = 0; depth < 100; depth++) {
             boolean foundSolution = searchPhaseThree(depth, fto);
@@ -541,11 +539,6 @@ public class FtoSearch {
                 throw new RuntimeException("Could not find FTO Phase 2 solution");
             }
         }
-
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime); // total time in nanoseconds
-
-        System.out.println("Phase 3 time: " + (duration / 1_000_000) + " ms");
 
         return solution[0] + solution[1] + solution[2];
     }
@@ -617,8 +610,6 @@ public class FtoSearch {
     }
 
     public static void main(String[] args) {
-        //520355MS // Plain
-        //529858MS // move ordering
         FtoSearch.performanceTest(100);
     }
 }
