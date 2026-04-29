@@ -10,13 +10,13 @@ import static cs.fto3phase.FullFto.Move;
 public class FtoSearch {
     private String[] solution;
 
+    //Depths at which the pruning tables are set to
     private static final int PHASE_ONE_PRUNING_DEPTH = 4;
     private static final int PHASE_TWO_PRUNING_DEPTH = 7;
-    private static final int PHASE_THREE_PRUNING_DEPTH = 5;
+
+    //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
     private static HashMap<Long, ArrayList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
-
-
 
     private static class PhaseTwoPruningEntry{
         public int distanceToSolved;
@@ -33,6 +33,10 @@ public class FtoSearch {
 
     //--------------- Static Pruning Table Generation ---------------//
 
+    /**
+     * Betas for logistic regression model
+     * This is used for pruning during phase two in depths 8-19
+     */
     private static final double[][] BETAS = {
         {0, 0, 0}, // 0
         {0, 0, 0}, // 1
@@ -61,14 +65,27 @@ public class FtoSearch {
 
     private static byte[] phaseTwoEdgePruningTable = new byte[362880/2];
 
-    private static void savePruningTable(byte[] table, String filename) throws IOException {
+    /**
+     * saves edgeprun.dat
+     * @param table table
+     * @param filename edgeprun.dat
+     * @throws IOException
+     */
+    private static void saveEdgeTable(byte[] table, String filename) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(filename);
              BufferedOutputStream bos = new BufferedOutputStream(fos)) {
             bos.write(table);
         }
     }
 
-    private static byte[] loadPruningTable(String filename, int size) throws IOException {
+    /**
+     * Loads edgeprun.dat
+     * @param filename edgeprun.dat
+     * @param size size of file in bytes
+     * @return array in bytes
+     * @throws IOException
+     */
+    private static byte[] loadEdgeTable(String filename, int size) throws IOException {
         byte[] table = new byte[size];
         try (FileInputStream fis = new FileInputStream(filename);
              BufferedInputStream bis = new BufferedInputStream(fis)) {
@@ -77,7 +94,10 @@ public class FtoSearch {
         return table;
     }
 
-
+    /**
+     * This is a function that generates edgeprun.dat
+     * Don't run this function unless you want to wait for several hours
+     */
     private static void phaseTwoEdgePruningSearch(int depth, FullFto fto){
 
         if (depth == 0)
@@ -107,6 +127,10 @@ public class FtoSearch {
 
     }
 
+    /**
+     * This is a function that generates edgeprun.dat
+     * Don't run this function unless you want to wait for several hours
+     */
     private static void generateEdgePruning(){
 
         for (int i = 0; i < 362880/2; i++) {
@@ -153,7 +177,7 @@ public class FtoSearch {
             System.out.println("Left: " + Integer.toString(capacity));
 
             try {
-                savePruningTable(phaseTwoEdgePruningTable, "edgeprun.dat");
+                saveEdgeTable(phaseTwoEdgePruningTable, "edgeprun.dat");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -162,7 +186,7 @@ public class FtoSearch {
 
     static{
         try {
-            phaseTwoEdgePruningTable = loadPruningTable("edgeprun.dat", 362880/2);
+            phaseTwoEdgePruningTable = loadEdgeTable("edgeprun.dat", 362880/2);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -174,6 +198,12 @@ public class FtoSearch {
         }
     }
 
+    /**
+     * Helper function for generating pruning tables
+     * This is not called in the actual search, just called once on program startup.
+     * @param depth depth
+     * @param fto fto
+     */
     private static void phaseOnePruningSearch(int depth, FullFto fto){
 
         long hash = fto.phaseOneHash();
@@ -197,6 +227,13 @@ public class FtoSearch {
         }
     }
 
+
+    /**
+     * Helper function for generating pruning tables
+     * This is not called in the actual search, just called once on program startup.
+     * @param depth depth
+     * @param fto fto
+     */
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
         long centerHash = fto.phaseTwoCentersHash();
         long triples = fto.packPhaseTwoTripleData();
@@ -242,6 +279,7 @@ public class FtoSearch {
         }
     }
 
+    //Generate pruning tables (2000ms depending on your machine)
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
         phaseTwoPruningTable = new HashMap<Long, ArrayList<PhaseTwoPruningEntry>>();
@@ -250,20 +288,25 @@ public class FtoSearch {
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
         phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
-//        pruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto(), 2, PHASE_THREE_MOVES);
 
         long endTime = System.nanoTime();
-        long duration = (endTime - startTime); // total time in nanoseconds
+        long duration = (endTime - startTime);
 
-        System.out.println("Pruning table generation time: " + (duration / 1_000_000) + " ms");
+        System.out.println("FTO Pruning table generation time: " + (duration / 1_000_000) + " ms");
 
     }
 
 
+    /**
+     * Simple IDA* algorithm for solving Phase 1 (AKA. the bottom center)
+     * @param depth depth
+     * @param fto fto
+     * @return Found solution? t/f
+     */
     private boolean searchPhaseOne(int depth, FullFto fto){
+        nodes++;
+
         if (fto.isPhaseOne()){
-            System.out.print("Found Phase 1 Solution: ");
-            System.out.println(fto.history());
             solution[0] = fto.history();
             return true;
         }
@@ -296,11 +339,17 @@ public class FtoSearch {
 
     int nodes;
 
+    /**
+     * IDA* recursive function for finding solutions for Phase 1 -> Phase 2
+     * AKA. Bottom center solved -> Octominx reduction
+     * This step takes a lot of moves, so it is pruned rather aggressively
+     * @param depth depth
+     * @param fto fto
+     * @return Found solution? t/f
+     */
     private boolean searchPhaseTwo(int depth, FullFto fto){
         nodes++;
         if (fto.isPhaseTwo()){
-            System.out.print("Found Phase 2 Solution: ");
-            System.out.println(fto.history());
             solution[1] = fto.history();
 
             return true;
@@ -317,6 +366,8 @@ public class FtoSearch {
 
         int ply = fto.historyLength();
 
+        //Logistic Regression model determines the likelihood of the current subtree having a solution
+        //Subtrees that are unlikely to have a solution are cut
         if (depth > 7 && depth < 20 && ply > 0){
             double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double)fto.triplePairCount() + BETAS[depth][2] * (float)edgeLookup;
 
@@ -324,13 +375,11 @@ public class FtoSearch {
 
             double p = odds/(1+odds);
 
-//            System.out.println(depth);
-//            System.out.println(1/(1+Math.pow(1.5, (double)(-depth))));
-
             if (p < 1/(1+Math.pow(1.6, (double)(depth-8))))
                 return false;
         }
 
+        //IDA* lookup
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
             ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
             if (lookup == null) {
@@ -354,9 +403,6 @@ public class FtoSearch {
         for (Move move : PHASE_TWO_MOVES){
             if (fto.isRepetition(move))
                 continue;
-//
-//            if (move == Move.D || move == Move.DP)
-//                continue;
 
             fto.turn(move);
             boolean foundSolution = searchPhaseTwo(depth-1, fto);
@@ -369,11 +415,17 @@ public class FtoSearch {
         return false;
     }
 
+    /**
+     * Recursive Depth-first search method for phase 3
+     * @param depth depth
+     * @param fto fto
+     * @return found solution t/f
+     */
     private boolean searchPhaseThree(int depth, FullFto fto){
+        nodes++;
+
         if (fto.isSolved()){
-            System.out.print("Found Phase 3 Solution: ");
             solution[2] = fto.history();
-            System.out.println(fto.history());
             return true;
         }
 
@@ -403,11 +455,8 @@ public class FtoSearch {
         fto.clearMoveStack();
         solution = new String[3];
 
-        long startTime = System.nanoTime();
-
+        //Run IDA* search for phase 1
         for (int depth = 0; depth < 100; depth++) {
-
-            System.out.println("Searching depth " + Integer.toString(depth));
             boolean foundSolution = searchPhaseOne(depth, fto);
 
             if (foundSolution)
@@ -418,17 +467,11 @@ public class FtoSearch {
             }
         }
 
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime); // total time in nanoseconds
-
-        System.out.println("Phase 1 search time: " + (duration / 1_000_000) + " ms");
-
         fto.parseAlg(solution[0]);
         fto.clearMoveStack();
 
+        //Run IDA* with pruning heuristics for phase 2
         for (int depth = 0; depth < 100; depth++) {
-
-            System.out.println("Searching depth " + Integer.toString(depth));
             boolean foundSolution = searchPhaseTwo(depth, fto);
 
             if (foundSolution)
@@ -442,9 +485,8 @@ public class FtoSearch {
         fto.parseAlg(solution[1]);
         fto.clearMoveStack();
 
+        //Phase 3 is trivial - just straight DFS here
         for (int depth = 0; depth < 100; depth++) {
-
-            System.out.println("Searching depth " + Integer.toString(depth));
             boolean foundSolution = searchPhaseThree(depth, fto);
 
             if (foundSolution)
@@ -455,12 +497,16 @@ public class FtoSearch {
             }
         }
 
-        System.out.print("Nodes: ");
-        System.out.println(nodes);
-
         return solution[0] + solution[1] + solution[2];
     }
 
+    /**
+     * Helper function to genData
+     * This is only called during development
+     * @param fto
+     * @param depth
+     * @param label
+     */
     private void write(FullFto fto, int depth, boolean label){
         System.out.print(fto.tripleCount());
         System.out.print(",");
@@ -474,6 +520,10 @@ public class FtoSearch {
         System.out.println();
     }
 
+    /**
+     * Generates training data for pruning model
+     * This is only called during development
+     */
     public void genData(){
 
         Random r = new Random();
@@ -494,20 +544,20 @@ public class FtoSearch {
     }
 
     public static void main(String[] args) {
-//        FullFto fto = new FullFto();
-//        fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
-//        fto.clearMoveStack();
-//        FtoSearch search = new FtoSearch();
-//        search.solution(fto);
 
-         FullFto fto = new FullFto();
-        //        fto.parseAlg("R' B' D' B L D B L BR R BR D BR R' BR' R D L D B U' R L' U' BR D' BL");
-        //        fto.clearMoveStack();
+        FullFto fto = new FullFto();
         Random r = new Random();
         for (int i = 0; i < 100; i++) {
+            long startTime = System.nanoTime();
+
             fto.scrambleRandomState(r);
             FtoSearch search = new FtoSearch();
-            search.solution(fto);
+            System.out.println(search.solution(fto));
+
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime); // total time in nanoseconds
+
+            System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
         }
     }
 }

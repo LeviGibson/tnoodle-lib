@@ -704,10 +704,7 @@ public class FullFto {
         for (int i = 0; i < 1000; i++) {
             Move move = Move.values()[r.nextInt(16)];
             turn(move);
-            System.out.print(move);
-            System.out.print(" ");
         }
-        System.out.println();
         clearMoveStack();
 
         return;
