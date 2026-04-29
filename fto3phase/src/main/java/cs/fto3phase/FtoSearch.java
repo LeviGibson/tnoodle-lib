@@ -452,7 +452,7 @@ public class FtoSearch {
     }
 
     /**
-     * Recursive Depth-first search method for phase 3
+     * IDA* Search algorithm for phase 3
      * @param depth depth
      * @param fto fto
      * @return found solution t/f
@@ -530,7 +530,7 @@ public class FtoSearch {
 
         long startTime = System.nanoTime();
 
-        //Phase 3 is trivial - just straight DFS here
+        //IDA* search for phase 3
         for (int depth = 0; depth < 100; depth++) {
             boolean foundSolution = searchPhaseThree(depth, fto);
 
