@@ -294,6 +294,8 @@ public class FullFto {
 
     private static long[][] PHASE2_CENTER_KEYS = new long[8][24];
     private static long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
+    private static long[][][] PHASE3_CORNER_KEYS = new long[6][6][4];
+    private static long[][] PHASE3_EDGE_KEYS = new long[9][9];
 
     //Initialize keys for hash functions
     static {
@@ -301,6 +303,8 @@ public class FullFto {
         // If you're looking at it suspiciously I know what you're thinking.
         // Don't worry about it
         Random r =  new Random();
+
+        //TODO clean this up
 
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 24; j++) {
@@ -313,6 +317,20 @@ public class FullFto {
                 for (int k = 0; k < 12; k++) {
                     PHASE2_EDGE_KEYS[i][j][k] = r.nextLong();
                 }
+            }
+        }
+
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 6; j++) {
+                for (int k = 0; k < 4; k++) {
+                    PHASE3_CORNER_KEYS[i][j][k] = r.nextLong();
+                }
+            }
+        }
+
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                PHASE3_EDGE_KEYS[i][j] = r.nextLong();
             }
         }
     }
@@ -436,7 +454,7 @@ public class FullFto {
 
     /**
      * Hash used for lookup during Phase 2 IDA* search
-     * Does not contain triple data. That is handeled by `packPhaseTwoTripleData`
+     * Does not contain triple data. That is handled by `packPhaseTwoTripleData`
      * @return hash
      */
     public long phaseTwoCentersHash(){
@@ -449,6 +467,25 @@ public class FullFto {
         hash ^= edgeHash(CenterOrd.R);
         hash ^= edgeHash(CenterOrd.L);
         hash ^= edgeHash(CenterOrd.B);
+
+        return hash;
+    }
+
+
+    /**
+     * Gets hash for Phase 3 IDA* search
+     * @return hash
+     */
+    public long phaseThreeHash(){
+        long hash = 0;
+
+        for (int i = 0; i < 9; i++) {
+            hash ^= PHASE3_EDGE_KEYS[i][edges[i]];
+        }
+
+        for (int i = 0; i < 6; i++) {
+            hash ^= PHASE3_CORNER_KEYS[i][getCornerIndex(corners[i])][getCornerOrientation(corners[i])];
+        }
 
         return hash;
     }
@@ -529,10 +566,6 @@ public class FullFto {
         }
 
         throw new RuntimeException("Invalid Phase: " + Integer.toString(phaseId));
-    }
-
-    public long phaseThreeHash(){
-        return 0;
     }
 
     //--------------- Main Public Functions ---------------//

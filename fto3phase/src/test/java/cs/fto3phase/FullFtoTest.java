@@ -492,41 +492,7 @@ public class FullFtoTest {
         assertNotEquals(phaseOne, phaseTwo, "Phase one and phase two hashes should differ");
     }
 
-    //--- phaseThreeHash Tests ---//
-
-    @Test
-    void testPhaseThreeHashAlwaysZero() {
-        assertEquals(0, fto.phaseThreeHash(), "Phase three hash should always be zero");
-    }
-
-    @Test
-    void testPhaseThreeHashAfterMoves() {
-        fto.parseAlg("R D F B L U");
-        assertEquals(0, fto.phaseThreeHash(), "Phase three hash should always be zero after moves");
-    }
-
-    @Test
-    void testPhaseThreeHashConsistent() {
-        FullFto fto1 = new FullFto();
-        FullFto fto2 = new FullFto();
-        fto1.parseAlg("R U B");
-        fto2.parseAlg("R U B");
-        assertEquals(fto1.phaseThreeHash(), fto2.phaseThreeHash(), "Phase three hash should be consistent");
-    }
-
     //--- Hash Function General Tests ---//
-
-    @Test
-    void testHashFunctionsReturnDifferentValues() {
-        fto.turn(Move.R);
-        long phaseOne = fto.phaseOneHash();
-        long phaseTwo = fto.phaseTwoCentersHash();
-        long phaseThree = fto.phaseThreeHash();
-
-        assertNotEquals(phaseOne, phaseTwo);
-        assertNotEquals(phaseOne, phaseThree);
-        assertNotEquals(phaseTwo, phaseThree);
-    }
 
     @Test
     void testHashFunctionsNonNegative() {

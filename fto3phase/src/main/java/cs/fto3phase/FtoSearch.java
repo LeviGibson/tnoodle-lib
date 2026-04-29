@@ -13,10 +13,12 @@ public class FtoSearch {
     //Depths at which the pruning tables are set to
     private static final int PHASE_ONE_PRUNING_DEPTH = 4;
     private static final int PHASE_TWO_PRUNING_DEPTH = 7;
+    private static final int PHASE_THREE_PRUNING_DEPTH = 4;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
     private static HashMap<Long, ArrayList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
+    private static HashMap<Long, Integer> phaseThreePruningTable;
 
     private static class PhaseTwoPruningEntry{
         public int distanceToSolved;
@@ -60,10 +62,10 @@ public class FtoSearch {
         {-1.91584, 0.95119, -0.33685}, // 19
     };
 
-    public static final Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
+    public static final Move[] PHASE_TWO_MOVES = {Move.U, Move.UP, Move.R, Move.L, Move.B, Move.RP, Move.LP, Move.BP, Move.DP, Move.D};
     public static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
 
-    private static byte[] phaseTwoEdgePruningTable = new byte[362880/2];
+    private static byte[] phaseTwoEdgePruningTable;
 
     /**
      * saves edgeprun.dat
@@ -279,15 +281,46 @@ public class FtoSearch {
         }
     }
 
+    /**
+     * Helper function for generating pruning tables
+     * This is not called in the actual search, just called once on program startup.
+     * @param depth depth
+     * @param fto fto
+     */
+    private static void phaseThreePruningSearch(int depth, FullFto fto){
+
+        long hash = fto.phaseThreeHash();
+        Integer lookup = phaseThreePruningTable.get(hash);
+
+        if (lookup == null || fto.historyLength() < lookup){
+            phaseThreePruningTable.put(hash, fto.historyLength());
+        }
+
+        if (depth == 0){
+            return;
+        }
+
+        for (Move move : PHASE_THREE_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            fto.turn(move);
+            phaseThreePruningSearch(depth-1, fto);
+            fto.undo();
+        }
+    }
+
     //Generate pruning tables (2000ms depending on your machine)
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
         phaseTwoPruningTable = new HashMap<Long, ArrayList<PhaseTwoPruningEntry>>();
+        phaseThreePruningTable = new HashMap<Long, Integer>();
 
         long startTime = System.nanoTime();
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
         phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
+        phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
 
         long endTime = System.nanoTime();
         long duration = (endTime - startTime);
@@ -404,6 +437,9 @@ public class FtoSearch {
             if (fto.isRepetition(move))
                 continue;
 
+            if (move == Move.D || move == Move.DP)
+                continue;
+
             fto.turn(move);
             boolean foundSolution = searchPhaseTwo(depth-1, fto);
             fto.undo();
@@ -431,6 +467,13 @@ public class FtoSearch {
 
         if (depth == 0){
             return false;
+        }
+
+        if (depth <= PHASE_THREE_PRUNING_DEPTH){
+            Integer lookup = phaseThreePruningTable.get(fto.phaseThreeHash());
+            if (lookup == null || depth < lookup){
+                return false;
+            }
         }
 
         for (Move move : PHASE_THREE_MOVES){
@@ -485,6 +528,8 @@ public class FtoSearch {
         fto.parseAlg(solution[1]);
         fto.clearMoveStack();
 
+        long startTime = System.nanoTime();
+
         //Phase 3 is trivial - just straight DFS here
         for (int depth = 0; depth < 100; depth++) {
             boolean foundSolution = searchPhaseThree(depth, fto);
@@ -496,6 +541,11 @@ public class FtoSearch {
                 throw new RuntimeException("Could not find FTO Phase 2 solution");
             }
         }
+
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime); // total time in nanoseconds
+
+        System.out.println("Phase 3 time: " + (duration / 1_000_000) + " ms");
 
         return solution[0] + solution[1] + solution[2];
     }
@@ -543,11 +593,13 @@ public class FtoSearch {
 
     }
 
-    public static void main(String[] args) {
+    private static void performanceTest(int num){
+
+        long totalTime = 0;
 
         FullFto fto = new FullFto();
         Random r = new Random();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < num; i++) {
             long startTime = System.nanoTime();
 
             fto.scrambleRandomState(r);
@@ -558,6 +610,15 @@ public class FtoSearch {
             long duration = (endTime - startTime); // total time in nanoseconds
 
             System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
+            totalTime += duration;
         }
+
+        System.out.println("Average Time:" + (totalTime / 1_000_000) + " ms" );
+    }
+
+    public static void main(String[] args) {
+        //520355MS // Plain
+        //529858MS // move ordering
+        FtoSearch.performanceTest(100);
     }
 }
