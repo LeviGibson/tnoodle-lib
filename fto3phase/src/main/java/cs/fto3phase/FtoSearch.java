@@ -179,7 +179,7 @@ public class FtoSearch {
             System.out.println("Left: " + Integer.toString(capacity));
 
             try {
-                saveEdgeTable(phaseTwoEdgePruningTable, "edgeprun.dat");
+                saveEdgeTable(phaseTwoEdgePruningTable, "fto3phase/src/resources/edgeprun.dat");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -188,7 +188,7 @@ public class FtoSearch {
 
     static{
         try {
-            phaseTwoEdgePruningTable = loadEdgeTable("edgeprun.dat", 362880/2);
+            phaseTwoEdgePruningTable = loadEdgeTable("fto3phase/src/resources/edgeprun.dat", 362880/2);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
