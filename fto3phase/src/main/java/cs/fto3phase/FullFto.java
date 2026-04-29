@@ -134,6 +134,25 @@ public class FullFto {
         centerIndices[i1] = tmp;
     }
 
+    private void swapCorners(int i1, int i2){
+        int tmp = corners[i2];
+        corners[i2] = corners[i1];
+        corners[i1] = tmp;
+    }
+
+    private void swapEdges(int i1, int i2){
+        int tmp = edges[i2];
+        edges[i2] = edges[i1];
+        edges[i1] = tmp;
+    }
+
+    private void swapCenters(int i1, int i2){
+        int tmp = centers[i2];
+        centers[i2] = centers[i1];
+        centers[i1] = tmp;
+    }
+
+
     /**
      * Twist corner
      * @param i index to twist corner at
@@ -779,48 +798,56 @@ public class FullFto {
      * Turns self into a random state
      * @param r secure random
      */
-    public void scrambleRandomState(Random r){
+    private void scrambleRandomState(Random r){
+        //Randomize corner permutation
+        //Swap each corner with a random corner (can be itself)
+        int parity = 0;
 
-        for (int i = 0; i < 1000; i++) {
-            Move move = Move.values()[r.nextInt(16)];
-            turn(move);
+        for (int i = 0; i < 6; i++) {
+            int target = r.nextInt(6);
+            swapCorners(i, target);
+            if (i != target)
+                parity++;
         }
-        clearMoveStack();
 
-        return;
-//
-//        //Randomize corner permutation
-//        //Swap each corner with a random corner (can be itself)
-//        for (int i = 0; i < 6; i++) {
-//            swapCorners(i, r.nextInt(6));
-//        }
-//
-//        //Randomize corner orientation
-//        int coParity = 0;
-//        for (int i = 0; i < 5; i++) {
-//            int twist = r.nextInt(4);
-//            twistCorner(i, twist);
-//            coParity += twist;
-//        }
-//        //Account for unsolvable states
-//        twistCorner(5, coParity % 4);
-//
-//        //Randomize edge permutation
-//        //Swap each corner with a random corner (can be itself)
-//        for (int i = 0; i < 12; i++) {
-//            swapEdges(i, r.nextInt(12));
-//        }
-//
-//        //Randomize center permutation
-//        //Swap each corner with a random corner (can be itself)
-//        for (int i = 0; i < 12; i++) {
-//            swapEdges(i, r.nextInt(12));
-//        }
-//
-//        for (int i = 0; i < 12; i++) {
-//            swapEdges(i, r.nextInt(12));
-//            swapCenters(i+12, (r.nextInt(12))+12);
-//        }
+        if (parity % 2 == 1)
+            swapCorners(0, 1);
+
+        //Randomize corner orientation
+        parity = 0;
+        for (int i = 0; i < 6; i++) {
+            if ((i < 3) == (getCornerIndex(corners[i]) < 3)){
+                twistCorner(i, r.nextInt(2)*2);
+            } else {
+                twistCorner(i, r.nextInt(2)*2+1);
+            }
+            parity += getCornerOrientation(corners[i]);
+        }
+
+        if (parity % 4 == 2){
+            twistCorner(0, 2);
+        }
+
+        //Randomize edge permutation
+        //Swap each corner with a random corner (can be itself)
+        parity = 0;
+        for (int i = 0; i < 12; i++) {
+            int target = r.nextInt(12);
+            swapEdges(i, target);
+            if (target == i)
+                parity++;
+        }
+        if (parity % 2 == 1)
+            swapEdges(0, 1);
+
+        //Randomize center permutation
+        //Swap each corner with a random corner (can be itself)
+        for (int i = 0; i < 12; i++) {
+            swapCenters(i, r.nextInt(12));
+            swapCenters(i+12, (r.nextInt(12))+12);
+        }
+
+        clearMoveStack();
     }
 
 

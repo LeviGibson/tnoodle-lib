@@ -590,12 +590,12 @@ public class FtoSearch {
 
         long totalTime = 0;
 
-        FullFto fto = new FullFto();
+        FullFto fto;
         Random r = new Random();
         for (int i = 0; i < num; i++) {
             long startTime = System.nanoTime();
 
-            fto.scrambleRandomState(r);
+            fto = FullFto.randomCube(r);
             FtoSearch search = new FtoSearch();
             System.out.println(search.solution(fto));
 
