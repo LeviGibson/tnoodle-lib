@@ -1,7 +1,6 @@
 package cs.fto3phase;
 
 import  java.io.*;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
@@ -61,6 +60,21 @@ public class FtoSearch {
         {-2.12963, 1.06413, -0.41900}, // 17
         {-2.19083, 1.03216, -0.35640}, // 18
         {-1.91584, 0.95119, -0.33685}, // 19
+    };
+
+    public static double[] THRESHOLDS = {
+        0.5,
+        0.384615384615,
+        0.280898876404,
+        0.196232339089,
+        0.1323872061,
+        0.0870643300922,
+        0.0562517775562,
+        0.0359149662319,
+        0.0227532978666,
+        0.0143431942811,
+        0.00901297449225,
+        0.00565221277625,
     };
 
     public static final Move[] PHASE_TWO_MOVES = {Move.U, Move.UP, Move.R, Move.L, Move.B, Move.RP, Move.LP, Move.BP, Move.DP, Move.D};
@@ -461,7 +475,7 @@ public class FtoSearch {
 
             double p = odds/(1+odds);
 
-            if (p < 1/(1+Math.pow(1.6, (double)(depth-8))))
+            if (p < THRESHOLDS[depth-8])
                 return false;
         }
 
@@ -641,9 +655,10 @@ public class FtoSearch {
 
     }
 
-    private static void performanceTest(int num){
+    public static long performanceTest(int num){
 
         long totalTime = 0;
+        long totalNodes = 0;
 
         FullFto fto;
         Random r = new Random();
@@ -653,6 +668,7 @@ public class FtoSearch {
             fto = FullFto.randomCube(r);
             FtoSearch search = new FtoSearch();
             System.out.println(search.solution(fto));
+            totalNodes += (long)search.nodes;
 
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
@@ -661,12 +677,12 @@ public class FtoSearch {
             totalTime += duration;
         }
 
-        System.out.println("Average Time:" + (totalTime / 1_000_000) + " ms" );
+        System.out.println("Average Time:" + ((totalTime/num) / 1_000_000) + " ms" );
+
+        return totalNodes;
     }
 
     public static void main(String[] args) {
-        //ArrayList: Average Time:267131 ms
-        //Linked List: 235788 ms
         FtoSearch.performanceTest(100);
     }
 }
