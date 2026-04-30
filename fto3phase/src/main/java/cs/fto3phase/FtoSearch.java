@@ -3,6 +3,7 @@ package cs.fto3phase;
 import  java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Random;
 
 import static cs.fto3phase.FullFto.Move;
@@ -17,7 +18,7 @@ public class FtoSearch {
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
-    private static HashMap<Long, ArrayList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
+    private static HashMap<Long, LinkedList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
     private static HashMap<Long, Integer> phaseThreePruningTable;
 
     private static class PhaseTwoPruningEntry{
@@ -294,10 +295,10 @@ public class FtoSearch {
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
         long centerHash = fto.phaseTwoCentersHash();
         long triples = fto.packPhaseTwoTripleData();
-        ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(centerHash);
+        LinkedList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(centerHash);
 
         if (lookup == null){
-            ArrayList<PhaseTwoPruningEntry> entry = new ArrayList<>();
+            LinkedList<PhaseTwoPruningEntry> entry = new LinkedList<>();
             entry.add(new PhaseTwoPruningEntry(fto.historyLength(), triples));
             phaseTwoPruningTable.put(centerHash, entry);
         } else {
@@ -368,7 +369,7 @@ public class FtoSearch {
     //Generate pruning tables (2000ms depending on your machine)
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
-        phaseTwoPruningTable = new HashMap<Long, ArrayList<PhaseTwoPruningEntry>>();
+        phaseTwoPruningTable = new HashMap<Long, LinkedList<PhaseTwoPruningEntry>>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
@@ -466,7 +467,7 @@ public class FtoSearch {
 
         //IDA* lookup
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
-            ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
+            LinkedList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
             if (lookup == null) {
                 return false;
             } else {
@@ -664,6 +665,8 @@ public class FtoSearch {
     }
 
     public static void main(String[] args) {
+        //ArrayList: Average Time:267131 ms
+        //Linked List: 235788 ms
         FtoSearch.performanceTest(100);
     }
 }
