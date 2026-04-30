@@ -610,12 +610,14 @@ public class FtoSearch {
      * @param depth
      * @param label
      */
-    private void write(FullFto fto, int depth, boolean label){
+    private static void write(FullFto fto, int depth, boolean label){
         System.out.print(fto.tripleCount());
         System.out.print(",");
         System.out.print(fto.triplePairCount());
         System.out.print(",");
         System.out.print((int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]));
+        System.out.print(",");
+        System.out.print((int)(phaseTwoCenterPruningTable[fto.phaseTwoCenterIndex()]));
         System.out.print(",");
         System.out.print(depth);
         System.out.print(",");
@@ -627,7 +629,7 @@ public class FtoSearch {
      * Generates training data for pruning model
      * This is only called during development
      */
-    public void genData(){
+    private static void genData(){
 
         Random r = new Random();
 
