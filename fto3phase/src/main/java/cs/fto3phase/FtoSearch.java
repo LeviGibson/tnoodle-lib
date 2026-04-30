@@ -89,12 +89,12 @@ public class FtoSearch {
      * @throws IOException
      */
     private static byte[] loadEdgeTable(String filename, int size) throws IOException {
-        byte[] table = new byte[size];
-        try (FileInputStream fis = new FileInputStream(filename);
-             BufferedInputStream bis = new BufferedInputStream(fis)) {
+        try (InputStream is = FtoSearch.class.getResourceAsStream("/" + filename);
+             BufferedInputStream bis = new BufferedInputStream(is)) {
+            byte[] table = new byte[size];
             bis.read(table);
+            return table;
         }
-        return table;
     }
 
     private static void phaseTwoCenterPruningSearch(int depth, FullFto fto){
@@ -242,8 +242,8 @@ public class FtoSearch {
 
     static{
         try {
-            phaseTwoEdgePruningTable = loadEdgeTable("fto3phase/src/resources/edgeprun.dat", 362880/2);
-            phaseTwoCenterPruningTable = loadEdgeTable("fto3phase/src/resources/centerprun.dat", 1680);
+            phaseTwoEdgePruningTable = loadEdgeTable("edgeprun.dat", 362880/2);
+            phaseTwoCenterPruningTable = loadEdgeTable("centerprun.dat", 1680);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -371,17 +371,9 @@ public class FtoSearch {
         phaseTwoPruningTable = new HashMap<Long, ArrayList<PhaseTwoPruningEntry>>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
 
-        long startTime = System.nanoTime();
-
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
         phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
-
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);
-
-        System.out.println("FTO Pruning table generation time: " + (duration / 1_000_000) + " ms");
-
     }
 
 

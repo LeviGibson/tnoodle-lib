@@ -170,19 +170,16 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
             }
         }
 
-        public FaceTurningOctahedronState(FaceTurningOctahedronState copyfrom) {
-            System.arraycopy(copyfrom.corners, 0, corners, 0, 6);
-            System.arraycopy(copyfrom.edges, 0, edges, 0, 12);
-            System.arraycopy(copyfrom.centers, 0, centers, 0, 24);
+        /**
+         * Copy constructor
+         * @param copyFrom state to copy from
+         */
+        public FaceTurningOctahedronState(FaceTurningOctahedronState copyFrom) {
+            System.arraycopy(copyFrom.corners, 0, corners, 0, 6);
+            System.arraycopy(copyFrom.edges, 0, edges, 0, 12);
+            System.arraycopy(copyFrom.centers, 0, centers, 0, 24);
         }
 
-        //TODO
-        @Override
-        public Map<String, FaceTurningOctahedronState> getScrambleSuccessors() {
-            return null;
-        }
-
-        //TODO
         @Override
         public Map<String, FaceTurningOctahedronState> getSuccessorsByName() {
             Map<String, FaceTurningOctahedronState> successors = new LinkedHashMap<>();
@@ -193,12 +190,6 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
                 successors.put(key, successor);
             }
             return successors;
-        }
-
-        //TODO
-        @Override
-        public String solveIn(int n) {
-            return null;
         }
 
         //TODO
@@ -219,11 +210,6 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
         //TODO
         @Override
         protected Svg drawScramble(Map<String, Color> colorSchemeMap) {
-            return null;
-        }
-
-        //TODO
-        public String toString() {
             return null;
         }
 
