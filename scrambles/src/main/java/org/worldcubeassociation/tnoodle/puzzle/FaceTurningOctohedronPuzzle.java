@@ -69,8 +69,8 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
         defaultColorScheme.put("L", new Color(124, 2, 158)); // Purple #7c029e
         defaultColorScheme.put("R", Color.RED);
         defaultColorScheme.put("U", Color.WHITE);
-        defaultColorScheme.put("BL", Color.GRAY);
-        defaultColorScheme.put("BR", new Color(255, 128, 0)); // Orange #FF8000
+        defaultColorScheme.put("BL", new Color(255, 128, 0));
+        defaultColorScheme.put("BR", Color.GRAY); // Orange #FF8000
     }
 
     @Override
@@ -79,31 +79,29 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
     }
 
 
-    //TODO
+    private static final int FACE_TURNING_OCTAHEDRON_UNIT_SIZE = 36;
+    private static final int FACE_TURNING_OCTAHEDRON_MARGIN = 4;
+
     @Override
     public Dimension getPreferredSize() {
-        return new Dimension(0, 0);
+        return getImageSize(FACE_TURNING_OCTAHEDRON_UNIT_SIZE);
     }
 
     private static Dimension getImageSize(int radius) {
         return new Dimension(getWidth(radius), getHeight(radius));
     }
 
-    //    private static final double RADIUS_MULTIPLIER = Math.sqrt(2) * Math.cos(Math.toRadians(15));
-//    private static final double multiplier = 1.4;
     private static int getWidth(int radius) {
-//        return (int) (2 * RADIUS_MULTIPLIER * multiplier * radius);
-        return 0;
+        return 12 * radius + 2 * FACE_TURNING_OCTAHEDRON_MARGIN;
     }
 
     private static int getHeight(int radius) {
-//        return (int) (4 * RADIUS_MULTIPLIER * multiplier * radius);
-        return 0;
+        return 6 * radius + 2 * FACE_TURNING_OCTAHEDRON_MARGIN;
     }
 
     @Override
     public String getLongName() {
-        return "Face-Turning Octahedron";
+        return "Face Turning Octahedron";
     }
 
     @Override
@@ -207,10 +205,91 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
             return Arrays.hashCode(corners) ^ Arrays.hashCode(edges) ^ Arrays.hashCode(centers);
         }
 
-        //TODO
         @Override
         protected Svg drawScramble(Map<String, Color> colorSchemeMap) {
-            return null;
+            int unit = FACE_TURNING_OCTAHEDRON_UNIT_SIZE;
+            int margin = FACE_TURNING_OCTAHEDRON_MARGIN;
+            Svg svg = new Svg(getImageSize(unit));
+
+            drawFace(svg, colorSchemeMap.get("L"),
+                margin, margin,
+                margin, margin + 6 * unit,
+                margin + 3 * unit, margin + 3 * unit);
+            drawFace(svg, colorSchemeMap.get("U"),
+                margin, margin,
+                margin + 6 * unit, margin,
+                margin + 3 * unit, margin + 3 * unit);
+            drawFace(svg, colorSchemeMap.get("F"),
+                margin, margin + 6 * unit,
+                margin + 6 * unit, margin + 6 * unit,
+                margin + 3 * unit, margin + 3 * unit);
+            drawFace(svg, colorSchemeMap.get("R"),
+                margin + 3 * unit, margin + 3 * unit,
+                margin + 6 * unit, margin,
+                margin + 6 * unit, margin + 6 * unit);
+            drawFace(svg, colorSchemeMap.get("BR"),
+                margin + 6 * unit, margin,
+                margin + 9 * unit, margin + 3 * unit,
+                margin + 6 * unit, margin + 6 * unit);
+            drawFace(svg, colorSchemeMap.get("B"),
+                margin + 6 * unit, margin,
+                margin + 12 * unit, margin,
+                margin + 9 * unit, margin + 3 * unit);
+            drawFace(svg, colorSchemeMap.get("D"),
+                margin + 6 * unit, margin + 6 * unit,
+                margin + 12 * unit, margin + 6 * unit,
+                margin + 9 * unit, margin + 3 * unit);
+            drawFace(svg, colorSchemeMap.get("BL"),
+                margin + 12 * unit, margin,
+                margin + 12 * unit, margin + 6 * unit,
+                margin + 9 * unit, margin + 3 * unit);
+
+            return svg;
+        }
+
+        private void drawFace(Svg svg, Color color, double ax, double ay, double bx, double by, double cx, double cy) {
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3 - i; j++) {
+                    drawSticker(svg, color,
+                        facePoint(ax, ay, bx, by, cx, cy, i, j),
+                        facePoint(ax, ay, bx, by, cx, cy, i + 1, j),
+                        facePoint(ax, ay, bx, by, cx, cy, i, j + 1));
+
+                    if (i + j < 2) {
+                        drawSticker(svg, color,
+                            facePoint(ax, ay, bx, by, cx, cy, i + 1, j),
+                            facePoint(ax, ay, bx, by, cx, cy, i + 1, j + 1),
+                            facePoint(ax, ay, bx, by, cx, cy, i, j + 1));
+                    }
+                }
+            }
+        }
+
+        private double[] facePoint(double ax, double ay, double bx, double by, double cx, double cy, int i, int j) {
+            double bWeight = i / 3.0;
+            double cWeight = j / 3.0;
+            double aWeight = 1 - bWeight - cWeight;
+            return new double[] {
+                aWeight * ax + bWeight * bx + cWeight * cx,
+                aWeight * ay + bWeight * by + cWeight * cy
+            };
+        }
+
+        private void drawSticker(Svg svg, Color color, double[] p1, double[] p2, double[] p3) {
+            Path sticker = new Path();
+            sticker.moveTo(p1[0], p1[1]);
+            sticker.lineTo(p2[0], p2[1]);
+            sticker.lineTo(p3[0], p3[1]);
+            sticker.closePath();
+            sticker.setFill(color);
+            sticker.setStroke(Color.BLACK);
+            svg.appendChild(sticker);
+        }
+
+        private int[][] getImage(){
+            int[][] image = new int[8][9];
+
+            return image;
         }
 
         private void cycleCorners(int i1, int i2, int i3) {
