@@ -2,22 +2,18 @@ package org.worldcubeassociation.tnoodle.puzzle;
 
 import cs.fto3phase.FtoSearch;
 import cs.fto3phase.FullFto;
-import cs.sq12phase.FullCube;
-import cs.sq12phase.Search;
 import org.worldcubeassociation.tnoodle.scrambles.*;
 import org.worldcubeassociation.tnoodle.svglite.Color;
 import org.worldcubeassociation.tnoodle.svglite.Dimension;
 import org.worldcubeassociation.tnoodle.svglite.Svg;
-import org.worldcubeassociation.tnoodle.svglite.Transform;
 import org.worldcubeassociation.tnoodle.svglite.Path;
-import org.worldcubeassociation.tnoodle.svglite.Rectangle;
 
 import java.util.*;
 
 import org.timepedia.exporter.client.Export;
 
 @Export
-public class FaceTurningOctohedronPuzzle extends Puzzle {
+public class FaceTurningOctahedronPuzzle extends Puzzle {
 
     private enum Move {R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
     private final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
@@ -55,7 +51,7 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
 
     private final ThreadLocal<FtoSearch> threePhaseSearcher;
 
-    public FaceTurningOctohedronPuzzle() {
+    public FaceTurningOctahedronPuzzle() {
         wcaMinScrambleDistance = 2;
         threePhaseSearcher = ThreadLocal.withInitial(FtoSearch::new);
     }

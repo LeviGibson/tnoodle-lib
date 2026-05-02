@@ -19,7 +19,7 @@ public enum PuzzleRegistry {
     MEGA(MegaminxPuzzle.class),
     CLOCK(ClockPuzzle.class),
     SKEWB(SkewbPuzzle.class),
-    FTO(FaceTurningOctohedronPuzzle.class);
+    FTO(FaceTurningOctahedronPuzzle.class);
 
     private final LazySupplier<? extends Puzzle> puzzleSupplier;
 
