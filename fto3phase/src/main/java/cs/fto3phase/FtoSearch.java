@@ -681,8 +681,4 @@ public class FtoSearch {
 
         return totalNodes;
     }
-
-    public static void main(String[] args) {
-        FtoSearch.performanceTest(100);
-    }
 }

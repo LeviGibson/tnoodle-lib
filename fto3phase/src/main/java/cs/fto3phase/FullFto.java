@@ -1357,11 +1357,4 @@ public class FullFto {
             turn(move);
         }
     }
-
-    //--------------- Main method for development ---------------//
-    //TODO remove before PR
-    public static void main(String[] args) {
-        FullFto fto = new FullFto();
-    }
-
 }
