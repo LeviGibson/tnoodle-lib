@@ -207,39 +207,47 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
 
         @Override
         protected Svg drawScramble(Map<String, Color> colorSchemeMap) {
+
+            Color[] scheme = new Color[8];
+            for(int i = 0; i < scheme.length; i++) {
+                scheme[i] = colorSchemeMap.get(CenterOrd.values()[i].toString());
+            }
+
+            int[][] image = getImage();
+
             int unit = FACE_TURNING_OCTAHEDRON_UNIT_SIZE;
             int margin = FACE_TURNING_OCTAHEDRON_MARGIN;
             Svg svg = new Svg(getImageSize(unit));
 
-            drawFace(svg, colorSchemeMap.get("L"),
+            drawFace(svg, image[4], scheme,
                 margin, margin,
                 margin, margin + 6 * unit,
                 margin + 3 * unit, margin + 3 * unit);
-            drawFace(svg, colorSchemeMap.get("U"),
+            drawFace(svg, image[0], scheme,
                 margin, margin,
                 margin + 6 * unit, margin,
                 margin + 3 * unit, margin + 3 * unit);
-            drawFace(svg, colorSchemeMap.get("F"),
+            drawFace(svg, image[1], scheme,
                 margin, margin + 6 * unit,
                 margin + 6 * unit, margin + 6 * unit,
                 margin + 3 * unit, margin + 3 * unit);
-            drawFace(svg, colorSchemeMap.get("R"),
+            drawFace(svg, image[5], scheme,
                 margin + 3 * unit, margin + 3 * unit,
                 margin + 6 * unit, margin,
                 margin + 6 * unit, margin + 6 * unit);
-            drawFace(svg, colorSchemeMap.get("BR"),
+            drawFace(svg, image[3], scheme,
                 margin + 6 * unit, margin,
                 margin + 9 * unit, margin + 3 * unit,
                 margin + 6 * unit, margin + 6 * unit);
-            drawFace(svg, colorSchemeMap.get("B"),
+            drawFace(svg, image[6], scheme,
                 margin + 6 * unit, margin,
                 margin + 12 * unit, margin,
                 margin + 9 * unit, margin + 3 * unit);
-            drawFace(svg, colorSchemeMap.get("D"),
+            drawFace(svg, image[7], scheme,
                 margin + 6 * unit, margin + 6 * unit,
                 margin + 12 * unit, margin + 6 * unit,
                 margin + 9 * unit, margin + 3 * unit);
-            drawFace(svg, colorSchemeMap.get("BL"),
+            drawFace(svg, image[2], scheme,
                 margin + 12 * unit, margin,
                 margin + 12 * unit, margin + 6 * unit,
                 margin + 9 * unit, margin + 3 * unit);
@@ -247,16 +255,17 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
             return svg;
         }
 
-        private void drawFace(Svg svg, Color color, double ax, double ay, double bx, double by, double cx, double cy) {
+        private void drawFace(Svg svg, int[] image, Color[] scheme, double ax, double ay, double bx, double by, double cx, double cy) {
+            int stickerIndex = 0;
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3 - i; j++) {
-                    drawSticker(svg, color,
+                    drawSticker(svg, scheme[image[stickerIndex++]],
                         facePoint(ax, ay, bx, by, cx, cy, i, j),
                         facePoint(ax, ay, bx, by, cx, cy, i + 1, j),
                         facePoint(ax, ay, bx, by, cx, cy, i, j + 1));
 
                     if (i + j < 2) {
-                        drawSticker(svg, color,
+                        drawSticker(svg, scheme[image[stickerIndex++]],
                             facePoint(ax, ay, bx, by, cx, cy, i + 1, j),
                             facePoint(ax, ay, bx, by, cx, cy, i + 1, j + 1),
                             facePoint(ax, ay, bx, by, cx, cy, i, j + 1));
@@ -286,8 +295,133 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
             svg.appendChild(sticker);
         }
 
+        int[][] CORNER_COLORS = {
+            {CenterOrd.U.ordinal(), CenterOrd.B.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.L.ordinal()},
+            {CenterOrd.U.ordinal(), CenterOrd.R.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.B.ordinal()},
+            {CenterOrd.U.ordinal(), CenterOrd.L.ordinal(), CenterOrd.F.ordinal(), CenterOrd.R.ordinal()},
+            {CenterOrd.D.ordinal(), CenterOrd.F.ordinal(), CenterOrd.L.ordinal(), CenterOrd.BL.ordinal()},
+            {CenterOrd.D.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.R.ordinal(), CenterOrd.F.ordinal()},
+            {CenterOrd.D.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.B.ordinal(), CenterOrd.BR.ordinal()}
+        };
+
+        int[][] EDGE_COLORS = {
+            {CenterOrd.U.ordinal(), CenterOrd.B.ordinal()}, // U_B
+            {CenterOrd.U.ordinal(), CenterOrd.R.ordinal()}, // U_R
+            {CenterOrd.U.ordinal(), CenterOrd.L.ordinal()}, // U_L
+            {CenterOrd.F.ordinal(), CenterOrd.L.ordinal()}, // F_L
+            {CenterOrd.F.ordinal(), CenterOrd.R.ordinal()}, // F_R
+            {CenterOrd.BR.ordinal(), CenterOrd.R.ordinal()}, // R_BR
+            {CenterOrd.BL.ordinal(), CenterOrd.B.ordinal()}, // B_BL
+            {CenterOrd.BR.ordinal(), CenterOrd.B.ordinal()}, // B_BR
+            {CenterOrd.BL.ordinal(), CenterOrd.L.ordinal()}, // L_BL
+            {CenterOrd.F.ordinal(), CenterOrd.D.ordinal()}, // D_F
+            {CenterOrd.BR.ordinal(), CenterOrd.D.ordinal()}, // D_BR
+            {CenterOrd.BL.ordinal(), CenterOrd.D.ordinal()} // D_BL
+        };
+
+        private int cornerColor(Corner index, int orientation){
+            int corner = corners[index.ordinal()];
+            return CORNER_COLORS[getCornerIndex(corner)][(getCornerOrientation(corner) + orientation)%4];
+        }
+
+
+
+        private int edgeColor(Edge index, int orientation){
+            int edge = edges[index.ordinal()];
+            return EDGE_COLORS[edge][orientation];
+        }
+
         private int[][] getImage(){
+
             int[][] image = new int[8][9];
+
+            //U face
+            image[0][0] = cornerColor(Corner.U_L, 0);
+            image[0][1] = centers[CenterInd.U_BL.ordinal()];
+            image[0][2] = edgeColor(Edge.U_L, 0);
+            image[0][3] = centers[CenterInd.U_F.ordinal()];
+            image[0][4] = cornerColor(Corner.U_F, 0);
+            image[0][5] = edgeColor(Edge.U_B, 0);
+            image[0][6] = centers[CenterInd.U_BR.ordinal()];
+            image[0][7] = edgeColor(Edge.U_R, 0);
+            image[0][8] = cornerColor(Corner.U_R, 0);
+
+            //F face
+            image[1][0] = cornerColor(Corner.D_L, 1);
+            image[1][1] = centers[CenterInd.F_BL.ordinal()];
+            image[1][2] = edgeColor(Edge.F_L, 0);
+            image[1][3] = centers[CenterInd.F_U.ordinal()];
+            image[1][4] = cornerColor(Corner.U_F, 2);
+            image[1][5] = edgeColor(Edge.D_F, 0);
+            image[1][6] = centers[CenterInd.F_BR.ordinal()];
+            image[1][7] = edgeColor(Edge.F_R, 0);
+            image[1][8] = cornerColor(Corner.D_R, 3);
+
+            //BL face
+            image[2][0] = cornerColor(Corner.U_L, 2);
+            image[2][1] = centers[CenterInd.BL_U.ordinal()];
+            image[2][2] = edgeColor(Edge.B_BL, 0);
+            image[2][3] = centers[CenterInd.BL_BR.ordinal()];
+            image[2][4] = cornerColor(Corner.D_B, 1);
+            image[2][5] = edgeColor(Edge.L_BL, 0);
+            image[2][6] = centers[CenterInd.BL_F.ordinal()];
+            image[2][7] = edgeColor(Edge.D_BL, 0);
+            image[2][8] = cornerColor(Corner.D_L, 3);
+
+            //BR face
+            image[3][0] = cornerColor(Corner.U_R, 2);
+            image[3][1] = centers[CenterInd.BR_U.ordinal()];
+            image[3][2] = edgeColor(Edge.R_BR, 0);
+            image[3][3] = centers[CenterInd.BR_F.ordinal()];
+            image[3][4] = cornerColor(Corner.D_R, 1);
+            image[3][5] = edgeColor(Edge.B_BR, 0);
+            image[3][6] = centers[CenterInd.BR_BL.ordinal()];
+            image[3][7] = edgeColor(Edge.D_BR, 0);
+            image[3][8] = cornerColor(Corner.D_B, 3);
+
+            //L face
+            image[4][0] = cornerColor(Corner.U_L, 3);
+            image[4][1] = centers[CenterInd.L_B.ordinal()];
+            image[4][2] = edgeColor(Edge.U_L, 1);
+            image[4][3] = centers[CenterInd.L_R.ordinal()];
+            image[4][4] = cornerColor(Corner.U_F, 1);
+            image[4][5] = edgeColor(Edge.L_BL, 1);
+            image[4][6] = centers[CenterInd.L_D.ordinal()];
+            image[4][7] = edgeColor(Edge.F_L, 1);
+            image[4][8] = cornerColor(Corner.D_L, 2);
+
+            //R face
+            image[5][0] = cornerColor(Corner.U_F, 3);
+            image[5][1] = centers[CenterInd.R_L.ordinal()];
+            image[5][2] = edgeColor(Edge.F_R, 1);
+            image[5][3] = centers[CenterInd.R_D.ordinal()];
+            image[5][4] = cornerColor(Corner.D_R, 2);
+            image[5][5] = edgeColor(Edge.U_R, 1);
+            image[5][6] = centers[CenterInd.R_B.ordinal()];
+            image[5][7] = edgeColor(Edge.R_BR, 1);
+            image[5][8] = cornerColor(Corner.U_R, 1);
+
+            //B face
+            image[6][0] = cornerColor(Corner.U_R, 3);
+            image[6][1] = centers[CenterInd.B_R.ordinal()];
+            image[6][2] = edgeColor(Edge.B_BR, 1);
+            image[6][3] = centers[CenterInd.B_D.ordinal()];
+            image[6][4] = cornerColor(Corner.D_B, 2);
+            image[6][5] = edgeColor(Edge.U_B, 1);
+            image[6][6] = centers[CenterInd.B_L.ordinal()];
+            image[6][7] = edgeColor(Edge.B_BL, 1);
+            image[6][8] = cornerColor(Corner.U_L, 1);
+
+            //D face
+            image[7][0] = cornerColor(Corner.D_R, 0);
+            image[7][1] = centers[CenterInd.D_R.ordinal()];
+            image[7][2] = edgeColor(Edge.D_BR, 1);
+            image[7][3] = centers[CenterInd.D_B.ordinal()];
+            image[7][4] = cornerColor(Corner.D_B, 0);
+            image[7][5] = edgeColor(Edge.D_F, 1);
+            image[7][6] = centers[CenterInd.D_L.ordinal()];
+            image[7][7] = edgeColor(Edge.D_BL, 1);
+            image[7][8] = cornerColor(Corner.D_L, 0);
 
             return image;
         }
@@ -331,18 +465,6 @@ public class FaceTurningOctohedronPuzzle extends Puzzle {
             int tmp = corners[i2];
             corners[i2] = corners[i1];
             corners[i1] = tmp;
-        }
-
-        private void swapEdges(int i1, int i2) {
-            int tmp = edges[i2];
-            edges[i2] = edges[i1];
-            edges[i1] = tmp;
-        }
-
-        private void swapCenters(int i1, int i2) {
-            int tmp = centers[i2];
-            centers[i2] = centers[i1];
-            centers[i1] = tmp;
         }
 
         private void twistCorner(int i, int dir) {
