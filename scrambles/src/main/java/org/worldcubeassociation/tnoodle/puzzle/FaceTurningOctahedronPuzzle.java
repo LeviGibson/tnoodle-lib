@@ -75,6 +75,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
     private static final int FACE_TURNING_OCTAHEDRON_UNIT_SIZE = 36;
     private static final int FACE_TURNING_OCTAHEDRON_MARGIN = 4;
+    private static final double FACE_TURNING_OCTAHEDRON_FACE_GAP = 6.0;
 
     @Override
     public Dimension getPreferredSize() {
@@ -254,6 +255,16 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         }
 
         private void drawFace(Svg svg, int[] image, Color[] scheme, double ax, double ay, double bx, double by, double cx, double cy) {
+            double[] a = insetFacePoint(ax, ay, bx, by, cx, cy);
+            double[] b = insetFacePoint(bx, by, ax, ay, cx, cy);
+            double[] c = insetFacePoint(cx, cy, ax, ay, bx, by);
+            ax = a[0];
+            ay = a[1];
+            bx = b[0];
+            by = b[1];
+            cx = c[0];
+            cy = c[1];
+
             int stickerIndex = 0;
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3 - i; j++) {
@@ -270,6 +281,23 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
                     }
                 }
             }
+        }
+
+        private double[] insetFacePoint(double x, double y, double other1x, double other1y, double other2x, double other2y) {
+            double centerX = (x + other1x + other2x) / 3.0;
+            double centerY = (y + other1y + other2y) / 3.0;
+            double dx = centerX - x;
+            double dy = centerY - y;
+            double distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance == 0) {
+                return new double[] { x, y };
+            }
+            double inset = Math.min(FACE_TURNING_OCTAHEDRON_FACE_GAP, distance);
+
+            return new double[] {
+                x + dx / distance * inset,
+                y + dy / distance * inset
+            };
         }
 
         private double[] facePoint(double ax, double ay, double bx, double by, double cx, double cy, int i, int j) {
