@@ -16,7 +16,7 @@ import org.timepedia.exporter.client.Export;
 public class FaceTurningOctahedronPuzzle extends Puzzle {
 
     private enum Move {R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
-    private final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
+    private static final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
 
     enum Corner {
         U_L, U_R, U_F, D_L, D_R, D_B
@@ -47,8 +47,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         D_L, D_R, D_B
     }
 
-//    private static final int radius = 32;
-
     private final ThreadLocal<FtoSearch> threePhaseSearcher;
 
     public FaceTurningOctahedronPuzzle() {
@@ -65,8 +63,8 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         defaultColorScheme.put("L", new Color(124, 2, 158)); // Purple #7c029e
         defaultColorScheme.put("R", Color.RED);
         defaultColorScheme.put("U", Color.WHITE);
-        defaultColorScheme.put("BL", new Color(255, 128, 0));
-        defaultColorScheme.put("BR", Color.GRAY); // Orange #FF8000
+        defaultColorScheme.put("BL", new Color(255, 128, 0)); // Orange #FF8000
+        defaultColorScheme.put("BR", Color.GRAY);
     }
 
     @Override
@@ -110,10 +108,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         return new FaceTurningOctahedronState();
     }
 
-    //TODO
     @Override
     protected int getRandomMoveCount() {
-        return 0;
+        return 34;
     }
 
     @Override
@@ -186,16 +183,21 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             return successors;
         }
 
-        //TODO
         @Override
         public boolean equals(Object other) {
-            FaceTurningOctahedronState o = ((FaceTurningOctahedronState) other);
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof FaceTurningOctahedronState)) {
+                return false;
+            }
+
+            FaceTurningOctahedronState o = (FaceTurningOctahedronState) other;
             return Arrays.equals(centers, o.centers) &&
                 Arrays.equals(corners, o.corners) &&
                 Arrays.equals(edges, o.edges);
         }
 
-        //TODO
         @Override
         public int hashCode() {
             return Arrays.hashCode(corners) ^ Arrays.hashCode(edges) ^ Arrays.hashCode(centers);

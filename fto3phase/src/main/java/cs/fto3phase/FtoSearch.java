@@ -7,6 +7,14 @@ import java.util.Random;
 
 import static cs.fto3phase.FullFto.Move;
 
+/**
+ * Three-phase IDA* solver for Face Turning Octahedron random-state scrambles.
+ *
+ * <p>The search first solves the D-face center and edge orbit, then reduces the
+ * state to the Octaminx subgroup, and finally solves the reduced state.
+ * Small phase-two pruning tables are loaded from bundled resources; larger pruning
+ * tables are generated in memory during class initialization.</p>
+ */
 public class FtoSearch {
     private String[] solution;
 
@@ -436,7 +444,7 @@ public class FtoSearch {
 
     /**
      * IDA* recursive function for finding solutions for Phase 1 -> Phase 2
-     * AKA. Bottom center solved -> Octominx reduction
+     * AKA. Bottom center solved -> Octaminx reduction
      * This step takes a lot of moves, so it is pruned rather aggressively
      * @param depth depth
      * @param fto fto
@@ -559,7 +567,14 @@ public class FtoSearch {
     }
 
 
+    /**
+     * Finds a solution for the supplied FTO state.
+     *
+     * @param fto state to solve
+     * @return solution algorithm with TNoodle-compatible move names
+     */
     public String solution(FullFto fto){
+        fto = new FullFto(fto); // Make a copy
         nodes = 0;
 
         fto.clearMoveStack();
@@ -607,7 +622,27 @@ public class FtoSearch {
             }
         }
 
-        return solution[0] + solution[1] + solution[2];
+        String s = solution[0] + solution[1] + solution[2];
+        return invertSolution(s);
+    }
+
+    private String invertSolution(String s) {
+        if (s == null || s.isEmpty()) return s;
+
+        String[] moves = s.trim().split("\\s+");
+
+        // Reverse the order, then toggle prime on each move
+        String[] inverted = new String[moves.length];
+        for (int i = 0; i < moves.length; i++) {
+            String move = moves[moves.length - 1 - i];
+            if (move.endsWith("'")) {
+                inverted[i] = move.substring(0, move.length() - 1); // remove prime
+            } else {
+                inverted[i] = move + "'"; // add prime
+            }
+        }
+
+        return String.join(" ", inverted);
     }
 
     /**

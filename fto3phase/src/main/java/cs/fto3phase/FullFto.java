@@ -4,6 +4,13 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.Stack;
 
+/**
+ * Mutable internal representation of a Face Turning Octahedron state.
+ *
+ * <p>The representation tracks corner permutation and orientation, edge
+ * permutation, center colors, and center piece identities used by the phase-two
+ * triple pruning logic. Public mutators update the current object in place.</p>
+ */
 public class FullFto {
 
     //--------------- State ---------------//
@@ -316,14 +323,11 @@ public class FullFto {
     private static long[][][] PHASE3_CORNER_KEYS = new long[6][6][4];
     private static long[][] PHASE3_EDGE_KEYS = new long[9][9];
 
-    //Initialize keys for hash functions
+    // Initialize keys for the in-memory pruning hashes. The values only need to
+    // be stable within one JVM because the corresponding pruning tables are also
+    // generated in memory during class initialization.
     static {
-        // This random is not used for generating random states.
-        // If you're looking at it suspiciously I know what you're thinking.
-        // Don't worry about it
         Random r =  new Random();
-
-        //TODO clean this up
 
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 24; j++) {
@@ -449,9 +453,10 @@ public class FullFto {
     private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
 
     /**
-     * Turns the G2 edge state to an index (Edges on R, L, B faces)
-     * This used for looking up the optimal edge solution for G2
-     * @return
+     * Turns the G2 edge state into a permutation index for edges on the R, L,
+     * and B faces. This is used for the phase-two edge pruning table lookup.
+     *
+     * @return phase-two edge pruning table index
      */
     public int phaseTwoEdgeIndex() {
         int index = 0;
@@ -481,6 +486,11 @@ public class FullFto {
         return fact[n] / (fact[a] * fact[b] * fact[c]);
     }
 
+    /**
+     * Turns the phase-two center orbit into a multinomial index.
+     *
+     * @return phase-two center pruning table index
+     */
     public int phaseTwoCenterIndex() {
         int[] c = new int[9];
 
@@ -519,6 +529,12 @@ public class FullFto {
         return index;
     }
 
+    /**
+     * Hash of the pieces relevant to phase one, where the D face center and
+     * edge orbit must be solved.
+     *
+     * @return phase-one pruning hash
+     */
     public long phaseOneHash(){
         return edgeHash(CenterOrd.D) ^ centerHash(CenterOrd.D);
     }
@@ -674,6 +690,7 @@ public class FullFto {
         System.arraycopy(other.corners, 0, this.corners, 0, other.corners.length);
         System.arraycopy(other.edges, 0, this.edges, 0, other.edges.length);
         System.arraycopy(other.centers, 0, this.centers, 0, other.centers.length);
+        System.arraycopy(other.centerIndices, 0, this.centerIndices, 0, other.centerIndices.length);
         this.moveStack = new Stack<>();
         this.moveStack.addAll(other.moveStack);
     }
@@ -828,7 +845,7 @@ public class FullFto {
     /**
      * Scramble `this` to a random G2 state
      * @param r random
-     * @param numMoves
+     * @param numMoves number of phase-two moves to apply before clearing history
      */
     public void scrambleRandomG2State(Random r, int numMoves){
         Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
@@ -915,9 +932,10 @@ public class FullFto {
     }
 
     /**
-     * Detects redundent move sequences like R R, R R', R BL R
-     * @param move
-     * @return
+     * Detects redundant move sequences like R R, R R', and R BL R.
+     *
+     * @param move move being considered
+     * @return true when the move repeats or immediately cancels recent history
      */
     boolean isRepetition(Move move){
 
