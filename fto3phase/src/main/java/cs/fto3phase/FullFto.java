@@ -27,7 +27,7 @@ public class FullFto {
 
     //History of moves applied to the FTO
     //Cleared before search
-    Stack<Move> moveStack;
+    public Stack<Move> moveStack;
 
     //All possible moves
     public enum Move{R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
@@ -773,6 +773,19 @@ public class FullFto {
         {Move.R, Move.RP}, // BLP
     };
 
+    public boolean isValidPhaseOneFinishingSequence(Move lastMove, Move lastLastMove){
+        if (!isPhaseOneBreakingMove(lastMove))
+            return false;
+
+        if (PARALLEL_MOVES[lastMove.ordinal()][0] == lastLastMove)
+            return false;
+
+        if (PARALLEL_MOVES[lastMove.ordinal()][1] == lastLastMove)
+            return false;
+
+        return true;
+    }
+
     /**
      * Undo the last move performed on FTO
      */
@@ -1402,6 +1415,10 @@ public class FullFto {
                     CenterInd.D_L.ordinal());
                 break;
         }
+    }
+
+    public static boolean isPhaseOneBreakingMove(Move move){
+        return move == Move.F || move == Move.FP || move == Move.BR || move == Move.BRP || move == Move.BL || move == Move.BLP;
     }
 
     /**
