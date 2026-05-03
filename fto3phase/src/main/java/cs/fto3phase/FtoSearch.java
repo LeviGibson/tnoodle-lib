@@ -19,7 +19,20 @@ public class FtoSearch {
     private static final int PHASE_ONE_PRUNING_DEPTH = 4;
     private static final int PHASE_TWO_PRUNING_DEPTH = 7;
     private static final int PHASE_THREE_PRUNING_DEPTH = 4;
-    private static final int PHASE_ONE_CANDIDATE_LIMIT = 200;
+
+
+    /**
+     * Important value!
+     * The higher the value, the slower the search, and the shorter the solution
+     * put these into desmos if you want estimates for this value
+     *
+     * f(x) = predicted average moves per solution
+     * g(x) = predicted average solution time to find a solution (calibrated on my computer, might be different for you)
+     *
+     *f\left(x\right)=-0.000674887x+30.74544
+     *g\left(x\right)=0.162887x+761.35639
+     */
+    private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
@@ -694,7 +707,6 @@ public class FtoSearch {
                 foundSolution = searchPhaseTwo(depthForSearch, state, copy);
 
                 if (foundSolution) {
-                    System.out.println(depth + state.solution[1].split(" ").length);
                     state.solution[0] = phaseOneCandidate;
                     break;
                 }
@@ -813,13 +825,13 @@ public class FtoSearch {
             fto = FullFto.randomCube(r);
             FtoSearch search = new FtoSearch();
             String s = search.solution(fto);
-            System.out.println(s);
+//            System.out.println(s);
             totalNodes += (long)search.nodes;
 
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
 
-            System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
+//            System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
             totalTime += duration;
             totalMoves += s.trim().split(" ").length;
         }
@@ -828,10 +840,5 @@ public class FtoSearch {
         System.out.println("Average Moves:" + (((float)totalMoves/(float)num)));
 
         return totalNodes;
-    }
-
-    public static void main(String[] args) {
-//        genData();
-        performanceTest(100);
     }
 }
