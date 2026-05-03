@@ -44,10 +44,10 @@ public class FtoSearch {
     private static HashMap<Long, LinkedList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
     private static HashMap<Long, Integer> phaseThreePruningTable;
 
-    private static final int PHASE_TWO_PRUNING_CACHE_MAGIC = 0x46544F32; // "FTO2"
-    private static final int PHASE_TWO_PRUNING_CACHE_VERSION = 1;
-    private static final String PHASE_TWO_PRUNING_CACHE_FILE = "phase2prun-d" + PHASE_TWO_PRUNING_DEPTH + ".bin.gz";
 
+    /**
+     * Contains all the data needed for a phase-2 hash lookup
+     */
     private static class PhaseTwoPruningEntry{
         public int distanceToSolved;
         public long triples;
@@ -55,9 +55,6 @@ public class FtoSearch {
             this.distanceToSolved = distanceToSolved;
             this.triples = triples;
         }
-    }
-
-    public FtoSearch(){
     }
 
     //--------------- Static Pruning Table Generation ---------------//
@@ -89,6 +86,9 @@ public class FtoSearch {
         {0.64805, 0.78102, -0.30848, -0.29557}, // 19
     };
 
+    /**
+     * Thresholds to prune at for logistic pruning index=depth
+     */
     public static double[] THRESHOLDS = {
         0.986641027960064,
         0.961649420842541,
@@ -104,74 +104,28 @@ public class FtoSearch {
         0.000510047301430,
     };
 
+    /**
+     * Moves allowed during Phase 1 -> Phase 2
+     */
     public static final Move[] PHASE_TWO_MOVES = {Move.U, Move.UP, Move.R, Move.L, Move.B, Move.RP, Move.LP, Move.BP, Move.DP, Move.D};
+    /**
+     * Moves allowed during Phase 2 -> Phase 3
+     */
     public static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
 
     private static byte[] phaseTwoEdgePruningTable;
     private static byte[] phaseTwoCenterPruningTable;
     private static byte[] phaseTwoTriplePruningTable;
 
-    private static int found = 0;
 
-    private static void phaseTwoTriplePruningSearch(int depth, FullFto fto){
-        if (depth == 0)
-            return;
-
-        int ply = fto.historyLength();
-
-        int index = fto.phaseTwoTripleIndex();
-
-        if (phaseTwoTriplePruningTable[index] > ply){
-            found++;
-            phaseTwoTriplePruningTable[index] = (byte)ply;
-            System.out.println(found);
-        }
-
-        for (Move move : PHASE_TWO_MOVES){
-            if (fto.isRepetition(move))
-                continue;
-
-            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
-                continue;
-
-            fto.turn(move);
-            phaseTwoTriplePruningSearch(depth-1, fto);
-            fto.undo();
-        }
-    }
-
-    static{
-        try {
-            phaseTwoTriplePruningTable = loadEdgeTable("triple_d10.dat", 2*2*2*2*2*2*2*2*2*2*2*2);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-//        for (int i = 0; i < 1000; i++) {
-//            FullFto fto = FullFto.randomCube(new Random());
-//            System.out.println(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
-//        }
-
-//        phaseTwoTriplePruningTable = new byte[2*2*2*2*2*2*2*2*2*2*2*2];
-//        Arrays.fill(phaseTwoTriplePruningTable, (byte) 25);
-//        for (int depth = 0; depth < 20; depth++) {
-//            System.out.println("Searching depth " + depth);
-//            phaseTwoTriplePruningSearch(depth, new FullFto());
-//            try {
-//                saveEdgeTable(phaseTwoTriplePruningTable, "depth " + depth + ".dat");
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-    }
 
     /**
-     * saves edgeprun.dat
+     * Saves .dat files in main/resources
      * @param table table
-     * @param filename edgeprun.dat
-     * @throws IOException
+     * @param filename name of file
+     * @throws IOException exception
      */
-    private static void saveEdgeTable(byte[] table, String filename) throws IOException {
+    private static void saveTable(byte[] table, String filename) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(filename);
              BufferedOutputStream bos = new BufferedOutputStream(fos)) {
             bos.write(table);
@@ -179,71 +133,18 @@ public class FtoSearch {
     }
 
     /**
-     * Loads edgeprun.dat
-     * @param filename edgeprun.dat
+     * Loads .dat files in main/resources
+     * @param filename name of file
      * @param size size of file in bytes
      * @return array in bytes
-     * @throws IOException
+     * @throws IOException exception
      */
-    private static byte[] loadEdgeTable(String filename, int size) throws IOException {
+    private static byte[] loadTable(String filename, int size) throws IOException {
         try (InputStream is = FtoSearch.class.getResourceAsStream("/" + filename);
              BufferedInputStream bis = new BufferedInputStream(is)) {
             byte[] table = new byte[size];
             bis.read(table);
             return table;
-        }
-    }
-
-    private static void phaseTwoCenterPruningSearch(int depth, FullFto fto){
-        if (depth == 0)
-            return;
-
-        int centerIndex = fto.phaseTwoCenterIndex();
-        int ply = fto.historyLength();
-
-        if (phaseTwoCenterPruningTable[centerIndex] > ply){
-            phaseTwoCenterPruningTable[centerIndex] = (byte)ply;
-        }
-
-        for (Move move : PHASE_TWO_MOVES){
-            if (fto.isRepetition(move))
-                continue;
-
-            if (move == Move.D || move == Move.DP)
-                continue;
-
-            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
-                continue;
-
-            fto.turn(move);
-            phaseTwoCenterPruningSearch(depth-1, fto);
-            fto.undo();
-        }
-    }
-
-    private static void generateCenterPruning(){
-        phaseTwoCenterPruningTable = new byte[1680];
-
-        for (int i = 0; i < 1680; i++) {
-            phaseTwoCenterPruningTable[i] = (byte) 25;
-        }
-
-        for (int depth = 0; depth < 11; depth++) {
-            System.out.println("Searching depth " + depth);
-            phaseTwoCenterPruningSearch(depth, new FullFto());
-
-            int remaining = 1680;
-            for (int i = 0; i < 1680; i++) {
-                if (phaseTwoCenterPruningTable[i] != 25)
-                    remaining--;
-            }
-            System.out.println("Remaining:" + remaining);
-        }
-
-        try {
-            saveEdgeTable(phaseTwoCenterPruningTable, "fto3phase/src/resources/centerprun.dat");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -330,7 +231,7 @@ public class FtoSearch {
             System.out.println("Left: " + Integer.toString(capacity));
 
             try {
-                saveEdgeTable(phaseTwoEdgePruningTable, "fto3phase/src/resources/edgeprun.dat");
+                saveTable(phaseTwoEdgePruningTable, "fto3phase/src/resources/edgeprun.dat");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -339,8 +240,9 @@ public class FtoSearch {
 
     static{
         try {
-            phaseTwoEdgePruningTable = loadEdgeTable("edgeprun.dat", 362880/2);
-            phaseTwoCenterPruningTable = loadEdgeTable("centerprun.dat", 1680);
+            phaseTwoTriplePruningTable = loadTable("triple_d10.dat", 2*2*2*2*2*2*2*2*2*2*2*2);
+            phaseTwoEdgePruningTable = loadTable("edgeprun.dat", 362880/2);
+            phaseTwoCenterPruningTable = loadTable("centerprun.dat", 1680);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -385,6 +287,7 @@ public class FtoSearch {
     /**
      * Helper function for generating pruning tables
      * This is not called in the actual search, just called once on program startup.
+     * This table is saved to the user's home folder after it is generated
      * @param depth depth
      * @param fto fto
      */
@@ -433,101 +336,6 @@ public class FtoSearch {
         }
     }
 
-    private static Path phaseTwoPruningCachePath() {
-        String configuredPath = System.getProperty("cs.fto3phase.phaseTwoPruningCache");
-        if (configuredPath != null && !configuredPath.trim().isEmpty()) {
-            return new File(configuredPath).toPath();
-        }
-
-        return new File(new File(System.getProperty("user.home"), ".tnoodle/fto3phase"), PHASE_TWO_PRUNING_CACHE_FILE).toPath();
-    }
-
-    private static boolean loadPhaseTwoPruningTable(Path path) {
-        if (!Files.isRegularFile(path)) {
-            return false;
-        }
-
-        System.out.println(path);
-
-        HashMap<Long, LinkedList<PhaseTwoPruningEntry>> table = new HashMap<>();
-
-        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(path))))) {
-            if (in.readInt() != PHASE_TWO_PRUNING_CACHE_MAGIC) {
-                return false;
-            }
-            if (in.readInt() != PHASE_TWO_PRUNING_CACHE_VERSION) {
-                return false;
-            }
-            if (in.readInt() != PHASE_TWO_PRUNING_DEPTH) {
-                return false;
-            }
-
-            int buckets = in.readInt();
-            if (buckets < 0) {
-                return false;
-            }
-
-            for (int i = 0; i < buckets; i++) {
-                long centerHash = in.readLong();
-                int entries = in.readInt();
-                if (entries <= 0) {
-                    return false;
-                }
-
-                LinkedList<PhaseTwoPruningEntry> bucket = new LinkedList<>();
-                for (int j = 0; j < entries; j++) {
-                    int distanceToSolved = in.readUnsignedByte();
-                    long triples = in.readLong();
-                    bucket.add(new PhaseTwoPruningEntry(distanceToSolved, triples));
-                }
-                table.put(centerHash, bucket);
-            }
-
-            phaseTwoPruningTable = table;
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private static void savePhaseTwoPruningTable(Path path) {
-        try {
-            Path parent = path.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            Path tmpPath = path.resolveSibling(path.getFileName().toString() + ".tmp");
-
-            ArrayList<Long> centerHashes = new ArrayList<>(phaseTwoPruningTable.keySet());
-            Collections.sort(centerHashes);
-
-            try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(tmpPath))))) {
-                out.writeInt(PHASE_TWO_PRUNING_CACHE_MAGIC);
-                out.writeInt(PHASE_TWO_PRUNING_CACHE_VERSION);
-                out.writeInt(PHASE_TWO_PRUNING_DEPTH);
-                out.writeInt(centerHashes.size());
-
-                for (Long centerHash : centerHashes) {
-                    LinkedList<PhaseTwoPruningEntry> bucket = phaseTwoPruningTable.get(centerHash);
-                    out.writeLong(centerHash);
-                    out.writeInt(bucket.size());
-
-                    for (PhaseTwoPruningEntry entry : bucket) {
-                        out.writeByte(entry.distanceToSolved);
-                        out.writeLong(entry.triples);
-                    }
-                }
-            }
-
-            try {
-                Files.move(tmpPath, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException e) {
-                Files.move(tmpPath, path, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not save phase two pruning table cache to " + path, e);
-        }
-    }
 
     /**
      * Helper function for generating pruning tables
@@ -558,22 +366,21 @@ public class FtoSearch {
         }
     }
 
-    //Generate pruning tables (2000ms depending on your machine)
+    //Generate pruning tables (2000ms on first program run depending on your machine)
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
-        Path phaseTwoPruningCachePath = phaseTwoPruningCachePath();
-        if (!loadPhaseTwoPruningTable(phaseTwoPruningCachePath)) {
-            phaseTwoPruningTable = new HashMap<Long, LinkedList<PhaseTwoPruningEntry>>();
-            phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
-            savePhaseTwoPruningTable(phaseTwoPruningCachePath);
-        }
+        phaseTwoPruningTable = new HashMap<Long, LinkedList<PhaseTwoPruningEntry>>();
+        phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
     }
 
-    private class State{
+    /**
+     * An instance of this class is passed to the search and used for storing solutions
+     */
+    private static class State{
         String[] solution = new String[3];
     }
 
@@ -625,21 +432,6 @@ public class FtoSearch {
     }
 
     int nodes;
-
-    private int distanceFromPhaseTwoToSolved(FullFto fto){
-        for (int depth = 0; depth < 100; depth++) {
-            State state = new State();
-            boolean foundSolution = searchPhaseThree(depth, state, fto);
-
-            if (foundSolution)
-                return depth + PHASE_THREE_PRUNING_DEPTH;
-
-            if (depth == 99){
-                throw new RuntimeException("Could not find FTO Phase 2 solution");
-            }
-        }
-        return 0;
-    }
 
     /**
      * IDA* recursive function for finding solutions for Phase 1 -> Phase 2
@@ -897,6 +689,7 @@ public class FtoSearch {
         System.out.println();
     }
 
+
     /**
      * Generates training data for pruning model
      * This is only called during development
@@ -934,13 +727,13 @@ public class FtoSearch {
             fto = FullFto.randomCube(r);
             FtoSearch search = new FtoSearch();
             String s = search.solution(fto);
-//            System.out.println(s);
+            System.out.println(s);
             totalNodes += (long)search.nodes;
 
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
 
-//            System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
+            System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
             totalTime += duration;
             totalMoves += s.trim().split(" ").length;
         }
@@ -951,7 +744,114 @@ public class FtoSearch {
         return totalNodes;
     }
 
+        /**
+     * Code for generating .dat files IN main/resources
+     * These files are packaged with the build, so no need to keep this code in
+    private static int found = 0;
+
+    private static void phaseTwoTriplePruningSearch(int depth, FullFto fto){
+        if (depth == 0)
+            return;
+
+        int ply = fto.historyLength();
+
+        int index = fto.phaseTwoTripleIndex();
+
+        if (phaseTwoTriplePruningTable[index] > ply){
+            found++;
+            phaseTwoTriplePruningTable[index] = (byte)ply;
+            System.out.println(found);
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
+                continue;
+
+            fto.turn(move);
+            phaseTwoTriplePruningSearch(depth-1, fto);
+            fto.undo();
+        }
+    }
+
+    static{
+        for (int i = 0; i < 1000; i++) {
+            FullFto fto = FullFto.randomCube(new Random());
+            System.out.println(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+        }
+
+        phaseTwoTriplePruningTable = new byte[2*2*2*2*2*2*2*2*2*2*2*2];
+        Arrays.fill(phaseTwoTriplePruningTable, (byte) 25);
+        for (int depth = 0; depth < 20; depth++) {
+            System.out.println("Searching depth " + depth);
+            phaseTwoTriplePruningSearch(depth, new FullFto());
+            try {
+                saveEdgeTable(phaseTwoTriplePruningTable, "depth " + depth + ".dat");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+     private static void phaseTwoCenterPruningSearch(int depth, FullFto fto){
+        if (depth == 0)
+            return;
+
+        int centerIndex = fto.phaseTwoCenterIndex();
+        int ply = fto.historyLength();
+
+        if (phaseTwoCenterPruningTable[centerIndex] > ply){
+            phaseTwoCenterPruningTable[centerIndex] = (byte)ply;
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            if (move == Move.D || move == Move.DP)
+                continue;
+
+            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
+                continue;
+
+            fto.turn(move);
+            phaseTwoCenterPruningSearch(depth-1, fto);
+            fto.undo();
+        }
+    }
+
+    private static void generateCenterPruning(){
+        phaseTwoCenterPruningTable = new byte[1680];
+
+        for (int i = 0; i < 1680; i++) {
+            phaseTwoCenterPruningTable[i] = (byte) 25;
+        }
+
+        for (int depth = 0; depth < 11; depth++) {
+            System.out.println("Searching depth " + depth);
+            phaseTwoCenterPruningSearch(depth, new FullFto());
+
+            int remaining = 1680;
+            for (int i = 0; i < 1680; i++) {
+                if (phaseTwoCenterPruningTable[i] != 25)
+                    remaining--;
+            }
+            System.out.println("Remaining:" + remaining);
+        }
+
+        try {
+            saveTable(phaseTwoCenterPruningTable, "fto3phase/src/resources/centerprun.dat");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+     **/
+
     public static void main(String[] args) {
+//        System.out.println("Starting FTO Search");
         performanceTest(100);
     }
 }
