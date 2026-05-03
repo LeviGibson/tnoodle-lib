@@ -1,6 +1,7 @@
 package cs.fto3phase;
 
 import  java.io.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
@@ -56,18 +57,18 @@ public class FtoSearch {
         {0, 0, 0}, // 5
         {0, 0, 0}, // 6
         {0, 0, 0}, // 7
-        {-3.0228, 1.6976, -1.1361}, // 8
-        {-2.8937, 1.5726, -0.9234}, // 9
-        {-3.05216, 1.51510, -0.79536}, // 10
-        {-2.14743, 1.40091, -0.81680}, // 11
-        {-3.02457, 1.22228, -0.52262}, // 12
-        {-1.91284, 1.23967, -0.67062}, // 13
-        {-2.59936, 1.25072, -0.52469}, // 14
-        {-2.26634, 1.11097, -0.44942}, // 15
-        {-2.40757, 1.14014, -0.42935}, // 16
-        {-2.12963, 1.06413, -0.41900}, // 17
-        {-2.19083, 1.03216, -0.35640}, // 18
-        {-1.91584, 0.95119, -0.33685}, // 19
+        {2.60980, 1.39171, -1.08659, -0.67610}, // 8
+        {5.02109, 1.13821, -1.10259, -0.73025}, // 9
+        {2.54998, 1.23541, -0.90102, -0.54790}, // 10
+        {2.56226, 1.07618, -0.72079, -0.56310}, // 11
+        {-0.17529, 1.25463, -0.65238, -0.32376}, // 12
+        {1.76425, 1.00602, -0.53846, -0.50472}, // 13
+        {-0.23506, 1.08614, -0.54071, -0.23815}, // 14
+        {1.47921, 0.97283, -0.56099, -0.36157}, // 15
+        {1.89530, 0.80994, -0.43749, -0.42357}, // 16
+        {-0.03786, 0.92725, -0.31888, -0.31122}, // 17
+        {0.21819, 0.88277, -0.37334, -0.24598}, // 18
+        {0.64805, 0.78102, -0.30848, -0.29557}, // 19
     };
 
     public static double[] THRESHOLDS = {
@@ -90,6 +91,61 @@ public class FtoSearch {
 
     private static byte[] phaseTwoEdgePruningTable;
     private static byte[] phaseTwoCenterPruningTable;
+    private static byte[] phaseTwoTriplePruningTable;
+
+    private static int found = 0;
+
+    private static void phaseTwoTriplePruningSearch(int depth, FullFto fto){
+        if (depth == 0)
+            return;
+
+        int ply = fto.historyLength();
+
+        int index = fto.phaseTwoTripleIndex();
+
+        if (phaseTwoTriplePruningTable[index] > ply){
+            found++;
+            phaseTwoTriplePruningTable[index] = (byte)ply;
+            System.out.println(found);
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
+                continue;
+
+            fto.turn(move);
+            phaseTwoTriplePruningSearch(depth-1, fto);
+            fto.undo();
+        }
+    }
+
+    static{
+        try {
+            phaseTwoTriplePruningTable = loadEdgeTable("triple_d10.dat", 2*2*2*2*2*2*2*2*2*2*2*2);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+//        for (int i = 0; i < 1000; i++) {
+//            FullFto fto = FullFto.randomCube(new Random());
+//            System.out.println(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+//        }
+
+//        phaseTwoTriplePruningTable = new byte[2*2*2*2*2*2*2*2*2*2*2*2];
+//        Arrays.fill(phaseTwoTriplePruningTable, (byte) 25);
+//        for (int depth = 0; depth < 20; depth++) {
+//            System.out.println("Searching depth " + depth);
+//            phaseTwoTriplePruningSearch(depth, new FullFto());
+//            try {
+//                saveEdgeTable(phaseTwoTriplePruningTable, "depth " + depth + ".dat");
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+    }
 
     /**
      * saves edgeprun.dat
@@ -441,6 +497,23 @@ public class FtoSearch {
     }
 
     int nodes;
+    Integer nodeBudget;
+
+    private int distanceFromPhaseTwoToSolved(FullFto fto){
+        for (int depth = 0; depth < 100; depth++) {
+            boolean foundSolution = searchPhaseThree(depth, fto);
+
+            if (foundSolution)
+                return depth + PHASE_THREE_PRUNING_DEPTH;
+
+            if (depth == 99){
+                throw new RuntimeException("Could not find FTO Phase 2 solution");
+            }
+        }
+        return 0;
+    }
+
+    private int phaseTwoToSolvedLen;
 
     /**
      * IDA* recursive function for finding solutions for Phase 1 -> Phase 2
@@ -452,10 +525,27 @@ public class FtoSearch {
      */
     private boolean searchPhaseTwo(int depth, FullFto fto){
         nodes++;
-        if (fto.isPhaseTwo()){
-            solution[1] = fto.history();
 
-            return true;
+        if (nodeBudget != null){
+            nodeBudget--;
+            if  (nodeBudget <= 0){
+                return true;
+            }
+        }
+
+        if (fto.isPhaseTwo()){
+            int dts = fto.historyLength() + distanceFromPhaseTwoToSolved(fto);
+            if (solution[1] == null || solution[1].isEmpty()){
+                solution[1] = fto.history();
+                System.out.println("Found Phase 2->solved solution:" + dts);
+                nodeBudget = 1000000;
+                phaseTwoToSolvedLen = dts;
+            }
+            else if (dts < phaseTwoToSolvedLen){
+                solution[1] = fto.history();
+                phaseTwoToSolvedLen = dts;
+                System.out.println("Found Phase 2->solved solution:" + dts);
+            }
         }
 
         if (depth == 0){
@@ -472,12 +562,16 @@ public class FtoSearch {
             return false;
         }
 
+        int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+        if (tripleLookup == 25)
+            tripleLookup = 10;
+
         int ply = fto.historyLength();
 
         //Logistic Regression model determines the likelihood of the current subtree having a solution
         //Subtrees that are unlikely to have a solution are cut
         if (depth > 7 && depth < 20 && ply > 0){
-            double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double)fto.triplePairCount() + BETAS[depth][2] * (float)edgeLookup;
+            double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double)fto.triplePairCount() + BETAS[depth][2] * (float)edgeLookup + BETAS[depth][3] * (float)tripleLookup;
 
             double odds = Math.pow(2.71828182846, logOdds);
 
@@ -599,8 +693,10 @@ public class FtoSearch {
         for (int depth = 0; depth < 100; depth++) {
             boolean foundSolution = searchPhaseTwo(depth, fto);
 
-            if (foundSolution)
+            if (foundSolution) {
+                System.out.println(depth + solution[1].split(" ").length);
                 break;
+            }
 
             if (depth == 99){
                 throw new RuntimeException("Could not find FTO Phase 2 solution");
@@ -653,6 +749,11 @@ public class FtoSearch {
      * @param label
      */
     private static void write(FullFto fto, int depth, boolean label){
+
+        int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+        if (tripleLookup == 25)
+            tripleLookup = 10;
+
         System.out.print(fto.tripleCount());
         System.out.print(",");
         System.out.print(fto.triplePairCount());
@@ -660,6 +761,8 @@ public class FtoSearch {
         System.out.print((int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]));
         System.out.print(",");
         System.out.print((int)(phaseTwoCenterPruningTable[fto.phaseTwoCenterIndex()]));
+        System.out.print(",");
+        System.out.print((int)(tripleLookup));
         System.out.print(",");
         System.out.print(depth);
         System.out.print(",");
@@ -676,7 +779,7 @@ public class FtoSearch {
         Random r = new Random();
 
         for (int depth = 8; depth < 20; depth++) {
-            for (int iter = 0; iter < 1000; iter++) {
+            for (int iter = 0; iter < 2000; iter++) {
                 FullFto randomFto = new FullFto();
                 FullFto closeFto = new FullFto();
 
@@ -693,6 +796,7 @@ public class FtoSearch {
     public static long performanceTest(int num){
 
         long totalTime = 0;
+        long totalMoves = 0;
         long totalNodes = 0;
 
         FullFto fto;
@@ -702,7 +806,8 @@ public class FtoSearch {
 
             fto = FullFto.randomCube(r);
             FtoSearch search = new FtoSearch();
-            System.out.println(search.solution(fto));
+            String s = search.solution(fto);
+            System.out.println(s);
             totalNodes += (long)search.nodes;
 
             long endTime = System.nanoTime();
@@ -710,10 +815,17 @@ public class FtoSearch {
 
             System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
             totalTime += duration;
+            totalMoves += s.split(" ").length;
         }
 
         System.out.println("Average Time:" + ((totalTime/num) / 1_000_000) + " ms" );
+        System.out.println("Average Moves:" + (((float)totalMoves/(float)num)));
 
         return totalNodes;
+    }
+
+    public static void main(String[] args) {
+//        genData();
+        performanceTest(100);
     }
 }

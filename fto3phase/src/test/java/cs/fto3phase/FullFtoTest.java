@@ -213,22 +213,6 @@ public class FullFtoTest {
         assertTrue(scrambled.history().isEmpty());
     }
 
-    //------------- Corner Encoding -------------//
-
-    @Test
-    void testGetCornerIndex() {
-        assertEquals(0, FullFto.getCornerIndex(FullFto.encodeCorner(0, 2)));
-        assertEquals(1, FullFto.getCornerIndex(FullFto.encodeCorner(1, 3)));
-        assertEquals(0, FullFto.getCornerIndex(FullFto.encodeCorner(0, 1)));
-    }
-
-    @Test
-    void testGetCornerOrientation() {
-        assertEquals(0, FullFto.getCornerOrientation(0));
-        assertEquals(1, FullFto.getCornerOrientation(1));
-        assertEquals(2, FullFto.getCornerOrientation(2));
-    }
-
     //------------- Move Stack Operations -------------//
 
     @Test

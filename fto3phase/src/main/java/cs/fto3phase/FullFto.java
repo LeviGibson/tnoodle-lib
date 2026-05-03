@@ -25,6 +25,8 @@ public class FullFto {
     //Used for pruning table generation
     private final int[] centerIndices = new int[24];
 
+    //History of moves applied to the FTO
+    //Cleared before search
     Stack<Move> moveStack;
 
     //All possible moves
@@ -37,9 +39,7 @@ public class FullFto {
     }
 
     enum Edge {
-        U_B, U_R, U_L, //U face edges
-        F_L, F_R, R_BR, B_BL, B_BR, L_BL, //Middle slice edges,
-        D_F, D_BR, D_BL //D face edges
+        U_B, U_R, U_L, F_L, F_R, R_BR, B_BL, B_BR, L_BL, D_F, D_BR, D_BL
     }
 
     /**
@@ -85,15 +85,33 @@ public class FullFto {
         }
     }
 
-    static int encodeCorner(int perm, int orientation){
+    /**
+     * Corners are encoded in a single integer
+     * 2 rightmost bits for orientation
+     * remaining bits for permutation
+     * @param perm corner index (0-5)
+     * @param orientation corner orientation (0, 1, 2, 3)
+     * @return encoded corner
+     */
+    private static int encodeCorner(int perm, int orientation){
         return ((perm << 2) | orientation);
     }
 
-    static int getCornerIndex(int corner){
+    /**
+     * Gets a corner's index
+     * @param corner corner from `corners` array
+     * @return corner index
+     */
+    private static int getCornerIndex(int corner){
         return corner>>2;
     }
 
-    static int getCornerOrientation(int corner){
+    /**
+     * Gets a corner's orientation
+     * @param corner corner from `corners` array
+     * @return corner orientation
+     */
+    private static int getCornerOrientation(int corner){
         return corner&0b11;
     }
 
@@ -124,7 +142,7 @@ public class FullFto {
     }
 
     /**
-     * Cycles centeds
+     * Cycles centers
      * @param i1 first index
      * @param i2 second index
      * @param i3 third index
@@ -227,7 +245,7 @@ public class FullFto {
      * @param cornerLocation location on fto
      * @return 0, 1, 2
      */
-    private int triplePairsOnCorner(int cornerLocation){
+    public int triplePairsOnCorner(int cornerLocation){
         int cornerIndex = getCornerIndex(corners[cornerLocation]);
         int cornerOrientation = getCornerOrientation(corners[cornerLocation]);
 
@@ -244,6 +262,33 @@ public class FullFto {
             count++;
 
         return count;
+    }
+
+    public int tripleIndexHelper(int cornerLocation){
+        int cornerIndex = getCornerIndex(corners[cornerLocation]);
+        int cornerOrientation = getCornerOrientation(corners[cornerLocation]);
+
+        int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
+        int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation+2)%4];
+
+        int testSpotOne = TRIPLE_LOCATIONS[cornerLocation][0];
+        int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
+
+        int count = 0;
+        if (centers[testSpotOne] == matchingCenterOne)
+            count |= 1;
+        if (centers[testSpotTwo] == matchingCenterTwo)
+            count |= 2;
+
+        return count;
+    }
+
+    public int phaseTwoTripleIndex(){
+        int index = 0;
+        for (int i = 0; i < 6; i++) {
+            index |= tripleIndexHelper(i) << 2*i;
+        }
+        return index;
     }
 
     /**
