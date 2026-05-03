@@ -507,9 +507,6 @@ public class FtoSearch {
             if (fto.isRepetition(move))
                 continue;
 
-            if (move == Move.D || move == Move.DP)
-                continue;
-
             fto.turn(move);
             boolean foundSolution = searchPhaseTwo(depth-1, state, fto);
             fto.undo();
