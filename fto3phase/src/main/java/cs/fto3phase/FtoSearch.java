@@ -1,7 +1,12 @@
 package cs.fto3phase;
 
 import  java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static cs.fto3phase.FullFto.Move;
 
@@ -38,6 +43,10 @@ public class FtoSearch {
     private static HashMap<Long, Integer> phaseOnePruningTable;
     private static HashMap<Long, LinkedList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
     private static HashMap<Long, Integer> phaseThreePruningTable;
+
+    private static final int PHASE_TWO_PRUNING_CACHE_MAGIC = 0x46544F32; // "FTO2"
+    private static final int PHASE_TWO_PRUNING_CACHE_VERSION = 1;
+    private static final String PHASE_TWO_PRUNING_CACHE_FILE = "phase2prun-d" + PHASE_TWO_PRUNING_DEPTH + ".bin.gz";
 
     private static class PhaseTwoPruningEntry{
         public int distanceToSolved;
@@ -424,6 +433,102 @@ public class FtoSearch {
         }
     }
 
+    private static Path phaseTwoPruningCachePath() {
+        String configuredPath = System.getProperty("cs.fto3phase.phaseTwoPruningCache");
+        if (configuredPath != null && !configuredPath.trim().isEmpty()) {
+            return new File(configuredPath).toPath();
+        }
+
+        return new File(new File(System.getProperty("user.home"), ".tnoodle/fto3phase"), PHASE_TWO_PRUNING_CACHE_FILE).toPath();
+    }
+
+    private static boolean loadPhaseTwoPruningTable(Path path) {
+        if (!Files.isRegularFile(path)) {
+            return false;
+        }
+
+        System.out.println(path);
+
+        HashMap<Long, LinkedList<PhaseTwoPruningEntry>> table = new HashMap<>();
+
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(path))))) {
+            if (in.readInt() != PHASE_TWO_PRUNING_CACHE_MAGIC) {
+                return false;
+            }
+            if (in.readInt() != PHASE_TWO_PRUNING_CACHE_VERSION) {
+                return false;
+            }
+            if (in.readInt() != PHASE_TWO_PRUNING_DEPTH) {
+                return false;
+            }
+
+            int buckets = in.readInt();
+            if (buckets < 0) {
+                return false;
+            }
+
+            for (int i = 0; i < buckets; i++) {
+                long centerHash = in.readLong();
+                int entries = in.readInt();
+                if (entries <= 0) {
+                    return false;
+                }
+
+                LinkedList<PhaseTwoPruningEntry> bucket = new LinkedList<>();
+                for (int j = 0; j < entries; j++) {
+                    int distanceToSolved = in.readUnsignedByte();
+                    long triples = in.readLong();
+                    bucket.add(new PhaseTwoPruningEntry(distanceToSolved, triples));
+                }
+                table.put(centerHash, bucket);
+            }
+
+            phaseTwoPruningTable = table;
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static void savePhaseTwoPruningTable(Path path) {
+        try {
+            Path parent = path.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Path tmpPath = path.resolveSibling(path.getFileName().toString() + ".tmp");
+
+            ArrayList<Long> centerHashes = new ArrayList<>(phaseTwoPruningTable.keySet());
+            Collections.sort(centerHashes);
+
+            try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(tmpPath))))) {
+                out.writeInt(PHASE_TWO_PRUNING_CACHE_MAGIC);
+                out.writeInt(PHASE_TWO_PRUNING_CACHE_VERSION);
+                out.writeInt(PHASE_TWO_PRUNING_DEPTH);
+                out.writeInt(centerHashes.size());
+
+                for (Long centerHash : centerHashes) {
+                    LinkedList<PhaseTwoPruningEntry> bucket = phaseTwoPruningTable.get(centerHash);
+                    out.writeLong(centerHash);
+                    out.writeInt(bucket.size());
+
+                    for (PhaseTwoPruningEntry entry : bucket) {
+                        out.writeByte(entry.distanceToSolved);
+                        out.writeLong(entry.triples);
+                    }
+                }
+            }
+
+            try {
+                Files.move(tmpPath, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException e) {
+                Files.move(tmpPath, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not save phase two pruning table cache to " + path, e);
+        }
+    }
+
     /**
      * Helper function for generating pruning tables
      * This is not called in the actual search, just called once on program startup.
@@ -456,11 +561,15 @@ public class FtoSearch {
     //Generate pruning tables (2000ms depending on your machine)
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
-        phaseTwoPruningTable = new HashMap<Long, LinkedList<PhaseTwoPruningEntry>>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
-        phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
+        Path phaseTwoPruningCachePath = phaseTwoPruningCachePath();
+        if (!loadPhaseTwoPruningTable(phaseTwoPruningCachePath)) {
+            phaseTwoPruningTable = new HashMap<Long, LinkedList<PhaseTwoPruningEntry>>();
+            phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
+            savePhaseTwoPruningTable(phaseTwoPruningCachePath);
+        }
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
     }
 
@@ -840,5 +949,9 @@ public class FtoSearch {
         System.out.println("Average Moves:" + (((float)totalMoves/(float)num)));
 
         return totalNodes;
+    }
+
+    public static void main(String[] args) {
+        performanceTest(100);
     }
 }
