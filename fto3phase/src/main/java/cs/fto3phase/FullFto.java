@@ -17,13 +17,13 @@ public class FullFto {
 
     //Corner has permutation and orientation encoded within int
     //Use methods encodeCorner, getCornerIndex, and getCornerOrientation
-    private int[] corners = new int[6];
+    private final int[] corners = new int[6];
     //Only permutation (FTO edges cannot be flipped)
-    private int[] edges = new int[12];
+    private final int[] edges = new int[12];
     //Only permutation
-    private int[] centers = new int[24];
+    private final int[] centers = new int[24];
     //Used for pruning table generation
-    private int[] centerIndices = new int[24];
+    private final int[] centerIndices = new int[24];
 
     Stack<Move> moveStack;
 
@@ -305,7 +305,7 @@ public class FullFto {
 
     /**
      * Are the centers and edges solved on this face? (checks all 3 angles)
-     * @param face
+     * @param face face to check
      * @return t/f
      */
     boolean isFaceSolved(CenterOrd face){
@@ -318,10 +318,10 @@ public class FullFto {
 
     //--------------- Hash Functions ---------------//
 
-    private static long[][] PHASE2_CENTER_KEYS = new long[8][24];
-    private static long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
-    private static long[][][] PHASE3_CORNER_KEYS = new long[6][6][4];
-    private static long[][] PHASE3_EDGE_KEYS = new long[9][9];
+    private static final long[][] PHASE2_CENTER_KEYS = new long[8][24];
+    private static final long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
+    private static final long[][][] PHASE3_CORNER_KEYS = new long[6][6][4];
+    private static final long[][] PHASE3_EDGE_KEYS = new long[9][9];
 
     // Initialize keys for the in-memory pruning hashes. The values only need to
     // be stable within one JVM because the corresponding pruning tables are also
@@ -652,7 +652,7 @@ public class FullFto {
                 return phaseTwoCentersHash();
         }
 
-        throw new RuntimeException("Invalid Phase: " + Integer.toString(phaseId));
+        throw new RuntimeException("Invalid Phase: " + phaseId);
     }
 
     //--------------- Main Public Functions ---------------//
@@ -755,7 +755,8 @@ public class FullFto {
         StringBuilder builder = new StringBuilder();
 
         for (Move move : moveStack){
-            builder.append(move.toString().replace("P", "'") + " ");
+            builder.append(move.toString().replace("P", "'"));
+            builder.append(" ");
         }
 
         return builder.toString();
@@ -954,9 +955,7 @@ public class FullFto {
         Move lastLastmove = moveStack.get(moveStack.size()-2);
 
         if (move == lastLastmove || INVERT_MOVE[move.ordinal()] == lastLastmove) {
-            if (PARALLEL_MOVES[lastLastmove.ordinal()][0] == move || PARALLEL_MOVES[lastLastmove.ordinal()][1] == move){
-                return true;
-            }
+            return PARALLEL_MOVES[lastLastmove.ordinal()][0] == move || PARALLEL_MOVES[lastLastmove.ordinal()][1] == move;
         }
 
         return false;
