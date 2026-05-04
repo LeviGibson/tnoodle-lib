@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class FullFtoTest {
 
     private FullFto fto;
-    private Random random = new Random();
+    private final Random random = new Random(0);
 
     @BeforeEach
     void setUp() {
@@ -37,6 +37,21 @@ public class FullFtoTest {
 
         assertEquals(original.history(), copy.history());
         assertEquals(original.moveStack, copy.moveStack);
+        assertEquals(original.phaseOneHash(), copy.phaseOneHash());
+        assertEquals(original.phaseTwoCentersHash(), copy.phaseTwoCentersHash());
+        assertEquals(original.phaseThreeHash(), copy.phaseThreeHash());
+    }
+
+    @Test
+    void testCopyConstructorDoesNotShareMoveStack() {
+        fto.parseAlg("R D F");
+        FullFto copy = new FullFto(fto);
+
+        copy.turn(Move.B);
+
+        assertEquals(3, fto.historyLength());
+        assertEquals(4, copy.historyLength());
+        assertNotEquals(fto.history(), copy.history());
     }
 
     //------------- Move Validation -------------//
@@ -100,10 +115,15 @@ public class FullFtoTest {
     void testHistoryAfterMoves() {
         fto.turn(Move.R);
         fto.turn(Move.D);
-        String history = fto.history();
-        assertNotNull(history);
-        assertTrue(history.contains("R"));
-        assertTrue(history.contains("D"));
+        assertEquals("R D ", fto.history());
+    }
+
+    @Test
+    void testHistoryUsesPrimeNotation() {
+        fto.turn(Move.RP);
+        fto.turn(Move.BLP);
+
+        assertEquals("R' BL' ", fto.history());
     }
 
     //------------- Undo -------------//
@@ -122,18 +142,24 @@ public class FullFtoTest {
 
     @Test
     void testUndoRestoresState() {
-        FullFto fto1 = new FullFto();
-        fto1.turn(Move.R);
-        fto1.turn(Move.D);
-        fto.turn(Move.R);
-        fto.turn(Move.D);
-        fto.undo();
-        fto.undo();
-        fto1.undo();
-        fto1.undo();
+        fto.parseAlg("R D F B L");
+        while (!fto.moveStack.isEmpty()) {
+            fto.undo();
+        }
 
-        assertEquals(fto1.history(), fto.history());
+        assertTrue(fto.isSolved());
         assertEquals(0, fto.moveStack.size());
+    }
+
+    @Test
+    void testEachMoveInverseRestoresSolvedState() {
+        for (Move move : Move.values()) {
+            FullFto moved = new FullFto();
+            moved.turn(move);
+            moved.turn(FullFto.INVERT_MOVE[move.ordinal()]);
+
+            assertTrue(moved.isSolved(), move + " followed by inverse should solve");
+        }
     }
 
     //------------- Parse Algorithm -------------//
@@ -141,13 +167,13 @@ public class FullFtoTest {
     @Test
     void testParseAlgSimple() {
         fto.parseAlg("R D");
-        assertNotNull(fto.history());
+        assertEquals("R D ", fto.history());
     }
 
     @Test
     void testParseAlgWithPrimes() {
         fto.parseAlg("R D' F BL'");
-        assertNotNull(fto.history());
+        assertEquals("R D' F BL' ", fto.history());
     }
 
     @Test
@@ -159,13 +185,18 @@ public class FullFtoTest {
     @Test
     void testParseAlgSpaces() {
         fto.parseAlg("R D F");
-        assertNotNull(fto.history());
+        assertEquals("R D F ", fto.history());
     }
 
     @Test
     void testParseAlgTrim() {
         fto.parseAlg("  R D   F  ");
-        assertNotNull(fto.history());
+        assertEquals("R D F ", fto.history());
+    }
+
+    @Test
+    void testParseAlgInvalidMoveThrows() {
+        assertThrows(IllegalArgumentException.class, () -> fto.parseAlg("R X"));
     }
 
     //------------- Phase Detection -------------//
@@ -213,6 +244,21 @@ public class FullFtoTest {
         assertTrue(scrambled.history().isEmpty());
     }
 
+    @Test
+    void testScrambleRandomG2StateClearsHistory() {
+        fto.scrambleRandomG2State(random, 20);
+
+        assertEquals(0, fto.historyLength());
+        assertEquals("", fto.history());
+    }
+
+    @Test
+    void testScrambleRandomG2StateIsPhaseOne() {
+        fto.scrambleRandomG2State(random, 20);
+
+        assertTrue(fto.isPhaseOne());
+    }
+
     //------------- Move Stack Operations -------------//
 
     @Test
@@ -248,6 +294,14 @@ public class FullFtoTest {
         assertEquals(FullFto.INVERT_MOVE.length, 16);
     }
 
+    @Test
+    void testInvertMoveArrayIsSymmetric() {
+        for (Move move : Move.values()) {
+            Move inverse = FullFto.INVERT_MOVE[move.ordinal()];
+            assertEquals(move, FullFto.INVERT_MOVE[inverse.ordinal()]);
+        }
+    }
+
     //------------- Parallel Moves -------------//
 
     @Test
@@ -261,6 +315,22 @@ public class FullFtoTest {
         for (Move[] moveArray : FullFto.PARALLEL_MOVES) {
             assertEquals(2, moveArray.length);
         }
+    }
+
+    @Test
+    void testIsValidPhaseOneFinishingSequenceRejectsNonBreakingMove() {
+        assertFalse(fto.isValidPhaseOneFinishingSequence(Move.R, Move.D));
+    }
+
+    @Test
+    void testIsValidPhaseOneFinishingSequenceRejectsParallelPreviousMove() {
+        assertFalse(fto.isValidPhaseOneFinishingSequence(Move.F, Move.B));
+        assertFalse(fto.isValidPhaseOneFinishingSequence(Move.F, Move.BP));
+    }
+
+    @Test
+    void testIsValidPhaseOneFinishingSequenceAcceptsBreakingNonParallelMove() {
+        assertTrue(fto.isValidPhaseOneFinishingSequence(Move.F, Move.R));
     }
 
     //------------- Reset -------------//
@@ -445,9 +515,9 @@ public class FullFtoTest {
     @Test
     void testPhaseTwoCentersHashChangesAfterMove() {
         long hashBefore = fto.phaseTwoCentersHash();
-        fto.turn(Move.R);
+        fto.turn(Move.U);
         long hashAfter = fto.phaseTwoCentersHash();
-        assertNotEquals(hashBefore, hashAfter, "Phase two hash should change after R move");
+        assertNotEquals(hashBefore, hashAfter, "Phase two hash should change after U move");
     }
 
     @Test
@@ -474,6 +544,36 @@ public class FullFtoTest {
         long phaseOne = fto.phaseOneHash();
         long phaseTwo = fto.phaseTwoCentersHash();
         assertNotEquals(phaseOne, phaseTwo, "Phase one and phase two hashes should differ");
+    }
+
+    @Test
+    void testPhaseThreeHashSameStateSameHash() {
+        FullFto fto1 = new FullFto();
+        FullFto fto2 = new FullFto();
+
+        fto1.parseAlg("R U B L");
+        fto2.parseAlg("R U B L");
+
+        assertEquals(fto1.phaseThreeHash(), fto2.phaseThreeHash());
+    }
+
+    @Test
+    void testPhaseTwoTripleDataMatchesCurrentState() {
+        fto.parseAlg("R U B L");
+        long tripleData = fto.packPhaseTwoTripleData();
+
+        assertTrue(fto.checkPhaseTwoTripleData(tripleData));
+    }
+
+    @Test
+    void testPhaseTwoTripleDataRejectsDifferentState() {
+        fto.parseAlg("R U B L");
+        long tripleData = fto.packPhaseTwoTripleData();
+
+        FullFto different = new FullFto();
+        different.parseAlg("R U B");
+
+        assertFalse(different.checkPhaseTwoTripleData(tripleData));
     }
 
     //--- Hash Function General Tests ---//

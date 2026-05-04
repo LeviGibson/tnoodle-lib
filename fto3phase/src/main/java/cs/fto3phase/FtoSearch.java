@@ -29,13 +29,6 @@ public class FtoSearch {
     /**
      * Important value!
      * The higher the value, the slower the search, and the shorter the solution
-     * put these into desmos if you want estimates for this value
-     *
-     * f(x) = predicted average moves per solution
-     * g(x) = predicted average solution time to find a solution (calibrated on my computer, might be different for you)
-     *
-     *f\left(x\right)=-0.000674887x+30.74544
-     *g\left(x\right)=0.162887x+761.35639
      */
     private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
 
