@@ -390,7 +390,11 @@ public class FtoSearch {
         if (fto.isPhaseOne()){
             Move lastMove = fto.moveStack.peek();
             Move lastLastMove = fto.moveStack.get(fto.moveStack.size() - 2);
-            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove)){
+            //Nodes % n == 0
+            //The performance of the solver is significantly better
+            //when the phase 1 candidates are "spread out" (not too similar to each other)
+            //so Nodes % n == 0 is a pseudo-random number generator which does that.
+            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && nodes % 5 == 0){
                 state.solution[0] = fto.history();
                 candidates.add(fto.history());
             }
