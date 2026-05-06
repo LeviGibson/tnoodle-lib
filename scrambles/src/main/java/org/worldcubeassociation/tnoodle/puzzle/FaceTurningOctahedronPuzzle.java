@@ -648,6 +648,8 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
                     cycleThreeCenters(CenterInd.B_L.ordinal(), CenterInd.D_B.ordinal(), CenterInd.L_D.ordinal());
                     cycleThreeCenters(CenterInd.L_B.ordinal(), CenterInd.B_D.ordinal(), CenterInd.D_L.ordinal());
                     break;
+                default:
+                    throw new RuntimeException("Move not recognized");
             }
         }
 
