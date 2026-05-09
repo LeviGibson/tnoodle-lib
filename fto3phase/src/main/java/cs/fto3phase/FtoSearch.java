@@ -460,15 +460,15 @@ public class FtoSearch {
             return false;
         }
 
-        int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
-        if (tripleLookup == 25)
-            tripleLookup = 10;
-
         int ply = fto.historyLength();
 
         //Logistic Regression model determines the likelihood of the current subtree having a solution
         //Subtrees that are unlikely to have a solution are cut
         if (depth > 7 && depth < 20 && ply > 0){
+            int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+            if (tripleLookup == 25)
+                tripleLookup = 10;
+
             double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double)fto.triplePairCount() + BETAS[depth][2] * (float)edgeLookup + BETAS[depth][3] * (float)tripleLookup;
 
             double odds = Math.pow(2.71828182846, logOdds);
