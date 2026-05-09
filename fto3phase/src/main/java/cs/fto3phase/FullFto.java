@@ -505,14 +505,12 @@ public class FullFto {
      */
     public int phaseTwoEdgeIndex() {
         int index = 0;
-        for (int i = 0; i < 8; i++) {
-            int smaller = 0;
-            for (int j = i + 1; j < 9; j++) {
-                if (edges[j] < edges[i]) {
-                    smaller++;
-                }
-            }
+        int seen = 0;
+        for (int i = 8; i >= 0; i--) {
+            int edge = edges[i];
+            int smaller = Integer.bitCount(seen & ((1 << edge) - 1));
             index += smaller * FACTORIAL[8 - i];
+            seen |= 1 << edge;
         }
         return index / 2;
     }

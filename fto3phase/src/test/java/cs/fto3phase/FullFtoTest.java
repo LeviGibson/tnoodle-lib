@@ -4,6 +4,7 @@ import cs.fto3phase.FullFto.Move;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -16,6 +17,7 @@ public class FullFtoTest {
 
     private FullFto fto;
     private final Random random = new Random(0);
+    private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
 
     @BeforeEach
     void setUp() {
@@ -576,6 +578,21 @@ public class FullFtoTest {
         assertFalse(different.checkPhaseTwoTripleData(tripleData));
     }
 
+    @Test
+    void testPhaseTwoEdgeIndexMatchesPairwiseRank() throws Exception {
+        Random r = new Random(123);
+        Move[] moves = Move.values();
+
+        for (int iteration = 0; iteration < 1000; iteration++) {
+            FullFto state = new FullFto();
+            for (int i = 0; i < 30; i++) {
+                state.turn(moves[r.nextInt(moves.length)]);
+            }
+
+            assertEquals(pairwisePhaseTwoEdgeIndex(state), state.phaseTwoEdgeIndex());
+        }
+    }
+
     //--- Hash Function General Tests ---//
 
     @Test
@@ -583,6 +600,27 @@ public class FullFtoTest {
         fto.parseAlg("R D F B L U BR BL");
         assertTrue(fto.phaseOneHash() >= 0 || fto.phaseOneHash() < 0, "Phase one hash returns long (sign varies)");
         assertTrue(fto.phaseTwoCentersHash() >= 0 || fto.phaseTwoCentersHash() < 0, "Phase two hash returns long (sign varies)");
+    }
+
+    private static int pairwisePhaseTwoEdgeIndex(FullFto state) throws Exception {
+        int[] edges = edgesOf(state);
+        int index = 0;
+        for (int i = 0; i < 8; i++) {
+            int smaller = 0;
+            for (int j = i + 1; j < 9; j++) {
+                if (edges[j] < edges[i]) {
+                    smaller++;
+                }
+            }
+            index += smaller * FACTORIAL[8 - i];
+        }
+        return index / 2;
+    }
+
+    private static int[] edgesOf(FullFto state) throws Exception {
+        Field edgesField = FullFto.class.getDeclaredField("edges");
+        edgesField.setAccessible(true);
+        return (int[]) edgesField.get(state);
     }
 
 }
