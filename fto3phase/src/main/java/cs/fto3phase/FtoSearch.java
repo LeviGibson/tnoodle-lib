@@ -34,7 +34,7 @@ public class FtoSearch {
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
-    private static HashMap<Long, LinkedList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
+    private static HashMap<Long, ArrayList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
     private static HashMap<Long, Integer> phaseThreePruningTable;
 
 
@@ -287,10 +287,10 @@ public class FtoSearch {
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
         long centerHash = fto.phaseTwoCentersHash();
         long triples = fto.packPhaseTwoTripleData();
-        LinkedList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(centerHash);
+        ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(centerHash);
 
         if (lookup == null){
-            LinkedList<PhaseTwoPruningEntry> entry = new LinkedList<>();
+            ArrayList<PhaseTwoPruningEntry> entry = new ArrayList<>();
             entry.add(new PhaseTwoPruningEntry(fto.historyLength(), triples));
             phaseTwoPruningTable.put(centerHash, entry);
         } else {
@@ -365,8 +365,12 @@ public class FtoSearch {
         phaseThreePruningTable = new HashMap<Long, Integer>();
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
-        phaseTwoPruningTable = new HashMap<Long, LinkedList<PhaseTwoPruningEntry>>();
+        long startTime = System.currentTimeMillis();
+        phaseTwoPruningTable = new HashMap<Long, ArrayList<PhaseTwoPruningEntry>>();
         phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
+        long endTime = System.currentTimeMillis();
+        long totalTime = endTime - startTime;
+        System.out.println("Total time (ms): " + totalTime);
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
     }
 
@@ -483,7 +487,7 @@ public class FtoSearch {
 
         //IDA* lookup
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
-            LinkedList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
+            ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
             if (lookup == null) {
                 return false;
             } else {
