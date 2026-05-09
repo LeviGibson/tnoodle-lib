@@ -22,7 +22,7 @@ public class FtoSearch {
 
     //Depths at which the pruning tables are set to
     private static final int PHASE_ONE_PRUNING_DEPTH = 4;
-    private static final int PHASE_TWO_PRUNING_DEPTH = 7;
+    private static final int PHASE_TWO_PRUNING_DEPTH = 8;
     private static final int PHASE_THREE_PRUNING_DEPTH = 4;
 
 
@@ -466,7 +466,7 @@ public class FtoSearch {
 
         //Logistic Regression model determines the likelihood of the current subtree having a solution
         //Subtrees that are unlikely to have a solution are cut
-        if (depth > 7 && depth < 20 && ply > 0){
+        if (depth > 8 && depth < 20 && ply > 0){
             int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
             if (tripleLookup == 25)
                 tripleLookup = 10;
