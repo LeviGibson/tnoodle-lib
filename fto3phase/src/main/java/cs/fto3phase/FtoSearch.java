@@ -455,11 +455,6 @@ public class FtoSearch {
             return false;
         }
 
-        int centerLookup = (int)(phaseTwoCenterPruningTable[fto.phaseTwoCenterIndex()]);
-        if (centerLookup > depth){
-            return false;
-        }
-
         int ply = fto.historyLength();
 
         //Logistic Regression model determines the likelihood of the current subtree having a solution
