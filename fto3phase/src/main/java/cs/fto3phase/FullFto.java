@@ -516,10 +516,19 @@ public class FullFto {
     }
 
     static int[] fact = new int[10];
+    static int[][][] multinomial = new int[4][4][4];
     static {
         fact[0] = 1;
         for (int i = 1; i < fact.length; i++) {
             fact[i] = fact[i - 1] * i;
+        }
+
+        for (int a = 0; a < multinomial.length; a++) {
+            for (int b = 0; b < multinomial[a].length; b++) {
+                for (int c = 0; c < multinomial[a][b].length; c++) {
+                    multinomial[a][b][c] = multinomial(a, b, c);
+                }
+            }
         }
     }
 
@@ -535,38 +544,32 @@ public class FullFto {
      * @return phase-two center pruning table index
      */
     public int phaseTwoCenterIndex() {
-        int[] c = new int[9];
-
-        for (int i = 0; i < 9; i++) {
-            c[i] = centers[i + 12] - 4;
-        }
-
         int count0 = 3, count1 = 3, count2 = 3;
         int index = 0;
 
         for (int i = 0; i < 9; i++) {
-            int current = c[i];
-
-            // Try placing smaller values
-            for (int v = 0; v < current; v++) {
-                if ((v == 0 && count0 > 0) ||
-                    (v == 1 && count1 > 0) ||
-                    (v == 2 && count2 > 0)) {
-
-                    int a = count0, b = count1, d = count2;
-
-                    if (v == 0) a--;
-                    if (v == 1) b--;
-                    if (v == 2) d--;
-
-                    index += multinomial(a, b, d);
+            switch (centers[i + 12] - 4) {
+                case 0:
+                    count0--;
+                    break;
+                case 1:
+                    if (count0 > 0) {
+                        index += multinomial[count0 - 1][count1][count2];
+                    }
+                    count1--;
+                    break;
+                case 2:
+                    if (count0 > 0) {
+                        index += multinomial[count0 - 1][count1][count2];
+                    }
+                    if (count1 > 0) {
+                        index += multinomial[count0][count1 - 1][count2];
+                    }
+                    count2--;
+                    break;
+                default:
+                    throw new IllegalStateException("Invalid phase-two center value");
                 }
-            }
-
-            // Consume the actual value
-            if (current == 0) count0--;
-            else if (current == 1) count1--;
-            else count2--;
         }
 
         return index;

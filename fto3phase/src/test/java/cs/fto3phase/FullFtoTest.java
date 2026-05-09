@@ -593,6 +593,18 @@ public class FullFtoTest {
         }
     }
 
+    @Test
+    void testPhaseTwoCenterIndexMatchesMultinomialRank() throws Exception {
+        Random r = new Random(456);
+
+        for (int iteration = 0; iteration < 1000; iteration++) {
+            FullFto state = new FullFto();
+            state.scrambleRandomG2State(r, 30);
+
+            assertEquals(multinomialPhaseTwoCenterIndex(state), state.phaseTwoCenterIndex());
+        }
+    }
+
     //--- Hash Function General Tests ---//
 
     @Test
@@ -621,6 +633,54 @@ public class FullFtoTest {
         Field edgesField = FullFto.class.getDeclaredField("edges");
         edgesField.setAccessible(true);
         return (int[]) edgesField.get(state);
+    }
+
+    private static int multinomialPhaseTwoCenterIndex(FullFto state) throws Exception {
+        int[] centers = centersOf(state);
+        int[] c = new int[9];
+
+        for (int i = 0; i < 9; i++) {
+            c[i] = centers[i + 12] - 4;
+        }
+
+        int count0 = 3, count1 = 3, count2 = 3;
+        int index = 0;
+
+        for (int i = 0; i < 9; i++) {
+            int current = c[i];
+
+            for (int v = 0; v < current; v++) {
+                if ((v == 0 && count0 > 0) ||
+                    (v == 1 && count1 > 0) ||
+                    (v == 2 && count2 > 0)) {
+
+                    int a = count0, b = count1, d = count2;
+
+                    if (v == 0) a--;
+                    if (v == 1) b--;
+                    if (v == 2) d--;
+
+                    index += multinomial(a, b, d);
+                }
+            }
+
+            if (current == 0) count0--;
+            else if (current == 1) count1--;
+            else count2--;
+        }
+
+        return index;
+    }
+
+    private static int multinomial(int a, int b, int c) {
+        int n = a + b + c;
+        return FACTORIAL[n] / (FACTORIAL[a] * FACTORIAL[b] * FACTORIAL[c]);
+    }
+
+    private static int[] centersOf(FullFto state) throws Exception {
+        Field centersField = FullFto.class.getDeclaredField("centers");
+        centersField.setAccessible(true);
+        return (int[]) centersField.get(state);
     }
 
 }
