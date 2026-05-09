@@ -297,6 +297,10 @@ public class FtoSearch {
                 continue;
             }
 
+            if (fto.historyLength() == 1 && (move == Move.D || move == Move.DP)){
+                continue;
+            }
+
             fto.turn(move);
             phaseTwoPruningSearch(depth-1, fto);
             fto.undo();
@@ -346,6 +350,7 @@ public class FtoSearch {
         long totalTime = endTime - startTime;
         System.out.println("Total time (ms): " + totalTime);
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
+//        System.exit(0);
     }
 
     /**
@@ -824,6 +829,6 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(500);
+        performanceTest(100);
     }
 }
