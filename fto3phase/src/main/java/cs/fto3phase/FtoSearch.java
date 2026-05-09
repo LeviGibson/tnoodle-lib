@@ -455,6 +455,13 @@ public class FtoSearch {
             return false;
         }
 
+        if (depth < 10) {
+            int centerLookup = (int) (phaseTwoCenterPruningTable[fto.phaseTwoCenterIndex()]);
+            if (centerLookup > depth) {
+                return false;
+            }
+        }
+
         int ply = fto.historyLength();
 
         //Logistic Regression model determines the likelihood of the current subtree having a solution
@@ -719,19 +726,14 @@ public class FtoSearch {
             fto = FullFto.randomCube(r);
             FtoSearch search = new FtoSearch();
             String s = search.solution(fto);
-            System.out.println(s);
             totalNodes += (long)search.nodes;
 
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
 
-            System.out.println("Scramble time: " + (duration / 1_000_000) + " ms");
+            System.out.println("NEW," + (duration / 1_000_000));
             totalTime += duration;
-            totalMoves += s.trim().split(" ").length;
         }
-
-        System.out.println("Average Time:" + ((totalTime/num) / 1_000_000) + " ms" );
-        System.out.println("Average Moves:" + (((float)totalMoves/(float)num)));
 
         return totalNodes;
     }
@@ -844,6 +846,6 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(100);
+        performanceTest(500);
     }
 }
