@@ -34,21 +34,8 @@ public class FtoSearch {
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
-    private static HashMap<Long, ArrayList<PhaseTwoPruningEntry>> phaseTwoPruningTable;
+    private static HashMap<Long, HashSet<Long>> phaseTwoPruningTable;
     private static HashMap<Long, Integer> phaseThreePruningTable;
-
-
-    /**
-     * Contains all the data needed for a phase-2 hash lookup
-     */
-    private static class PhaseTwoPruningEntry{
-        public int distanceToSolved;
-        public long triples;
-        public PhaseTwoPruningEntry(int distanceToSolved, long triples){
-            this.distanceToSolved = distanceToSolved;
-            this.triples = triples;
-        }
-    }
 
     //--------------- Static Pruning Table Generation ---------------//
 
@@ -287,27 +274,14 @@ public class FtoSearch {
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
         long centerHash = fto.phaseTwoCentersHash();
         long triples = fto.packPhaseTwoTripleData();
-        ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(centerHash);
+        HashSet<Long> lookup = phaseTwoPruningTable.get(centerHash);
 
         if (lookup == null){
-            ArrayList<PhaseTwoPruningEntry> entry = new ArrayList<>();
-            entry.add(new PhaseTwoPruningEntry(fto.historyLength(), triples));
+            HashSet<Long> entry = new HashSet<>();
+            entry.add(triples);
             phaseTwoPruningTable.put(centerHash, entry);
         } else {
-            boolean foundMatchingEntry = false;
-
-            for (PhaseTwoPruningEntry e : lookup){
-                if (e.triples == triples){
-                    foundMatchingEntry = true;
-                    if (e.distanceToSolved > fto.historyLength()){
-                        e.distanceToSolved = fto.historyLength();
-                    }
-                }
-            }
-
-            if (!foundMatchingEntry){
-                lookup.add(new PhaseTwoPruningEntry(fto.historyLength(), triples));
-            }
+            lookup.add(triples);
         }
 
         if (depth == 0){
@@ -366,7 +340,7 @@ public class FtoSearch {
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
         long startTime = System.currentTimeMillis();
-        phaseTwoPruningTable = new HashMap<Long, ArrayList<PhaseTwoPruningEntry>>();
+        phaseTwoPruningTable = new HashMap<Long, HashSet<Long>>();
         phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
         long endTime = System.currentTimeMillis();
         long totalTime = endTime - startTime;
@@ -487,14 +461,14 @@ public class FtoSearch {
 
         //IDA* lookup
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
-            ArrayList<PhaseTwoPruningEntry> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
+            HashSet<Long> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
             if (lookup == null) {
                 return false;
             } else {
                 boolean hashHit = false;
 
-                for (PhaseTwoPruningEntry e : lookup) {
-                    if (fto.checkPhaseTwoTripleData(e.triples) && e.distanceToSolved <= depth) {
+                for (long triples : lookup) {
+                    if (fto.checkPhaseTwoTripleData(triples)) {
                         hashHit = true;
                         break;
                     }
