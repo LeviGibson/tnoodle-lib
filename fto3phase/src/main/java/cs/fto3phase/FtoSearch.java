@@ -846,6 +846,6 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(200);
+        performanceTest(500);
     }
 }

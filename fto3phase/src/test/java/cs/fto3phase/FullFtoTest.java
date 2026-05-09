@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -161,6 +163,38 @@ public class FullFtoTest {
             moved.turn(FullFto.INVERT_MOVE[move.ordinal()]);
 
             assertTrue(moved.isSolved(), move + " followed by inverse should solve");
+        }
+    }
+
+    @Test
+    void testEachMoveMatchesEnumOrdinalReferenceImplementation() throws Exception {
+        for (Move move : Move.values()) {
+            FullFto actual = new FullFto();
+            ReferenceState expected = new ReferenceState();
+
+            actual.turn(move);
+            expected.turn(move);
+
+            assertStateEquals(expected, actual, move.name());
+        }
+    }
+
+    @Test
+    void testRandomMoveSequencesMatchEnumOrdinalReferenceImplementation() throws Exception {
+        Random r = new Random(789);
+        Move[] moves = Move.values();
+
+        for (int iteration = 0; iteration < 200; iteration++) {
+            FullFto actual = new FullFto();
+            ReferenceState expected = new ReferenceState();
+
+            for (int i = 0; i < 100; i++) {
+                Move move = moves[r.nextInt(moves.length)];
+                actual.turn(move);
+                expected.turn(move);
+            }
+
+            assertStateEquals(expected, actual, "iteration " + iteration);
         }
     }
 
@@ -681,6 +715,233 @@ public class FullFtoTest {
         Field centersField = FullFto.class.getDeclaredField("centers");
         centersField.setAccessible(true);
         return (int[]) centersField.get(state);
+    }
+
+    private static int[] cornersOf(FullFto state) throws Exception {
+        Field cornersField = FullFto.class.getDeclaredField("corners");
+        cornersField.setAccessible(true);
+        return (int[]) cornersField.get(state);
+    }
+
+    private static int[] centerIndicesOf(FullFto state) throws Exception {
+        Field centerIndicesField = FullFto.class.getDeclaredField("centerIndices");
+        centerIndicesField.setAccessible(true);
+        return (int[]) centerIndicesField.get(state);
+    }
+
+    private static void assertStateEquals(ReferenceState expected, FullFto actual, String context) throws Exception {
+        assertArrayEquals(expected.corners, cornersOf(actual), "corners differ after " + context);
+        assertArrayEquals(expected.edges, edgesOf(actual), "edges differ after " + context);
+        assertArrayEquals(expected.centers, centersOf(actual), "centers differ after " + context);
+        assertArrayEquals(expected.centerIndices, centerIndicesOf(actual), "center indices differ after " + context);
+    }
+
+    private static final class ReferenceState {
+        final int[] corners = new int[6];
+        final int[] edges = new int[12];
+        final int[] centers = new int[24];
+        final int[] centerIndices = new int[24];
+
+        ReferenceState() {
+            for (int i = 0; i < corners.length; i++) {
+                corners[i] = i << 2;
+            }
+            for (int i = 0; i < edges.length; i++) {
+                edges[i] = i;
+            }
+            for (int i = 0; i < centers.length; i++) {
+                centers[i] = i / 3;
+                centerIndices[i] = i;
+            }
+        }
+
+        void turn(Move move) {
+            switch (move) {
+                case R:
+                    cycleCorners(c("U_F"), c("U_R"), c("D_R"));
+                    twist(c("U_F"), 3); twist(c("U_R"), 2); twist(c("D_R"), 3);
+                    cycleEdges(e("U_R"), e("R_BR"), e("F_R"));
+                    cycleCenters(ci("R_L"), ci("R_B"), ci("R_D"));
+                    cycleCenters(ci("F_U"), ci("U_BR"), ci("BR_F"));
+                    cycleCenters(ci("F_BR"), ci("U_F"), ci("BR_U"));
+                    break;
+                case L:
+                    cycleCorners(c("U_L"), c("U_F"), c("D_L"));
+                    twist(c("U_L"), 3); twist(c("U_F"), 2); twist(c("D_L"), 3);
+                    cycleEdges(e("U_L"), e("F_L"), e("L_BL"));
+                    cycleCenters(ci("L_B"), ci("L_R"), ci("L_D"));
+                    cycleCenters(ci("U_BL"), ci("F_U"), ci("BL_F"));
+                    cycleCenters(ci("U_F"), ci("F_BL"), ci("BL_U"));
+                    break;
+                case U:
+                    cycleCorners(c("U_L"), c("U_R"), c("U_F"));
+                    cycleEdges(e("U_B"), e("U_R"), e("U_L"));
+                    cycleCenters(ci("U_BL"), ci("U_BR"), ci("U_F"));
+                    cycleCenters(ci("R_L"), ci("L_B"), ci("B_R"));
+                    cycleCenters(ci("R_B"), ci("L_R"), ci("B_L"));
+                    break;
+                case D:
+                    cycleCorners(c("D_L"), c("D_R"), c("D_B"));
+                    cycleEdges(e("D_F"), e("D_BR"), e("D_BL"));
+                    cycleCenters(ci("D_L"), ci("D_R"), ci("D_B"));
+                    cycleCenters(ci("F_BL"), ci("BR_F"), ci("BL_BR"));
+                    cycleCenters(ci("F_BR"), ci("BR_BL"), ci("BL_F"));
+                    break;
+                case F:
+                    cycleCorners(c("U_F"), c("D_R"), c("D_L"));
+                    twist(c("U_F"), 3); twist(c("D_R"), 3); twist(c("D_L"), 2);
+                    cycleEdges(e("F_R"), e("D_F"), e("F_L"));
+                    cycleCenters(ci("F_U"), ci("F_BR"), ci("F_BL"));
+                    cycleCenters(ci("L_R"), ci("R_D"), ci("D_L"));
+                    cycleCenters(ci("R_L"), ci("D_R"), ci("L_D"));
+                    break;
+                case B:
+                    cycleCorners(c("U_R"), c("U_L"), c("D_B"));
+                    twist(c("U_R"), 3); twist(c("U_L"), 2); twist(c("D_B"), 3);
+                    cycleEdges(e("U_B"), e("B_BL"), e("B_BR"));
+                    cycleCenters(ci("B_R"), ci("B_L"), ci("B_D"));
+                    cycleCenters(ci("U_BR"), ci("BL_U"), ci("BR_BL"));
+                    cycleCenters(ci("U_BL"), ci("BL_BR"), ci("BR_U"));
+                    break;
+                case BR:
+                    cycleCorners(c("U_R"), c("D_B"), c("D_R"));
+                    twist(c("U_R"), 3); twist(c("D_B"), 3); twist(c("D_R"), 2);
+                    cycleEdges(e("R_BR"), e("B_BR"), e("D_BR"));
+                    cycleCenters(ci("BR_U"), ci("BR_BL"), ci("BR_F"));
+                    cycleCenters(ci("R_B"), ci("B_D"), ci("D_R"));
+                    cycleCenters(ci("R_D"), ci("B_R"), ci("D_B"));
+                    break;
+                case BL:
+                    cycleCorners(c("U_L"), c("D_L"), c("D_B"));
+                    twist(c("U_L"), 3); twist(c("D_L"), 3); twist(c("D_B"), 2);
+                    cycleEdges(e("L_BL"), e("D_BL"), e("B_BL"));
+                    cycleCenters(ci("BL_U"), ci("BL_F"), ci("BL_BR"));
+                    cycleCenters(ci("B_L"), ci("L_D"), ci("D_B"));
+                    cycleCenters(ci("L_B"), ci("D_L"), ci("B_D"));
+                    break;
+                case RP:
+                    cycleCorners(c("U_F"), c("D_R"), c("U_R"));
+                    twist(c("U_F"), 2); twist(c("U_R"), 1); twist(c("D_R"), 1);
+                    cycleEdges(e("U_R"), e("F_R"), e("R_BR"));
+                    cycleCenters(ci("R_L"), ci("R_D"), ci("R_B"));
+                    cycleCenters(ci("F_U"), ci("BR_F"), ci("U_BR"));
+                    cycleCenters(ci("F_BR"), ci("BR_U"), ci("U_F"));
+                    break;
+                case LP:
+                    cycleCorners(c("U_L"), c("D_L"), c("U_F"));
+                    twist(c("U_L"), 2); twist(c("U_F"), 1); twist(c("D_L"), 1);
+                    cycleEdges(e("U_L"), e("L_BL"), e("F_L"));
+                    cycleCenters(ci("L_B"), ci("L_D"), ci("L_R"));
+                    cycleCenters(ci("U_BL"), ci("BL_F"), ci("F_U"));
+                    cycleCenters(ci("U_F"), ci("BL_U"), ci("F_BL"));
+                    break;
+                case UP:
+                    cycleCorners(c("U_L"), c("U_F"), c("U_R"));
+                    cycleEdges(e("U_B"), e("U_L"), e("U_R"));
+                    cycleCenters(ci("U_BL"), ci("U_F"), ci("U_BR"));
+                    cycleCenters(ci("R_L"), ci("B_R"), ci("L_B"));
+                    cycleCenters(ci("R_B"), ci("B_L"), ci("L_R"));
+                    break;
+                case DP:
+                    cycleCorners(c("D_L"), c("D_B"), c("D_R"));
+                    cycleEdges(e("D_F"), e("D_BL"), e("D_BR"));
+                    cycleCenters(ci("D_L"), ci("D_B"), ci("D_R"));
+                    cycleCenters(ci("F_BL"), ci("BL_BR"), ci("BR_F"));
+                    cycleCenters(ci("F_BR"), ci("BL_F"), ci("BR_BL"));
+                    break;
+                case FP:
+                    cycleCorners(c("U_F"), c("D_L"), c("D_R"));
+                    twist(c("U_F"), 1); twist(c("D_R"), 2); twist(c("D_L"), 1);
+                    cycleEdges(e("F_R"), e("F_L"), e("D_F"));
+                    cycleCenters(ci("F_U"), ci("F_BL"), ci("F_BR"));
+                    cycleCenters(ci("L_R"), ci("D_L"), ci("R_D"));
+                    cycleCenters(ci("R_L"), ci("L_D"), ci("D_R"));
+                    break;
+                case BP:
+                    cycleCorners(c("U_R"), c("D_B"), c("U_L"));
+                    twist(c("U_R"), 2); twist(c("U_L"), 1); twist(c("D_B"), 1);
+                    cycleEdges(e("U_B"), e("B_BR"), e("B_BL"));
+                    cycleCenters(ci("B_R"), ci("B_D"), ci("B_L"));
+                    cycleCenters(ci("U_BR"), ci("BR_BL"), ci("BL_U"));
+                    cycleCenters(ci("U_BL"), ci("BR_U"), ci("BL_BR"));
+                    break;
+                case BRP:
+                    cycleCorners(c("U_R"), c("D_R"), c("D_B"));
+                    twist(c("U_R"), 1); twist(c("D_B"), 2); twist(c("D_R"), 1);
+                    cycleEdges(e("R_BR"), e("D_BR"), e("B_BR"));
+                    cycleCenters(ci("BR_U"), ci("BR_F"), ci("BR_BL"));
+                    cycleCenters(ci("R_B"), ci("D_R"), ci("B_D"));
+                    cycleCenters(ci("R_D"), ci("D_B"), ci("B_R"));
+                    break;
+                case BLP:
+                    cycleCorners(c("U_L"), c("D_B"), c("D_L"));
+                    twist(c("U_L"), 1); twist(c("D_L"), 2); twist(c("D_B"), 1);
+                    cycleEdges(e("L_BL"), e("B_BL"), e("D_BL"));
+                    cycleCenters(ci("BL_U"), ci("BL_BR"), ci("BL_F"));
+                    cycleCenters(ci("B_L"), ci("D_B"), ci("L_D"));
+                    cycleCenters(ci("L_B"), ci("B_D"), ci("D_L"));
+                    break;
+            }
+        }
+
+        private void cycleCorners(int i1, int i2, int i3) {
+            int tmp = corners[i3];
+            corners[i3] = corners[i2];
+            corners[i2] = corners[i1];
+            corners[i1] = tmp;
+        }
+
+        private void cycleEdges(int i1, int i2, int i3) {
+            int tmp = edges[i3];
+            edges[i3] = edges[i2];
+            edges[i2] = edges[i1];
+            edges[i1] = tmp;
+        }
+
+        private void cycleCenters(int i1, int i2, int i3) {
+            int tmp = centers[i3];
+            centers[i3] = centers[i2];
+            centers[i2] = centers[i1];
+            centers[i1] = tmp;
+
+            tmp = centerIndices[i3];
+            centerIndices[i3] = centerIndices[i2];
+            centerIndices[i2] = centerIndices[i1];
+            centerIndices[i1] = tmp;
+        }
+
+        private void twist(int i, int dir) {
+            corners[i] = (corners[i] & ~0b11) | ((corners[i] + dir) & 0b11);
+        }
+    }
+
+    private static final Map<String, Integer> CORNER_ORDINALS = enumOrdinals("cs.fto3phase.FullFto$Corner");
+    private static final Map<String, Integer> EDGE_ORDINALS = enumOrdinals("cs.fto3phase.FullFto$Edge");
+    private static final Map<String, Integer> CENTER_IND_ORDINALS = enumOrdinals("cs.fto3phase.FullFto$CenterInd");
+
+    private static int c(String name) {
+        return CORNER_ORDINALS.get(name);
+    }
+
+    private static int e(String name) {
+        return EDGE_ORDINALS.get(name);
+    }
+
+    private static int ci(String name) {
+        return CENTER_IND_ORDINALS.get(name);
+    }
+
+    private static Map<String, Integer> enumOrdinals(String className) {
+        try {
+            Object[] constants = Class.forName(className).getEnumConstants();
+            Map<String, Integer> ordinals = new HashMap<>();
+            for (int i = 0; i < constants.length; i++) {
+                ordinals.put(((Enum<?>) constants[i]).name(), i);
+            }
+            return ordinals;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
 }

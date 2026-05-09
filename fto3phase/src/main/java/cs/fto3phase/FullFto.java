@@ -30,7 +30,16 @@ public class FullFto {
     public Stack<Move> moveStack;
 
     //All possible moves
-    public enum Move{R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
+    public enum Move{
+        R(0), L(1), U(2), D(3), F(4), B(5), BR(6), BL(7),
+        RP(8), LP(9), UP(10), DP(11), FP(12), BP(13), BRP(14), BLP(15);
+
+        final int id;
+
+        Move(int id) {
+            this.id = id;
+        }
+    }
 
     //--------------- Nitty-Gritty stuff ---------------//
 
@@ -47,7 +56,13 @@ public class FullFto {
      * internal representation of centers is {U, U, U, F, F, F ...}
      */
     private enum CenterOrd {
-        U, F, BR, BL, L, R, B, D
+        U(0), F(1), BR(2), BL(3), L(4), R(5), B(6), D(7);
+
+        final int id;
+
+        CenterOrd(int id) {
+            this.id = id;
+        }
     }
 
     /**
@@ -200,33 +215,33 @@ public class FullFto {
      * MATCHING_CENTERS[getCornerIndex(corner)][corner orientation]
      */
     int[][] MATCHING_CENTERS =  {
-        {CenterOrd.U.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.U.ordinal()}, // U_L
-        {CenterOrd.U.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.U.ordinal()}, // U_R
-        {CenterOrd.U.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.U.ordinal()}, // U_F
-        {CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal()}, // D_L
-        {CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal()}, // D_R
-        {CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal()} // D_B
+        {0, 3, 3, 0}, // U_L
+        {0, 2, 2, 0}, // U_R
+        {0, 1, 1, 0}, // U_F
+        {1, 1, 3, 3}, // D_L
+        {2, 2, 1, 1}, // D_R
+        {3, 3, 2, 2} // D_B
     };
 
     int[][] MATCHING_CENTER_INDICES =  {
-        {CenterInd.U_BL.ordinal(), CenterInd.BL_U.ordinal(), CenterInd.BL_U.ordinal(), CenterInd.U_BL.ordinal()}, // U_L
-        {CenterInd.U_BR.ordinal(), CenterInd.BR_U.ordinal(), CenterInd.BR_U.ordinal(), CenterInd.U_BR.ordinal()}, // U_R
-        {CenterInd.U_F.ordinal(), CenterInd.F_U.ordinal(), CenterInd.F_U.ordinal(), CenterInd.U_F.ordinal()}, // U_F
-        {CenterInd.F_BL.ordinal(), CenterInd.F_BL.ordinal(), CenterInd.BL_F.ordinal(), CenterInd.BL_F.ordinal()}, // D_L
-        {CenterInd.BR_F.ordinal(), CenterInd.BR_F.ordinal(), CenterInd.F_BR.ordinal(), CenterInd.F_BR.ordinal()}, // D_R
-        {CenterInd.BL_BR.ordinal(), CenterInd.BL_BR.ordinal(), CenterInd.BR_BL.ordinal(), CenterInd.BR_BL.ordinal()} // D_B
+        {0, 9, 9, 0}, // U_L
+        {1, 6, 6, 1}, // U_R
+        {2, 3, 3, 2}, // U_F
+        {5, 5, 10, 10}, // D_L
+        {8, 8, 4, 4}, // D_R
+        {11, 11, 7, 7} // D_B
     };
 
     /**
      * for each corner, where should the matching centers be to make a triple?
      */
     int[][] TRIPLE_LOCATIONS =  {
-        {CenterInd.U_BL.ordinal(), CenterInd.BL_U.ordinal()}, // U_L
-        {CenterInd.U_BR.ordinal(), CenterInd.BR_U.ordinal()}, // U_R
-        {CenterInd.U_F.ordinal(), CenterInd.F_U.ordinal()}, // U_F
-        {CenterInd.F_BL.ordinal(), CenterInd.BL_F.ordinal()}, // D_L
-        {CenterInd.BR_F.ordinal(), CenterInd.F_BR.ordinal()}, // D_R
-        {CenterInd.BL_BR.ordinal(), CenterInd.BR_BL.ordinal()} // D_B
+        {0, 9}, // U_L
+        {1, 6}, // U_R
+        {2, 3}, // U_F
+        {5, 10}, // D_L
+        {8, 4}, // D_R
+        {11, 7} // D_B
     };
 
     /**
@@ -303,28 +318,28 @@ public class FullFto {
      * Index with [CenterOrd][-]
      */
     int[][] EDGES_ON_FACE = {
-        {Edge.U_B.ordinal(), Edge.U_L.ordinal(), Edge.U_R.ordinal()},
-        {Edge.F_L.ordinal(), Edge.D_F.ordinal(), Edge.F_R.ordinal()},
-        {Edge.B_BR.ordinal(), Edge.D_BR.ordinal(), Edge.R_BR.ordinal()},
-        {Edge.B_BL.ordinal(), Edge.D_BL.ordinal(), Edge.L_BL.ordinal()},
-        {Edge.L_BL.ordinal(), Edge.F_L.ordinal(), Edge.U_L.ordinal()},
-        {Edge.R_BR.ordinal(), Edge.U_R.ordinal(), Edge.F_R.ordinal()},
-        {Edge.B_BL.ordinal(), Edge.B_BR.ordinal(), Edge.U_B.ordinal()},
-        {Edge.D_BL.ordinal(), Edge.D_BR.ordinal(), Edge.D_F.ordinal()},
+        {0, 2, 1},
+        {3, 9, 4},
+        {7, 10, 5},
+        {6, 11, 8},
+        {8, 3, 2},
+        {5, 1, 4},
+        {6, 7, 0},
+        {11, 10, 9},
     };
 
     /**
      * Index with [CenterOrd][-]
      */
     private static final int[][] CENTERS_ON_FACE = {
-        {CenterInd.U_BL.ordinal(), CenterInd.U_BR.ordinal(), CenterInd.U_F.ordinal()},
-        {CenterInd.F_BL.ordinal(), CenterInd.F_BR.ordinal(), CenterInd.F_U.ordinal()},
-        {CenterInd.BR_BL.ordinal(), CenterInd.BR_F.ordinal(), CenterInd.BR_U.ordinal()},
-        {CenterInd.BL_U.ordinal(), CenterInd.BL_F.ordinal(), CenterInd.BL_BR.ordinal()},
-        {CenterInd.L_B.ordinal(), CenterInd.L_D.ordinal(), CenterInd.L_R.ordinal()},
-        {CenterInd.R_B.ordinal(), CenterInd.R_D.ordinal(), CenterInd.R_L.ordinal()},
-        {CenterInd.B_L.ordinal(), CenterInd.B_D.ordinal(), CenterInd.B_R.ordinal()},
-        {CenterInd.D_B.ordinal(), CenterInd.D_L.ordinal(), CenterInd.D_R.ordinal()},
+        {0, 1, 2},
+        {5, 4, 3},
+        {7, 8, 6},
+        {9, 10, 11},
+        {12, 14, 13},
+        {16, 17, 15},
+        {19, 20, 18},
+        {23, 21, 22},
     };
 
     /**
@@ -334,8 +349,10 @@ public class FullFto {
      * @return t/f
      */
     private boolean areEdgesSolvedOnFace(CenterOrd face, int angle){
+        int faceId = face.id;
+        int[] faceEdges = EDGES_ON_FACE[faceId];
         for (int i = 0; i < 3; i++) {
-            if (edges[EDGES_ON_FACE[face.ordinal()][(i+angle)%3]] != EDGES_ON_FACE[face.ordinal()][i]){
+            if (edges[faceEdges[(i+angle)%3]] != faceEdges[i]){
                 return false;
             }
         }
@@ -348,8 +365,10 @@ public class FullFto {
      * @return t/f
      */
     private boolean areCentersSolvedOnFace(CenterOrd face){
+        int faceId = face.id;
+        int[] faceCenters = CENTERS_ON_FACE[faceId];
         for (int i = 0; i < 3; i++) {
-            if (centers[CENTERS_ON_FACE[face.ordinal()][i]] != face.ordinal()){
+            if (centers[faceCenters[i]] != faceId){
                 return false;
             }
         }
@@ -418,10 +437,12 @@ public class FullFto {
      */
     private long centerHash(CenterOrd center){
         long hash = 0;
+        int centerId = center.id;
+        long[] centerKeys = PHASE2_CENTER_KEYS[centerId];
 
         for (int i = 0; i < 24; i++) {
-            if (centers[i] == center.ordinal()){
-                hash ^= PHASE2_CENTER_KEYS[center.ordinal()][i];
+            if (centers[i] == centerId){
+                hash ^= centerKeys[i];
             }
         }
 
@@ -458,9 +479,10 @@ public class FullFto {
      */
     private long edgeHash(CenterOrd center){
         //This function needs to return the same hash for any version of the same 3-cycle of edges
+        int centerId = center.id;
 
         //Get edges we're looking for
-        int[] e = Arrays.copyOf(EDGES_ON_FACE[center.ordinal()], 3);
+        int[] e = Arrays.copyOf(EDGES_ON_FACE[centerId], 3);
 
         int firstMachingEdge = -1;
 
@@ -495,8 +517,9 @@ public class FullFto {
 
         //Generate hash
         long hash = 0;
+        long[][] edgeKeys = PHASE2_EDGE_KEYS[centerId];
         for (int i = 0; i < 3; i++){
-            hash ^= PHASE2_EDGE_KEYS[center.ordinal()][i][e[i]];
+            hash ^= edgeKeys[i][e[i]];
         }
 
         //Return hash
@@ -786,10 +809,11 @@ public class FullFto {
         if (!isPhaseOneBreakingMove(lastMove))
             return false;
 
-        if (PARALLEL_MOVES[lastMove.ordinal()][0] == lastLastMove)
+        Move[] parallelMoves = PARALLEL_MOVES[lastMove.id];
+        if (parallelMoves[0] == lastLastMove)
             return false;
 
-        if (PARALLEL_MOVES[lastMove.ordinal()][1] == lastLastMove)
+        if (parallelMoves[1] == lastLastMove)
             return false;
 
         return true;
@@ -799,7 +823,7 @@ public class FullFto {
      * Undo the last move performed on FTO
      */
     public void undo() {
-        turn(INVERT_MOVE[moveStack.pop().ordinal()]);
+        turn(INVERT_MOVE[moveStack.pop().id]);
         moveStack.pop();
     }
 
@@ -841,19 +865,19 @@ public class FullFto {
      * @return t/f
      */
     public boolean isPhaseOne(){
-        if (centers[CenterInd.D_L.ordinal()] != CenterOrd.D.ordinal() ||
-            centers[CenterInd.D_R.ordinal()] != CenterOrd.D.ordinal() ||
-            centers[CenterInd.D_B.ordinal()] != CenterOrd.D.ordinal())
+        if (centers[21] != 7 ||
+            centers[22] != 7 ||
+            centers[23] != 7)
             return false;
-        return (edges[Edge.D_F.ordinal()] == Edge.D_F.ordinal() &&
-            edges[Edge.D_BR.ordinal()] == Edge.D_BR.ordinal() &&
-            edges[Edge.D_BL.ordinal()] == Edge.D_BL.ordinal()) ||
-                (edges[Edge.D_F.ordinal()] == Edge.D_BL.ordinal() &&
-                    edges[Edge.D_BR.ordinal()] == Edge.D_F.ordinal() &&
-                    edges[Edge.D_BL.ordinal()] == Edge.D_BR.ordinal()) ||
-                (edges[Edge.D_F.ordinal()] == Edge.D_BR.ordinal() &&
-                    edges[Edge.D_BR.ordinal()] == Edge.D_BL.ordinal() &&
-                    edges[Edge.D_BL.ordinal()] == Edge.D_F.ordinal());
+        return (edges[9] == 9 &&
+            edges[10] == 10 &&
+            edges[11] == 11) ||
+                (edges[9] == 11 &&
+                    edges[10] == 9 &&
+                    edges[11] == 10) ||
+                (edges[9] == 10 &&
+                    edges[10] == 11 &&
+                    edges[11] == 9);
     }
 
     /**
@@ -1011,7 +1035,8 @@ public class FullFto {
             return false;
 
         Move lastMove = moveStack.peek();
-        if (move == lastMove || INVERT_MOVE[move.ordinal()] == lastMove) {
+        int moveId = move.id;
+        if (move == lastMove || INVERT_MOVE[moveId] == lastMove) {
             return true;
         }
 
@@ -1021,8 +1046,9 @@ public class FullFto {
 
         Move lastLastmove = moveStack.get(moveStack.size()-2);
 
-        if (move == lastLastmove || INVERT_MOVE[move.ordinal()] == lastLastmove) {
-            return PARALLEL_MOVES[lastLastmove.ordinal()][0] == move || PARALLEL_MOVES[lastLastmove.ordinal()][1] == move;
+        if (move == lastLastmove || INVERT_MOVE[moveId] == lastLastmove) {
+            Move[] parallelMoves = PARALLEL_MOVES[lastLastmove.id];
+            return parallelMoves[0] == move || parallelMoves[1] == move;
         }
 
         return false;
@@ -1039,389 +1065,389 @@ public class FullFto {
         moveStack.push(move);
         switch (move){
             case R:
-                cycleCorners(Corner.U_F.ordinal(),
-                    Corner.U_R.ordinal(),
-                    Corner.D_R.ordinal());
+                cycleCorners(2,
+                    1,
+                    4);
 
-                twistCorner(Corner.U_F.ordinal(), 3);
-                twistCorner(Corner.U_R.ordinal(), 2);
-                twistCorner(Corner.D_R.ordinal(), 3);
+                twistCorner(2, 3);
+                twistCorner(1, 2);
+                twistCorner(4, 3);
 
-                cycleEdges(Edge.U_R.ordinal(),
-                    Edge.R_BR.ordinal(),
-                    Edge.F_R.ordinal());
+                cycleEdges(1,
+                    5,
+                    4);
 
-                cycleThreeCenters(CenterInd.R_L.ordinal(),
-                    CenterInd.R_B.ordinal(),
-                    CenterInd.R_D.ordinal());
+                cycleThreeCenters(15,
+                    16,
+                    17);
 
-                cycleThreeCenters(CenterInd.F_U.ordinal(),
-                    CenterInd.U_BR.ordinal(),
-                    CenterInd.BR_F.ordinal());
+                cycleThreeCenters(3,
+                    1,
+                    8);
 
-                cycleThreeCenters(CenterInd.F_BR.ordinal(),
-                    CenterInd.U_F.ordinal(),
-                    CenterInd.BR_U.ordinal());
+                cycleThreeCenters(4,
+                    2,
+                    6);
                 break;
 
             case L:
-                cycleCorners(Corner.U_L.ordinal(),
-                    Corner.U_F.ordinal(),
-                    Corner.D_L.ordinal());
+                cycleCorners(0,
+                    2,
+                    3);
 
-                twistCorner(Corner.U_L.ordinal(), 3);
-                twistCorner(Corner.U_F.ordinal(), 2);
-                twistCorner(Corner.D_L.ordinal(), 3);
+                twistCorner(0, 3);
+                twistCorner(2, 2);
+                twistCorner(3, 3);
 
-                cycleEdges(Edge.U_L.ordinal(),
-                    Edge.F_L.ordinal(),
-                    Edge.L_BL.ordinal());
+                cycleEdges(2,
+                    3,
+                    8);
 
-                cycleThreeCenters(CenterInd.L_B.ordinal(),
-                    CenterInd.L_R.ordinal(),
-                    CenterInd.L_D.ordinal());
+                cycleThreeCenters(12,
+                    13,
+                    14);
 
-                cycleThreeCenters(CenterInd.U_BL.ordinal(),
-                    CenterInd.F_U.ordinal(),
-                    CenterInd.BL_F.ordinal());
+                cycleThreeCenters(0,
+                    3,
+                    10);
 
-                cycleThreeCenters(CenterInd.U_F.ordinal(),
-                    CenterInd.F_BL.ordinal(),
-                    CenterInd.BL_U.ordinal());
+                cycleThreeCenters(2,
+                    5,
+                    9);
                 break;
             case U:
-                cycleCorners(Corner.U_L.ordinal(),
-                    Corner.U_R.ordinal(),
-                    Corner.U_F.ordinal());
+                cycleCorners(0,
+                    1,
+                    2);
 
-                cycleEdges(Edge.U_B.ordinal(),
-                    Edge.U_R.ordinal(),
-                    Edge.U_L.ordinal());
+                cycleEdges(0,
+                    1,
+                    2);
 
-                cycleThreeCenters(CenterInd.U_BL.ordinal(),
-                    CenterInd.U_BR.ordinal(),
-                    CenterInd.U_F.ordinal());
+                cycleThreeCenters(0,
+                    1,
+                    2);
 
-                cycleThreeCenters(CenterInd.R_L.ordinal(),
-                    CenterInd.L_B.ordinal(),
-                    CenterInd.B_R.ordinal());
+                cycleThreeCenters(15,
+                    12,
+                    18);
 
-                cycleThreeCenters(CenterInd.R_B.ordinal(),
-                    CenterInd.L_R.ordinal(),
-                    CenterInd.B_L.ordinal());
+                cycleThreeCenters(16,
+                    13,
+                    19);
                 break;
             case D:
-                cycleCorners(Corner.D_L.ordinal(),
-                    Corner.D_R.ordinal(),
-                    Corner.D_B.ordinal());
+                cycleCorners(3,
+                    4,
+                    5);
 
-                cycleEdges(Edge.D_F.ordinal(),
-                    Edge.D_BR.ordinal(),
-                    Edge.D_BL.ordinal());
+                cycleEdges(9,
+                    10,
+                    11);
 
-                cycleThreeCenters(CenterInd.D_L.ordinal(),
-                    CenterInd.D_R.ordinal(),
-                    CenterInd.D_B.ordinal());
+                cycleThreeCenters(21,
+                    22,
+                    23);
 
-                cycleThreeCenters(CenterInd.F_BL.ordinal(),
-                    CenterInd.BR_F.ordinal(),
-                    CenterInd.BL_BR.ordinal());
+                cycleThreeCenters(5,
+                    8,
+                    11);
 
-                cycleThreeCenters(CenterInd.F_BR.ordinal(),
-                    CenterInd.BR_BL.ordinal(),
-                    CenterInd.BL_F.ordinal());
+                cycleThreeCenters(4,
+                    7,
+                    10);
                 break;
             case F:
-                cycleCorners(Corner.U_F.ordinal(),
-                    Corner.D_R.ordinal(),
-                    Corner.D_L.ordinal());
+                cycleCorners(2,
+                    4,
+                    3);
 
-                twistCorner(Corner.U_F.ordinal(), 3);
-                twistCorner(Corner.D_R.ordinal(), 3);
-                twistCorner(Corner.D_L.ordinal(), 2);
+                twistCorner(2, 3);
+                twistCorner(4, 3);
+                twistCorner(3, 2);
 
-                cycleEdges(Edge.F_R.ordinal(),
-                    Edge.D_F.ordinal(),
-                    Edge.F_L.ordinal());
+                cycleEdges(4,
+                    9,
+                    3);
 
-                cycleThreeCenters(CenterInd.F_U.ordinal(),
-                    CenterInd.F_BR.ordinal(),
-                    CenterInd.F_BL.ordinal());
+                cycleThreeCenters(3,
+                    4,
+                    5);
 
-                cycleThreeCenters(CenterInd.L_R.ordinal(),
-                    CenterInd.R_D.ordinal(),
-                    CenterInd.D_L.ordinal());
+                cycleThreeCenters(13,
+                    17,
+                    21);
 
-                cycleThreeCenters(CenterInd.R_L.ordinal(),
-                    CenterInd.D_R.ordinal(),
-                    CenterInd.L_D.ordinal());
+                cycleThreeCenters(15,
+                    22,
+                    14);
                 break;
             case B:
-                cycleCorners(Corner.U_R.ordinal(),
-                    Corner.U_L.ordinal(),
-                    Corner.D_B.ordinal());
+                cycleCorners(1,
+                    0,
+                    5);
 
-                twistCorner(Corner.U_R.ordinal(), 3);
-                twistCorner(Corner.U_L.ordinal(), 2);
-                twistCorner(Corner.D_B.ordinal(), 3);
+                twistCorner(1, 3);
+                twistCorner(0, 2);
+                twistCorner(5, 3);
 
-                cycleEdges(Edge.U_B.ordinal(),
-                    Edge.B_BL.ordinal(),
-                    Edge.B_BR.ordinal());
+                cycleEdges(0,
+                    6,
+                    7);
 
-                cycleThreeCenters(CenterInd.B_R.ordinal(),
-                    CenterInd.B_L.ordinal(),
-                    CenterInd.B_D.ordinal());
+                cycleThreeCenters(18,
+                    19,
+                    20);
 
-                cycleThreeCenters(CenterInd.U_BR.ordinal(),
-                    CenterInd.BL_U.ordinal(),
-                    CenterInd.BR_BL.ordinal());
+                cycleThreeCenters(1,
+                    9,
+                    7);
 
-                cycleThreeCenters(CenterInd.U_BL.ordinal(),
-                    CenterInd.BL_BR.ordinal(),
-                    CenterInd.BR_U.ordinal());
+                cycleThreeCenters(0,
+                    11,
+                    6);
                 break;
             case BR:
-                cycleCorners(Corner.U_R.ordinal(),
-                    Corner.D_B.ordinal(),
-                    Corner.D_R.ordinal());
+                cycleCorners(1,
+                    5,
+                    4);
 
-                twistCorner(Corner.U_R.ordinal(), 3);
-                twistCorner(Corner.D_B.ordinal(), 3);
-                twistCorner(Corner.D_R.ordinal(), 2);
+                twistCorner(1, 3);
+                twistCorner(5, 3);
+                twistCorner(4, 2);
 
-                cycleEdges(Edge.R_BR.ordinal(),
-                    Edge.B_BR.ordinal(),
-                    Edge.D_BR.ordinal());
+                cycleEdges(5,
+                    7,
+                    10);
 
-                cycleThreeCenters(CenterInd.BR_U.ordinal(),
-                    CenterInd.BR_BL.ordinal(),
-                    CenterInd.BR_F.ordinal());
+                cycleThreeCenters(6,
+                    7,
+                    8);
 
-                cycleThreeCenters(CenterInd.R_B.ordinal(),
-                    CenterInd.B_D.ordinal(),
-                    CenterInd.D_R.ordinal());
+                cycleThreeCenters(16,
+                    20,
+                    22);
 
-                cycleThreeCenters(CenterInd.R_D.ordinal(),
-                    CenterInd.B_R.ordinal(),
-                    CenterInd.D_B.ordinal());
+                cycleThreeCenters(17,
+                    18,
+                    23);
                 break;
             case BL:
-                cycleCorners(Corner.U_L.ordinal(),
-                    Corner.D_L.ordinal(),
-                    Corner.D_B.ordinal());
+                cycleCorners(0,
+                    3,
+                    5);
 
-                twistCorner(Corner.U_L.ordinal(), 3);
-                twistCorner(Corner.D_L.ordinal(), 3);
-                twistCorner(Corner.D_B.ordinal(), 2);
+                twistCorner(0, 3);
+                twistCorner(3, 3);
+                twistCorner(5, 2);
 
-                cycleEdges(Edge.L_BL.ordinal(),
-                    Edge.D_BL.ordinal(),
-                    Edge.B_BL.ordinal());
+                cycleEdges(8,
+                    11,
+                    6);
 
-                cycleThreeCenters(CenterInd.BL_U.ordinal(),
-                    CenterInd.BL_F.ordinal(),
-                    CenterInd.BL_BR.ordinal());
+                cycleThreeCenters(9,
+                    10,
+                    11);
 
-                cycleThreeCenters(CenterInd.B_L.ordinal(),
-                    CenterInd.L_D.ordinal(),
-                    CenterInd.D_B.ordinal());
+                cycleThreeCenters(19,
+                    14,
+                    23);
 
-                cycleThreeCenters(CenterInd.L_B.ordinal(),
-                    CenterInd.D_L.ordinal(),
-                    CenterInd.B_D.ordinal());
+                cycleThreeCenters(12,
+                    21,
+                    20);
                 break;
             case RP:
-                cycleCorners(Corner.U_F.ordinal(),
-                    Corner.D_R.ordinal(),
-                    Corner.U_R.ordinal());
+                cycleCorners(2,
+                    4,
+                    1);
 
-                twistCorner(Corner.U_F.ordinal(), 2);
-                twistCorner(Corner.U_R.ordinal(), 1);
-                twistCorner(Corner.D_R.ordinal(), 1);
+                twistCorner(2, 2);
+                twistCorner(1, 1);
+                twistCorner(4, 1);
 
-                cycleEdges(Edge.U_R.ordinal(),
-                    Edge.F_R.ordinal(),
-                    Edge.R_BR.ordinal());
+                cycleEdges(1,
+                    4,
+                    5);
 
-                cycleThreeCenters(CenterInd.R_L.ordinal(),
-                    CenterInd.R_D.ordinal(),
-                    CenterInd.R_B.ordinal());
+                cycleThreeCenters(15,
+                    17,
+                    16);
 
-                cycleThreeCenters(CenterInd.F_U.ordinal(),
-                    CenterInd.BR_F.ordinal(),
-                    CenterInd.U_BR.ordinal());
+                cycleThreeCenters(3,
+                    8,
+                    1);
 
-                cycleThreeCenters(CenterInd.F_BR.ordinal(),
-                    CenterInd.BR_U.ordinal(),
-                    CenterInd.U_F.ordinal());
+                cycleThreeCenters(4,
+                    6,
+                    2);
                 break;
             case LP:
-                cycleCorners(Corner.U_L.ordinal(),
-                    Corner.D_L.ordinal(),
-                    Corner.U_F.ordinal());
+                cycleCorners(0,
+                    3,
+                    2);
 
-                twistCorner(Corner.U_L.ordinal(), 2);
-                twistCorner(Corner.U_F.ordinal(), 1);
-                twistCorner(Corner.D_L.ordinal(), 1);
+                twistCorner(0, 2);
+                twistCorner(2, 1);
+                twistCorner(3, 1);
 
-                cycleEdges(Edge.U_L.ordinal(),
-                    Edge.L_BL.ordinal(),
-                    Edge.F_L.ordinal());
+                cycleEdges(2,
+                    8,
+                    3);
 
-                cycleThreeCenters(CenterInd.L_B.ordinal(),
-                    CenterInd.L_D.ordinal(),
-                    CenterInd.L_R.ordinal());
+                cycleThreeCenters(12,
+                    14,
+                    13);
 
-                cycleThreeCenters(CenterInd.U_BL.ordinal(),
-                    CenterInd.BL_F.ordinal(),
-                    CenterInd.F_U.ordinal());
+                cycleThreeCenters(0,
+                    10,
+                    3);
 
-                cycleThreeCenters(CenterInd.U_F.ordinal(),
-                    CenterInd.BL_U.ordinal(),
-                    CenterInd.F_BL.ordinal());
+                cycleThreeCenters(2,
+                    9,
+                    5);
                 break;
             case UP:
-                cycleCorners(Corner.U_L.ordinal(),
-                    Corner.U_F.ordinal(),
-                    Corner.U_R.ordinal());
+                cycleCorners(0,
+                    2,
+                    1);
 
-                cycleEdges(Edge.U_B.ordinal(),
-                    Edge.U_L.ordinal(),
-                    Edge.U_R.ordinal());
+                cycleEdges(0,
+                    2,
+                    1);
 
-                cycleThreeCenters(CenterInd.U_BL.ordinal(),
-                    CenterInd.U_F.ordinal(),
-                    CenterInd.U_BR.ordinal());
+                cycleThreeCenters(0,
+                    2,
+                    1);
 
-                cycleThreeCenters(CenterInd.R_L.ordinal(),
-                    CenterInd.B_R.ordinal(),
-                    CenterInd.L_B.ordinal());
+                cycleThreeCenters(15,
+                    18,
+                    12);
 
-                cycleThreeCenters(CenterInd.R_B.ordinal(),
-                    CenterInd.B_L.ordinal(),
-                    CenterInd.L_R.ordinal());
+                cycleThreeCenters(16,
+                    19,
+                    13);
                 break;
             case DP:
-                cycleCorners(Corner.D_L.ordinal(),
-                    Corner.D_B.ordinal(),
-                    Corner.D_R.ordinal());
+                cycleCorners(3,
+                    5,
+                    4);
 
-                cycleEdges(Edge.D_F.ordinal(),
-                    Edge.D_BL.ordinal(),
-                    Edge.D_BR.ordinal());
+                cycleEdges(9,
+                    11,
+                    10);
 
-                cycleThreeCenters(CenterInd.D_L.ordinal(),
-                    CenterInd.D_B.ordinal(),
-                    CenterInd.D_R.ordinal());
+                cycleThreeCenters(21,
+                    23,
+                    22);
 
-                cycleThreeCenters(CenterInd.F_BL.ordinal(),
-                    CenterInd.BL_BR.ordinal(),
-                    CenterInd.BR_F.ordinal());
+                cycleThreeCenters(5,
+                    11,
+                    8);
 
-                cycleThreeCenters(CenterInd.F_BR.ordinal(),
-                    CenterInd.BL_F.ordinal(),
-                    CenterInd.BR_BL.ordinal());
+                cycleThreeCenters(4,
+                    10,
+                    7);
                 break;
             case FP:
-                cycleCorners(Corner.U_F.ordinal(),
-                    Corner.D_L.ordinal(),
-                    Corner.D_R.ordinal());
+                cycleCorners(2,
+                    3,
+                    4);
 
-                twistCorner(Corner.U_F.ordinal(), 1);
-                twistCorner(Corner.D_R.ordinal(), 2);
-                twistCorner(Corner.D_L.ordinal(), 1);
+                twistCorner(2, 1);
+                twistCorner(4, 2);
+                twistCorner(3, 1);
 
-                cycleEdges(Edge.F_R.ordinal(),
-                    Edge.F_L.ordinal(),
-                    Edge.D_F.ordinal());
+                cycleEdges(4,
+                    3,
+                    9);
 
-                cycleThreeCenters(CenterInd.F_U.ordinal(),
-                    CenterInd.F_BL.ordinal(),
-                    CenterInd.F_BR.ordinal());
+                cycleThreeCenters(3,
+                    5,
+                    4);
 
-                cycleThreeCenters(CenterInd.L_R.ordinal(),
-                    CenterInd.D_L.ordinal(),
-                    CenterInd.R_D.ordinal());
+                cycleThreeCenters(13,
+                    21,
+                    17);
 
-                cycleThreeCenters(CenterInd.R_L.ordinal(),
-                    CenterInd.L_D.ordinal(),
-                    CenterInd.D_R.ordinal());
+                cycleThreeCenters(15,
+                    14,
+                    22);
                 break;
             case BP:
-                cycleCorners(Corner.U_R.ordinal(),
-                    Corner.D_B.ordinal(),
-                    Corner.U_L.ordinal());
+                cycleCorners(1,
+                    5,
+                    0);
 
-                twistCorner(Corner.U_R.ordinal(), 2);
-                twistCorner(Corner.U_L.ordinal(), 1);
-                twistCorner(Corner.D_B.ordinal(), 1);
+                twistCorner(1, 2);
+                twistCorner(0, 1);
+                twistCorner(5, 1);
 
-                cycleEdges(Edge.U_B.ordinal(),
-                    Edge.B_BR.ordinal(),
-                    Edge.B_BL.ordinal());
+                cycleEdges(0,
+                    7,
+                    6);
 
-                cycleThreeCenters(CenterInd.B_R.ordinal(),
-                    CenterInd.B_D.ordinal(),
-                    CenterInd.B_L.ordinal());
+                cycleThreeCenters(18,
+                    20,
+                    19);
 
-                cycleThreeCenters(CenterInd.U_BR.ordinal(),
-                    CenterInd.BR_BL.ordinal(),
-                    CenterInd.BL_U.ordinal());
+                cycleThreeCenters(1,
+                    7,
+                    9);
 
-                cycleThreeCenters(CenterInd.U_BL.ordinal(),
-                    CenterInd.BR_U.ordinal(),
-                    CenterInd.BL_BR.ordinal());
+                cycleThreeCenters(0,
+                    6,
+                    11);
                 break;
             case BRP:
-                cycleCorners(Corner.U_R.ordinal(),
-                    Corner.D_R.ordinal(),
-                    Corner.D_B.ordinal());
+                cycleCorners(1,
+                    4,
+                    5);
 
-                twistCorner(Corner.U_R.ordinal(), 1);
-                twistCorner(Corner.D_B.ordinal(), 2);
-                twistCorner(Corner.D_R.ordinal(), 1);
+                twistCorner(1, 1);
+                twistCorner(5, 2);
+                twistCorner(4, 1);
 
-                cycleEdges(Edge.R_BR.ordinal(),
-                    Edge.D_BR.ordinal(),
-                    Edge.B_BR.ordinal());
+                cycleEdges(5,
+                    10,
+                    7);
 
-                cycleThreeCenters(CenterInd.BR_U.ordinal(),
-                    CenterInd.BR_F.ordinal(),
-                    CenterInd.BR_BL.ordinal());
+                cycleThreeCenters(6,
+                    8,
+                    7);
 
-                cycleThreeCenters(CenterInd.R_B.ordinal(),
-                    CenterInd.D_R.ordinal(),
-                    CenterInd.B_D.ordinal());
+                cycleThreeCenters(16,
+                    22,
+                    20);
 
-                cycleThreeCenters(CenterInd.R_D.ordinal(),
-                    CenterInd.D_B.ordinal(),
-                    CenterInd.B_R.ordinal());
+                cycleThreeCenters(17,
+                    23,
+                    18);
                 break;
             case BLP:
-                cycleCorners(Corner.U_L.ordinal(),
-                    Corner.D_B.ordinal(),
-                    Corner.D_L.ordinal());
+                cycleCorners(0,
+                    5,
+                    3);
 
-                twistCorner(Corner.U_L.ordinal(), 1);
-                twistCorner(Corner.D_L.ordinal(), 2);
-                twistCorner(Corner.D_B.ordinal(), 1);
+                twistCorner(0, 1);
+                twistCorner(3, 2);
+                twistCorner(5, 1);
 
-                cycleEdges(Edge.L_BL.ordinal(),
-                    Edge.B_BL.ordinal(),
-                    Edge.D_BL.ordinal());
+                cycleEdges(8,
+                    6,
+                    11);
 
-                cycleThreeCenters(CenterInd.BL_U.ordinal(),
-                    CenterInd.BL_BR.ordinal(),
-                    CenterInd.BL_F.ordinal());
+                cycleThreeCenters(9,
+                    11,
+                    10);
 
-                cycleThreeCenters(CenterInd.B_L.ordinal(),
-                    CenterInd.D_B.ordinal(),
-                    CenterInd.L_D.ordinal());
+                cycleThreeCenters(19,
+                    23,
+                    14);
 
-                cycleThreeCenters(CenterInd.L_B.ordinal(),
-                    CenterInd.B_D.ordinal(),
-                    CenterInd.D_L.ordinal());
+                cycleThreeCenters(12,
+                    20,
+                    21);
                 break;
         }
     }
