@@ -595,6 +595,9 @@ public class FtoSearch {
             for (String phaseOneCandidate : candidates){
                 int depthForSearch = Math.max(0, depth-algLen(phaseOneCandidate));
 
+                if (depthForSearch == 0)
+                    continue;
+
                 FullFto copy = new FullFto(fto);
                 copy.parseAlg(phaseOneCandidate);
                 copy.clearMoveStack();
@@ -846,6 +849,6 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(25);
+        performanceTest(100);
     }
 }
