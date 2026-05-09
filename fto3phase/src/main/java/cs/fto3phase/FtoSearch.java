@@ -21,7 +21,7 @@ import static cs.fto3phase.FullFto.Move;
 public class FtoSearch {
 
     //Depths at which the pruning tables are set to
-    private static final int PHASE_ONE_PRUNING_DEPTH = 4;
+    private static final int PHASE_ONE_PRUNING_DEPTH = 6;
     private static final int PHASE_TWO_PRUNING_DEPTH = 8;
     private static final int PHASE_THREE_PRUNING_DEPTH = 4;
 
@@ -30,7 +30,7 @@ public class FtoSearch {
      * Important value!
      * The higher the value, the slower the search, and the shorter the solution
      */
-    private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
+    private static int PHASE_ONE_CANDIDATE_LIMIT = 5000;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
@@ -70,12 +70,12 @@ public class FtoSearch {
      * Thresholds to prune at for logistic pruning index=depth
      */
     public static double[] THRESHOLDS = {
-        0.986641027960064,
-        0.961649420842541,
-        0.894885223305345,
-        0.742958928062686,
-        0.495291928080875,
-        0.249914082445017,
+        0.25,
+        0.24,
+        0.23,
+        0.22,
+        0.21,
+        0.2,
         0.101624061096067,
         0.036985375660089,
         0.012871511674730,
@@ -257,6 +257,11 @@ public class FtoSearch {
             if (fto.isRepetition(move))
                 continue;
 
+            if (fto.historyLength() == 0 && move != Move.F && move != Move.FP &&
+                                            move != Move.BR && move != Move.BRP &&
+                                            move != Move.BL && move != Move.BLP)
+                continue;
+
             fto.turn(move);
             phaseOnePruningSearch(depth-1, fto);
             fto.undo();
@@ -377,7 +382,9 @@ public class FtoSearch {
             //The performance of the solver is significantly better
             //when the phase 1 candidates are "spread out" (not too similar to each other)
             //so Nodes % n == 0 is a pseudo-random number generator which does that.
-            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && nodes % 5 == 0){
+            double p = logisticRegression(fto, 19-fto.historyLength());
+
+            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > 0.5){
                 state.solution[0] = fto.history();
                 candidates.add(fto.history());
             }
@@ -449,16 +456,12 @@ public class FtoSearch {
 
         //Logistic Regression model determines the likelihood of the current subtree having a solution
         //Subtrees that are unlikely to have a solution are cut
-        if (depth > 8 && depth < 20 && ply > 0){
+        if (depth > PHASE_TWO_PRUNING_DEPTH && depth < 20 && ply > 0){
             int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
             if (tripleLookup == 25)
                 tripleLookup = 10;
 
-            double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double)fto.triplePairCount() + BETAS[depth][2] * (float)edgeLookup + BETAS[depth][3] * (float)tripleLookup;
-
-            double odds = Math.pow(2.71828182846, logOdds);
-
-            double p = odds/(1+odds);
+            double p = logisticRegression(depth, fto, edgeLookup, tripleLookup);
 
             if (p < THRESHOLDS[depth-8])
                 return false;
@@ -498,6 +501,21 @@ public class FtoSearch {
         }
 
         return false;
+    }
+
+    private static double logisticRegression(int depth, FullFto fto, int edgeLookup, int tripleLookup) {
+        double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double) fto.triplePairCount() + BETAS[depth][2] * (double)edgeLookup + BETAS[depth][3] * (double)tripleLookup;
+
+        double odds = Math.pow(2.71828182846, logOdds);
+
+        return odds/(1+odds);
+    }
+
+    private static double logisticRegression(FullFto fto, int depth) {
+        int tripleLookup = phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()];
+        if (tripleLookup == 25)
+            tripleLookup = 10;
+        return logisticRegression(depth, fto, phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()], tripleLookup);
     }
 
     /**
@@ -561,17 +579,23 @@ public class FtoSearch {
 
         ArrayList<String> candidates = new ArrayList<>();
 
+        long startTime = System.currentTimeMillis();
+
         //Run IDA* search for phase 1
         for (int depth = 0; depth < 100; depth++) {
-            boolean foundSolution = searchPhaseOne(depth, state, candidates, fto);
+            boolean foundEnoughSolutions = searchPhaseOne(depth, state, candidates, fto);
 
-            if (foundSolution)
+            if (foundEnoughSolutions)
                 break;
 
             if (depth == 99){
                 throw new RuntimeException("Could not find FTO Phase 1 solution");
             }
         }
+
+        long endTime = System.currentTimeMillis();
+        long totalTime = endTime - startTime;
+//        System.out.println("FTO Phase 1 solution time: " + totalTime + " ms");
 
         //Run IDA* with pruning heuristics for phase 2
         for (int depth = 0; depth < 100; depth++) {
@@ -711,13 +735,17 @@ public class FtoSearch {
             String s = search.solution(fto);
             totalNodes += (long)search.nodes;
 
+            System.out.println(s);
+
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
 
             System.out.println("NEW," + (duration / 1_000_000));
             totalTime += duration;
+            totalMoves += s.split(" ").length;
         }
 
+        System.out.println("Average Moves: " + (double)totalMoves / (double)num);
         return totalNodes;
     }
 
@@ -829,6 +857,6 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(500);
+        performanceTest(50);
     }
 }
