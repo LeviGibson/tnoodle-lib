@@ -449,6 +449,32 @@ public class FullFto {
         return hash;
     }
 
+    private long phaseTwoCenterHash(){
+        long hash = 0;
+        short[] centers = this.centers;
+        long[] rKeys = PHASE2_CENTER_KEYS[CenterOrd.R.id];
+        long[] lKeys = PHASE2_CENTER_KEYS[CenterOrd.L.id];
+        long[] bKeys = PHASE2_CENTER_KEYS[CenterOrd.B.id];
+
+        for (int i = 0; i < 24; i++) {
+            switch (centers[i]) {
+                case 5:
+                    hash ^= rKeys[i];
+                    break;
+                case 4:
+                    hash ^= lKeys[i];
+                    break;
+                case 6:
+                    hash ^= bKeys[i];
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return hash;
+    }
+
     /**
      * Static helper function
      */
@@ -629,11 +655,7 @@ public class FullFto {
      * @return hash
      */
     public long phaseTwoCentersHash(){
-        long hash = 0;
-
-        hash ^= centerHash(CenterOrd.R);
-        hash ^= centerHash(CenterOrd.L);
-        hash ^= centerHash(CenterOrd.B);
+        long hash = phaseTwoCenterHash();
 
         hash ^= edgeHash(CenterOrd.R);
         hash ^= edgeHash(CenterOrd.L);

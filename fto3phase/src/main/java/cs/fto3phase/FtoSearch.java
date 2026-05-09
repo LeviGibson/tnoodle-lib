@@ -452,21 +452,6 @@ public class FtoSearch {
             }
         }
 
-        int ply = fto.historyLength();
-
-        //Logistic Regression model determines the likelihood of the current subtree having a solution
-        //Subtrees that are unlikely to have a solution are cut
-        if (depth > PHASE_TWO_PRUNING_DEPTH && depth < 20 && ply > 0){
-            int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
-            if (tripleLookup == 25)
-                tripleLookup = 10;
-
-            double p = logisticRegression(depth, fto, edgeLookup, tripleLookup);
-
-            if (p < THRESHOLDS[depth-8])
-                return false;
-        }
-
         //IDA* lookup
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
             HashSet<Long> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
