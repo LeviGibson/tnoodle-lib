@@ -122,6 +122,7 @@ public class FullFto {
      * @param i3 third index
      */
     private void cycleCorners(int i1, int i2, int i3){
+        int[] corners = this.corners;
         int tmp = corners[i3];
         corners[i3] = corners[i2];
         corners[i2] = corners[i1];
@@ -135,6 +136,7 @@ public class FullFto {
      * @param i3 third index
      */
     private void cycleEdges(int i1, int i2, int i3){
+        int[] edges = this.edges;
         int tmp = edges[i3];
         edges[i3] = edges[i2];
         edges[i2] = edges[i1];
@@ -148,11 +150,13 @@ public class FullFto {
      * @param i3 third index
      */
     private void cycleThreeCenters(int i1, int i2, int i3){
+        int[] centers = this.centers;
         int tmp = centers[i3];
         centers[i3] = centers[i2];
         centers[i2] = centers[i1];
         centers[i1] = tmp;
 
+        int[] centerIndices = this.centerIndices;
         tmp = centerIndices[i3];
         centerIndices[i3] = centerIndices[i2];
         centerIndices[i2] = centerIndices[i1];
@@ -160,18 +164,21 @@ public class FullFto {
     }
 
     private void swapCorners(int i1, int i2){
+        int[] corners = this.corners;
         int tmp = corners[i2];
         corners[i2] = corners[i1];
         corners[i1] = tmp;
     }
 
     private void swapEdges(int i1, int i2){
+        int[] edges = this.edges;
         int tmp = edges[i2];
         edges[i2] = edges[i1];
         edges[i1] = tmp;
     }
 
     private void swapCenters(int i1, int i2){
+        int[] centers = this.centers;
         int tmp = centers[i2];
         centers[i2] = centers[i1];
         centers[i1] = tmp;
@@ -184,7 +191,8 @@ public class FullFto {
      * @param dir direction (1=clockwise, 2=180 degrees, 3=counterClockwise)
      */
     private void twistCorner(int i, int dir){
-        corners[i] = encodeCorner(getCornerIndex(corners[i]), (getCornerOrientation(corners[i])+dir)%4);
+        int corner = corners[i];
+        corners[i] = (corner & ~0b11) | ((corner + dir) & 0b11);
     }
 
     /**
