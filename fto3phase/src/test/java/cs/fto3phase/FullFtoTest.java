@@ -649,7 +649,7 @@ public class FullFtoTest {
     }
 
     private static int pairwisePhaseTwoEdgeIndex(FullFto state) throws Exception {
-        int[] edges = edgesOf(state);
+        short[] edges = edgesOf(state);
         int index = 0;
         for (int i = 0; i < 8; i++) {
             int smaller = 0;
@@ -663,14 +663,14 @@ public class FullFtoTest {
         return index / 2;
     }
 
-    private static int[] edgesOf(FullFto state) throws Exception {
+    private static short[] edgesOf(FullFto state) throws Exception {
         Field edgesField = FullFto.class.getDeclaredField("edges");
         edgesField.setAccessible(true);
-        return (int[]) edgesField.get(state);
+        return (short[]) edgesField.get(state);
     }
 
     private static int multinomialPhaseTwoCenterIndex(FullFto state) throws Exception {
-        int[] centers = centersOf(state);
+        short[] centers = centersOf(state);
         int[] c = new int[9];
 
         for (int i = 0; i < 9; i++) {
@@ -711,22 +711,22 @@ public class FullFtoTest {
         return FACTORIAL[n] / (FACTORIAL[a] * FACTORIAL[b] * FACTORIAL[c]);
     }
 
-    private static int[] centersOf(FullFto state) throws Exception {
+    private static short[] centersOf(FullFto state) throws Exception {
         Field centersField = FullFto.class.getDeclaredField("centers");
         centersField.setAccessible(true);
-        return (int[]) centersField.get(state);
+        return (short[]) centersField.get(state);
     }
 
-    private static int[] cornersOf(FullFto state) throws Exception {
+    private static short[] cornersOf(FullFto state) throws Exception {
         Field cornersField = FullFto.class.getDeclaredField("corners");
         cornersField.setAccessible(true);
-        return (int[]) cornersField.get(state);
+        return (short[]) cornersField.get(state);
     }
 
-    private static int[] centerIndicesOf(FullFto state) throws Exception {
+    private static short[] centerIndicesOf(FullFto state) throws Exception {
         Field centerIndicesField = FullFto.class.getDeclaredField("centerIndices");
         centerIndicesField.setAccessible(true);
-        return (int[]) centerIndicesField.get(state);
+        return (short[]) centerIndicesField.get(state);
     }
 
     private static void assertStateEquals(ReferenceState expected, FullFto actual, String context) throws Exception {
@@ -737,21 +737,21 @@ public class FullFtoTest {
     }
 
     private static final class ReferenceState {
-        final int[] corners = new int[6];
-        final int[] edges = new int[12];
-        final int[] centers = new int[24];
-        final int[] centerIndices = new int[24];
+        final short[] corners = new short[6];
+        final short[] edges = new short[12];
+        final short[] centers = new short[24];
+        final short[] centerIndices = new short[24];
 
         ReferenceState() {
             for (int i = 0; i < corners.length; i++) {
-                corners[i] = i << 2;
+                corners[i] = (short) (i << 2);
             }
             for (int i = 0; i < edges.length; i++) {
-                edges[i] = i;
+                edges[i] = (short) i;
             }
             for (int i = 0; i < centers.length; i++) {
-                centers[i] = i / 3;
-                centerIndices[i] = i;
+                centers[i] = (short) (i / 3);
+                centerIndices[i] = (short) i;
             }
         }
 
@@ -885,21 +885,21 @@ public class FullFtoTest {
         }
 
         private void cycleCorners(int i1, int i2, int i3) {
-            int tmp = corners[i3];
+            short tmp = corners[i3];
             corners[i3] = corners[i2];
             corners[i2] = corners[i1];
             corners[i1] = tmp;
         }
 
         private void cycleEdges(int i1, int i2, int i3) {
-            int tmp = edges[i3];
+            short tmp = edges[i3];
             edges[i3] = edges[i2];
             edges[i2] = edges[i1];
             edges[i1] = tmp;
         }
 
         private void cycleCenters(int i1, int i2, int i3) {
-            int tmp = centers[i3];
+            short tmp = centers[i3];
             centers[i3] = centers[i2];
             centers[i2] = centers[i1];
             centers[i1] = tmp;
@@ -911,7 +911,7 @@ public class FullFtoTest {
         }
 
         private void twist(int i, int dir) {
-            corners[i] = (corners[i] & ~0b11) | ((corners[i] + dir) & 0b11);
+            corners[i] = (short) ((corners[i] & ~0b11) | ((corners[i] + dir) & 0b11));
         }
     }
 

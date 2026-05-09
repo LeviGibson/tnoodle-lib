@@ -17,13 +17,13 @@ public class FullFto {
 
     //Corner has permutation and orientation encoded within int
     //Use methods encodeCorner, getCornerIndex, and getCornerOrientation
-    private final int[] corners = new int[6];
+    private final short[] corners = new short[6];
     //Only permutation (FTO edges cannot be flipped)
-    private final int[] edges = new int[12];
+    private final short[] edges = new short[12];
     //Only permutation
-    private final int[] centers = new int[24];
+    private final short[] centers = new short[24];
     //Used for pruning table generation
-    private final int[] centerIndices = new int[24];
+    private final short[] centerIndices = new short[24];
 
     //History of moves applied to the FTO
     //Cleared before search
@@ -82,20 +82,20 @@ public class FullFto {
     }
 
     //Solved state saved for speed
-    private static final int[] SOLVED_CORNERS = new int[6];
-    private static final int[] SOLVED_EDGES = new int[12];
-    private static final int[] SOLVED_CENTERS = new int[24];
+    private static final short[] SOLVED_CORNERS = new short[6];
+    private static final short[] SOLVED_EDGES = new short[12];
+    private static final short[] SOLVED_CENTERS = new short[24];
     static{
         //Initialize to solved state
         for (int i = 0; i < 6; i++) {
-            SOLVED_CORNERS[i] = encodeCorner(i, 0);
+            SOLVED_CORNERS[i] = (short) encodeCorner(i, 0);
         }
         for (int i = 0; i < 12; i++) {
-            SOLVED_EDGES[i] = i;
+            SOLVED_EDGES[i] = (short) i;
         }
         for (int i = 0; i < 24/3; i++) {
             for (int j = 0; j < 3; j++){
-                SOLVED_CENTERS[(i*3)+j] = i;
+                SOLVED_CENTERS[(i*3)+j] = (short) i;
             }
         }
     }
@@ -137,8 +137,8 @@ public class FullFto {
      * @param i3 third index
      */
     private void cycleCorners(int i1, int i2, int i3){
-        int[] corners = this.corners;
-        int tmp = corners[i3];
+        short[] corners = this.corners;
+        short tmp = corners[i3];
         corners[i3] = corners[i2];
         corners[i2] = corners[i1];
         corners[i1] = tmp;
@@ -151,8 +151,8 @@ public class FullFto {
      * @param i3 third index
      */
     private void cycleEdges(int i1, int i2, int i3){
-        int[] edges = this.edges;
-        int tmp = edges[i3];
+        short[] edges = this.edges;
+        short tmp = edges[i3];
         edges[i3] = edges[i2];
         edges[i2] = edges[i1];
         edges[i1] = tmp;
@@ -165,13 +165,13 @@ public class FullFto {
      * @param i3 third index
      */
     private void cycleThreeCenters(int i1, int i2, int i3){
-        int[] centers = this.centers;
-        int tmp = centers[i3];
+        short[] centers = this.centers;
+        short tmp = centers[i3];
         centers[i3] = centers[i2];
         centers[i2] = centers[i1];
         centers[i1] = tmp;
 
-        int[] centerIndices = this.centerIndices;
+        short[] centerIndices = this.centerIndices;
         tmp = centerIndices[i3];
         centerIndices[i3] = centerIndices[i2];
         centerIndices[i2] = centerIndices[i1];
@@ -179,22 +179,22 @@ public class FullFto {
     }
 
     private void swapCorners(int i1, int i2){
-        int[] corners = this.corners;
-        int tmp = corners[i2];
+        short[] corners = this.corners;
+        short tmp = corners[i2];
         corners[i2] = corners[i1];
         corners[i1] = tmp;
     }
 
     private void swapEdges(int i1, int i2){
-        int[] edges = this.edges;
-        int tmp = edges[i2];
+        short[] edges = this.edges;
+        short tmp = edges[i2];
         edges[i2] = edges[i1];
         edges[i1] = tmp;
     }
 
     private void swapCenters(int i1, int i2){
-        int[] centers = this.centers;
-        int tmp = centers[i2];
+        short[] centers = this.centers;
+        short tmp = centers[i2];
         centers[i2] = centers[i1];
         centers[i1] = tmp;
     }
@@ -207,7 +207,7 @@ public class FullFto {
      */
     private void twistCorner(int i, int dir){
         int corner = corners[i];
-        corners[i] = (corner & ~0b11) | ((corner + dir) & 0b11);
+        corners[i] = (short) ((corner & ~0b11) | ((corner + dir) & 0b11));
     }
 
     /**
@@ -463,6 +463,13 @@ public class FullFto {
      * Static helper function
      */
     private static int indexOf(int[] arr, int target) {
+        for (int i = 0; i < arr.length; i++) {
+            if (target == arr[i]) return i;
+        }
+        return -1;
+    }
+
+    private static int indexOf(short[] arr, int target) {
         for (int i = 0; i < arr.length; i++) {
             if (target == arr[i]) return i;
         }
@@ -740,20 +747,20 @@ public class FullFto {
     public FullFto() {
         //Initialize to solved state
         for (int i = 0; i < 6; i++) {
-            corners[i] = encodeCorner(i, 0);
+            corners[i] = (short) encodeCorner(i, 0);
         }
         for (int i = 0; i < 12; i++) {
-            edges[i] = i;
+            edges[i] = (short) i;
         }
 
         for (int i = 0; i < 24/3; i++) {
             for (int j = 0; j < 3; j++){
-                centers[(i*3)+j] = i;
+                centers[(i*3)+j] = (short) i;
             }
         }
 
         for (int i = 0; i < 24; i++) {
-            centerIndices[i] = i;
+            centerIndices[i] = (short) i;
         }
 
         moveStack = new Stack<>();
