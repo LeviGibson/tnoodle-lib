@@ -30,9 +30,9 @@ public class FtoSearch {
      * Important value!
      * The higher the value, the slower the search, and the shorter the solution
      */
-    private static int PHASE_ONE_CANDIDATE_LIMIT = 1500;
-    private static double PHASE_ONE_CANDIDATE_THREASHOLD = 0.15;
-    private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
+    private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
+    private static double PHASE_ONE_CANDIDATE_THREASHOLD = 0.1;
+    private static final int PHASE_TWO_CANDIDATE_LIMIT = 50;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
@@ -81,10 +81,10 @@ public class FtoSearch {
         0.101624061096067,
         0.036985375660089,
         0.012871511674730,
+        0.004407539222975,
+        0.001500793803529,
+        0.000510047301430,
     };
-
-
-
 
     /**
      * Moves allowed during Phase 1 -> Phase 2
