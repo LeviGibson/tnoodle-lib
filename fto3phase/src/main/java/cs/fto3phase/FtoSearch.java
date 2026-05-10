@@ -30,7 +30,8 @@ public class FtoSearch {
      * Important value!
      * The higher the value, the slower the search, and the shorter the solution
      */
-    private static int PHASE_ONE_CANDIDATE_LIMIT = 5000;
+    private static int PHASE_ONE_CANDIDATE_LIMIT = 1500;
+    private static double PHASE_ONE_CANDIDATE_THREASHOLD = 0.15;
     private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
 
     //Pruning tables
@@ -395,7 +396,7 @@ public class FtoSearch {
             //so Nodes % n == 0 is a pseudo-random number generator which does that.
             double p = logisticRegression(fto, 19-fto.historyLength());
 
-            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > 0.25){
+            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > PHASE_ONE_CANDIDATE_THREASHOLD){
                 state.solution[0] = fto.history();
                 candidates.add(new FullFto(fto));
             }
