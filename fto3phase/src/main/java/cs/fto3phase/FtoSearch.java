@@ -31,6 +31,7 @@ public class FtoSearch {
      * The higher the value, the slower the search, and the shorter the solution
      */
     private static int PHASE_ONE_CANDIDATE_LIMIT = 5000;
+    private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
@@ -70,19 +71,19 @@ public class FtoSearch {
      * Thresholds to prune at for logistic pruning index=depth
      */
     public static double[] THRESHOLDS = {
-        0.25,
-        0.24,
-        0.23,
-        0.22,
-        0.21,
-        0.2,
+        0.986641027960064,
+        0.961649420842541,
+        0.894885223305345,
+        0.742958928062686,
+        0.495291928080875,
+        0.249914082445017,
         0.101624061096067,
         0.036985375660089,
         0.012871511674730,
-        0.004407539222975,
-        0.001500793803529,
-        0.000510047301430,
     };
+
+
+
 
     /**
      * Moves allowed during Phase 1 -> Phase 2
@@ -365,6 +366,16 @@ public class FtoSearch {
         String[] solution = new String[3];
     }
 
+    private static class PhaseTwoCandidate {
+        FullFto phaseOneSolution;
+        FullFto phaseTwoSolution;
+
+        PhaseTwoCandidate(FullFto phaseOneSolution, FullFto phaseTwoSolution) {
+            this.phaseOneSolution = phaseOneSolution;
+            this.phaseTwoSolution = phaseTwoSolution;
+        }
+    }
+
 
     /**
      * Simple IDA* algorithm for solving Phase 1 (AKA. the bottom center)
@@ -372,7 +383,7 @@ public class FtoSearch {
      * @param fto fto
      * @return Found solution? t/f
      */
-    private boolean searchPhaseOne(int depth, State state, ArrayList<String> candidates, FullFto fto){
+    private boolean searchPhaseOne(int depth, State state, ArrayList<FullFto> candidates, FullFto fto){
         nodes++;
 
         if (fto.isPhaseOne()){
@@ -384,9 +395,9 @@ public class FtoSearch {
             //so Nodes % n == 0 is a pseudo-random number generator which does that.
             double p = logisticRegression(fto, 19-fto.historyLength());
 
-            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > 0.5){
+            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > 0.25){
                 state.solution[0] = fto.history();
-                candidates.add(fto.history());
+                candidates.add(new FullFto(fto));
             }
 
             return candidates.size() >= PHASE_ONE_CANDIDATE_LIMIT;
@@ -428,12 +439,13 @@ public class FtoSearch {
      * @param fto fto
      * @return Found solution? t/f
      */
-    private boolean searchPhaseTwo(int depth, State state, FullFto fto){
+    private boolean searchPhaseTwo(int depth, State state, ArrayList<FullFto> candidates, FullFto fto){
         nodes++;
 
         if (fto.isPhaseTwo()){
             state.solution[1] = fto.history();
-            return true;
+            candidates.add(new FullFto(fto));
+            return candidates.size() >= PHASE_TWO_CANDIDATE_LIMIT;
         }
 
         if (depth == 0){
@@ -450,6 +462,22 @@ public class FtoSearch {
             if (centerLookup > depth) {
                 return false;
             }
+        }
+
+        int ply = fto.historyLength();
+        //Logistic Regression model determines the likelihood of the current subtree having a solution
+        //Subtrees that are unlikely to have a solution are cut
+        if (depth > PHASE_TWO_PRUNING_DEPTH && depth < 20 && ply > 0){
+
+            int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+
+
+            if (tripleLookup == 25)
+                tripleLookup = 10;
+
+            double p = logisticRegression(depth, fto, edgeLookup, tripleLookup);
+            if (p < THRESHOLDS[depth-8])
+                return false;
         }
 
         //IDA* lookup
@@ -478,7 +506,7 @@ public class FtoSearch {
                 continue;
 
             fto.turn(move);
-            boolean foundSolution = searchPhaseTwo(depth-1, state, fto);
+            boolean foundSolution = searchPhaseTwo(depth-1, state, candidates, fto);
             fto.undo();
 
             if (foundSolution)
@@ -544,25 +572,15 @@ public class FtoSearch {
     }
 
     private int algLen(String alg){
-        return alg.split(" ").length;
+        if (alg == null || alg.trim().isEmpty()) {
+            return 0;
+        }
+        return alg.trim().split("\\s+").length;
     }
 
-
-    /**
-     * Finds a solution for the supplied FTO state.
-     *
-     * @param fto state to solve
-     * @return solution algorithm with TNoodle-compatible move names
-     */
-    public String solution(FullFto fto){
-        fto = new FullFto(fto); // Make a copy
-        nodes = 0;
-
-        fto.clearMoveStack();
-
+    private ArrayList<FullFto> solvePhaseOneCandidates(FullFto fto) {
         State state = new State();
-
-        ArrayList<String> candidates = new ArrayList<>();
+        ArrayList<FullFto> candidates = new ArrayList<>();
 
         long startTime = System.currentTimeMillis();
 
@@ -582,54 +600,115 @@ public class FtoSearch {
         long totalTime = endTime - startTime;
 //        System.out.println("FTO Phase 1 solution time: " + totalTime + " ms");
 
-        //Run IDA* with pruning heuristics for phase 2
-        for (int depth = 0; depth < 100; depth++) {
-            boolean foundSolution = false;
+        return candidates;
+    }
 
-            for (String phaseOneCandidate : candidates){
-                int depthForSearch = Math.max(0, depth-algLen(phaseOneCandidate));
+    private ArrayList<PhaseTwoCandidate> solvePhaseTwoCandidates(ArrayList<FullFto> candidates) {
+        State state = new State();
+        ArrayList<PhaseTwoCandidate> phaseTwoCandidates = new ArrayList<>();
+
+        for (int depth = 0; depth < 100; depth++) {
+            for (FullFto phaseOneCandidate : candidates){
+                int depthForSearch = Math.max(0, depth-phaseOneCandidate.historyLength());
 
                 if (depthForSearch == 0)
                     continue;
 
-                FullFto copy = new FullFto(fto);
-                copy.parseAlg(phaseOneCandidate);
+                FullFto copy = new FullFto(phaseOneCandidate);
                 copy.clearMoveStack();
 
-                foundSolution = searchPhaseTwo(depthForSearch, state, copy);
+                ArrayList<FullFto> phaseTwoCandidateSolutions = new ArrayList<>();
+                boolean foundEnoughSolutions = searchPhaseTwo(depthForSearch, state, phaseTwoCandidateSolutions, copy);
 
-                if (foundSolution) {
-                    state.solution[0] = phaseOneCandidate;
-                    break;
+                for (FullFto phaseTwoCandidate : phaseTwoCandidateSolutions) {
+                    phaseTwoCandidates.add(new PhaseTwoCandidate(phaseOneCandidate, phaseTwoCandidate));
+                    if (phaseTwoCandidates.size() >= PHASE_TWO_CANDIDATE_LIMIT) {
+                        break;
+                    }
                 }
 
-                if (depth == 99){
-                    throw new RuntimeException("Could not find FTO Phase 2 solution");
+                if (foundEnoughSolutions || phaseTwoCandidates.size() >= PHASE_TWO_CANDIDATE_LIMIT) {
+                    break;
                 }
             }
 
-            if (foundSolution)
-                break;
-        }
-
-        fto.parseAlg(state.solution[0]);
-        fto.parseAlg(state.solution[1]);
-        fto.clearMoveStack();
-
-        //IDA* search for phase 3
-        for (int depth = 0; depth < 100; depth++) {
-            boolean foundSolution = searchPhaseThree(depth, state, fto);
-
-            if (foundSolution)
+            if (phaseTwoCandidates.size() >= PHASE_TWO_CANDIDATE_LIMIT)
                 break;
 
-            if (depth == 99){
+            if (depth == 99 && phaseTwoCandidates.isEmpty()){
                 throw new RuntimeException("Could not find FTO Phase 2 solution");
             }
         }
 
-        String s = state.solution[0] + state.solution[1] + state.solution[2];
-        return invertSolution(s);
+        return phaseTwoCandidates;
+    }
+
+    private String solvePhaseThreeBestCandidate(ArrayList<PhaseTwoCandidate> phaseTwoCandidates) {
+        String bestSolution = null;
+        int bestSolutionLength = Integer.MAX_VALUE;
+
+        for (PhaseTwoCandidate candidate : phaseTwoCandidates) {
+            FullFto copy = new FullFto(candidate.phaseTwoSolution);
+            copy.clearMoveStack();
+
+            State candidateState = new State();
+            candidateState.solution[0] = candidate.phaseOneSolution.history();
+            candidateState.solution[1] = candidate.phaseTwoSolution.history();
+
+            //IDA* search for phase 3
+            for (int depth = 0; depth < 100; depth++) {
+                boolean foundSolution = searchPhaseThree(depth, candidateState, copy);
+
+                if (foundSolution)
+                    break;
+
+                if (depth == 99){
+                    throw new RuntimeException("Could not find FTO Phase 3 solution");
+                }
+            }
+
+            String candidateSolution = candidateState.solution[0] + candidateState.solution[1] + candidateState.solution[2];
+            int candidateSolutionLength = algLen(candidateSolution);
+            if (candidateSolutionLength < bestSolutionLength) {
+                bestSolution = candidateSolution;
+                bestSolutionLength = candidateSolutionLength;
+            }
+        }
+
+        return bestSolution;
+    }
+
+
+    /**
+     * Finds a solution for the supplied FTO state.
+     *
+     * @param fto state to solve
+     * @return solution algorithm with TNoodle-compatible move names
+     */
+    public String solution(FullFto fto){
+        fto = new FullFto(fto); // Make a copy
+        nodes = 0;
+
+        fto.clearMoveStack();
+
+        long startTime = System.currentTimeMillis();
+        ArrayList<FullFto> candidates = solvePhaseOneCandidates(fto);
+        long endTime = System.currentTimeMillis();
+        long totalTime = endTime - startTime;
+//        System.out.println("Phase 1 Time: " + totalTime + " ms");
+
+        startTime = System.currentTimeMillis();
+        ArrayList<PhaseTwoCandidate> phaseTwoCandidates = solvePhaseTwoCandidates(candidates);
+        endTime = System.currentTimeMillis();
+        totalTime = endTime - startTime;
+//        System.out.println("Phase 2 Time: " + totalTime + " ms");
+
+        startTime = System.currentTimeMillis();
+        String bestSolution = solvePhaseThreeBestCandidate(phaseTwoCandidates);
+        endTime = System.currentTimeMillis();
+        totalTime = endTime - startTime;
+//        System.out.println("Phase 3 Time: " + totalTime + " ms");
+        return invertSolution(bestSolution);
     }
 
     private String invertSolution(String s) {
@@ -719,8 +798,6 @@ public class FtoSearch {
             FtoSearch search = new FtoSearch();
             String s = search.solution(fto);
             totalNodes += (long)search.nodes;
-
-            System.out.println(s);
 
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
@@ -842,6 +919,6 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(50);
+        performanceTest(100);
     }
 }
