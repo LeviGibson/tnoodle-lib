@@ -32,7 +32,7 @@ public class FtoSearch {
      */
     private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
     private static double PHASE_ONE_CANDIDATE_THREASHOLD = 0.1;
-    private static final int PHASE_TWO_CANDIDATE_LIMIT = 50;
+    private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
