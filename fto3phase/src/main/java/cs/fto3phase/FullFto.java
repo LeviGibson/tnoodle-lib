@@ -683,11 +683,7 @@ public class FullFto {
     public long phaseTwoHash(){
         long hash = 0;
 
-        for (int i = 12; i < 21; i++) {
-            int center = getCenterOrdinal(i);
-            assert (center == 5 || center == 4 || center == 6);
-            hash ^= PHASE2_CENTER_KEYS[center][i];
-        }
+        hash ^= (centers & 0b111111111111111111000000000000000000000000L);
 
         hash ^= edgeHash(CenterOrd.R);
         hash ^= edgeHash(CenterOrd.L);

@@ -907,7 +907,7 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(50);
+        performanceTest(500);
 //        FullFto fto = new FullFto();
 //        fto.parseAlg("R D L' B' L R B' L' F' R' L B' L' F L' D' F D R F L' BR' U B' R' U F U'");
 //        FtoSearch s =  new FtoSearch();
