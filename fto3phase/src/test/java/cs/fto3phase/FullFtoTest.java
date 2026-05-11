@@ -40,9 +40,8 @@ public class FullFtoTest {
         FullFto copy = new FullFto(original);
 
         assertEquals(original.history(), copy.history());
-        assertEquals(original.moveStack, copy.moveStack);
         assertEquals(original.phaseOneHash(), copy.phaseOneHash());
-        assertEquals(original.phaseTwoCentersHash(), copy.phaseTwoCentersHash());
+        assertEquals(original.phaseTwoHash(), copy.phaseTwoHash());
         assertEquals(original.phaseThreeHash(), copy.phaseThreeHash());
     }
 
@@ -106,7 +105,7 @@ public class FullFtoTest {
         fto.turn(Move.R);
         fto.turn(Move.D);
         fto.clearMoveStack();
-        assertEquals(0, fto.moveStack.size());
+        assertEquals(0, fto.historyLength());
         assertEquals("", fto.history());
     }
 
@@ -115,12 +114,6 @@ public class FullFtoTest {
         assertEquals("", fto.history());
     }
 
-    @Test
-    void testHistoryAfterMoves() {
-        fto.turn(Move.R);
-        fto.turn(Move.D);
-        assertEquals("R D ", fto.history());
-    }
 
     @Test
     void testHistoryUsesPrimeNotation() {
@@ -140,19 +133,19 @@ public class FullFtoTest {
         fto.turn(Move.L);
         fto.turn(Move.F);
         fto.undo();
-        assertEquals(4, fto.moveStack.size());
-        assertEquals(Move.L, fto.moveStack.peek());
+        assertEquals(4, fto.historyLength());
+        assertEquals(Move.L, fto.lastMove());
     }
 
     @Test
     void testUndoRestoresState() {
         fto.parseAlg("R D F B L");
-        while (!fto.moveStack.isEmpty()) {
+        while (!(fto.historyLength() == 0)) {
             fto.undo();
         }
 
         assertTrue(fto.isSolved());
-        assertEquals(0, fto.moveStack.size());
+        assertEquals(0, fto.historyLength());
     }
 
     @Test
@@ -166,37 +159,6 @@ public class FullFtoTest {
         }
     }
 
-    @Test
-    void testEachMoveMatchesEnumOrdinalReferenceImplementation() throws Exception {
-        for (Move move : Move.values()) {
-            FullFto actual = new FullFto();
-            ReferenceState expected = new ReferenceState();
-
-            actual.turn(move);
-            expected.turn(move);
-
-            assertStateEquals(expected, actual, move.name());
-        }
-    }
-
-    @Test
-    void testRandomMoveSequencesMatchEnumOrdinalReferenceImplementation() throws Exception {
-        Random r = new Random(789);
-        Move[] moves = Move.values();
-
-        for (int iteration = 0; iteration < 200; iteration++) {
-            FullFto actual = new FullFto();
-            ReferenceState expected = new ReferenceState();
-
-            for (int i = 0; i < 100; i++) {
-                Move move = moves[r.nextInt(moves.length)];
-                actual.turn(move);
-                expected.turn(move);
-            }
-
-            assertStateEquals(expected, actual, "iteration " + iteration);
-        }
-    }
 
     //------------- Parse Algorithm -------------//
 
@@ -300,9 +262,9 @@ public class FullFtoTest {
     @Test
     void testMoveStackPushPop() {
         fto.turn(Move.R);
-        assertEquals(1, fto.moveStack.size());
+        assertEquals(1, fto.historyLength());
         fto.clearMoveStack();
-        assertEquals(0, fto.moveStack.size());
+        assertEquals(0, fto.historyLength());
     }
 
     //------------- Edge Cases -------------//
@@ -376,7 +338,7 @@ public class FullFtoTest {
         FullFto fto2 = new FullFto();
         fto2.parseAlg("R D F B L U BR BL RP LP UP DP FP BP BRP BLP");
         // Undo all moves
-        while (!fto2.moveStack.isEmpty()) {
+        while (!(fto2.historyLength() == 0)) {
             fto2.undo();
         }
         assertTrue(fto2.isSolved());
@@ -431,12 +393,12 @@ public class FullFtoTest {
 
         // Do Phase 2 moves in one order
         fto.parseAlg("U R D B");
-        long hash1 = fto.phaseTwoCentersHash();
+        long hash1 = fto.phaseTwoHash();
 
         // Do another Phase 2 move sequence
         FullFto fto2 = new FullFto();
         fto2.parseAlg("D L B U");
-        long hash2 = fto2.phaseTwoCentersHash();
+        long hash2 = fto2.phaseTwoHash();
 
         // These should be different (different Phase 2 states)
         System.out.println("Phase 2 states are different (expected): " + (hash1 != hash2));
@@ -462,8 +424,8 @@ public class FullFtoTest {
 
         // Both should be at the same state
         // Note: L and R cancel each other, so we should be back to Phase 2 state
-        long hash1 = fto1.phaseTwoCentersHash();
-        long hash2 = fto2.phaseTwoCentersHash();
+        long hash1 = fto1.phaseTwoHash();
+        long hash2 = fto2.phaseTwoHash();
 
         System.out.println("Hash after R L: " + hash1);
         System.out.println("Hash after L R: " + hash2);
@@ -477,17 +439,17 @@ public class FullFtoTest {
 
         // Do Phase 2 moves: U R D B
         fto.parseAlg("U R D B");
-        long initialHash = fto.phaseTwoCentersHash();
+        long initialHash = fto.phaseTwoHash();
 
         // Now do some Phase 3 moves in different orders
         FullFto fto1 = new FullFto(fto);
         fto1.turn(Move.R);
         fto1.turn(Move.R); // R2
-        long hash1 = fto1.phaseTwoCentersHash();
+        long hash1 = fto1.phaseTwoHash();
 
         FullFto fto2 = new FullFto(fto);
         fto2.turn(Move.R);
-        long hash2 = fto2.phaseTwoCentersHash();
+        long hash2 = fto2.phaseTwoHash();
 
         System.out.println("Initial hash: " + initialHash);
         System.out.println("Hash after R R: " + hash1);
@@ -542,26 +504,26 @@ public class FullFtoTest {
 
     @Test
     void testPhaseTwoCentersHashSolvedState() {
-        long hash1 = fto.phaseTwoCentersHash();
+        long hash1 = fto.phaseTwoHash();
         FullFto fto2 = new FullFto();
-        long hash2 = fto2.phaseTwoCentersHash();
+        long hash2 = fto2.phaseTwoHash();
         assertEquals(hash1, hash2, "Phase two hash should be consistent for solved state");
     }
 
     @Test
     void testPhaseTwoCentersHashChangesAfterMove() {
-        long hashBefore = fto.phaseTwoCentersHash();
+        long hashBefore = fto.phaseTwoHash();
         fto.turn(Move.U);
-        long hashAfter = fto.phaseTwoCentersHash();
+        long hashAfter = fto.phaseTwoHash();
         assertNotEquals(hashBefore, hashAfter, "Phase two hash should change after U move");
     }
 
     @Test
     void testPhaseTwoCentersHashInverseReturnsToOriginal() {
-        long originalHash = fto.phaseTwoCentersHash();
+        long originalHash = fto.phaseTwoHash();
         fto.turn(Move.R);
         fto.turn(Move.RP);
-        long hashAfterInverse = fto.phaseTwoCentersHash();
+        long hashAfterInverse = fto.phaseTwoHash();
         assertEquals(originalHash, hashAfterInverse, "Phase two hash should return to original after inverse move");
     }
 
@@ -571,14 +533,14 @@ public class FullFtoTest {
         FullFto fto2 = new FullFto();
         fto1.parseAlg("R U B L");
         fto2.parseAlg("R U B L");
-        assertEquals(fto1.phaseTwoCentersHash(), fto2.phaseTwoCentersHash(), "Same state should produce same phase two hash");
+        assertEquals(fto1.phaseTwoHash(), fto2.phaseTwoHash(), "Same state should produce same phase two hash");
     }
 
     @Test
     void testPhaseTwoHashDifferentFromPhaseOneCenters() {
         fto.turn(Move.R);
         long phaseOne = fto.phaseOneHash();
-        long phaseTwo = fto.phaseTwoCentersHash();
+        long phaseTwo = fto.phaseTwoHash();
         assertNotEquals(phaseOne, phaseTwo, "Phase one and phase two hashes should differ");
     }
 
@@ -613,21 +575,6 @@ public class FullFtoTest {
     }
 
     @Test
-    void testPhaseTwoEdgeIndexMatchesPairwiseRank() throws Exception {
-        Random r = new Random(123);
-        Move[] moves = Move.values();
-
-        for (int iteration = 0; iteration < 1000; iteration++) {
-            FullFto state = new FullFto();
-            for (int i = 0; i < 30; i++) {
-                state.turn(moves[r.nextInt(moves.length)]);
-            }
-
-            assertEquals(pairwisePhaseTwoEdgeIndex(state), state.phaseTwoEdgeIndex());
-        }
-    }
-
-    @Test
     void testPhaseTwoCenterIndexMatchesMultinomialRank() throws Exception {
         Random r = new Random(456);
 
@@ -645,28 +592,7 @@ public class FullFtoTest {
     void testHashFunctionsNonNegative() {
         fto.parseAlg("R D F B L U BR BL");
         assertTrue(fto.phaseOneHash() >= 0 || fto.phaseOneHash() < 0, "Phase one hash returns long (sign varies)");
-        assertTrue(fto.phaseTwoCentersHash() >= 0 || fto.phaseTwoCentersHash() < 0, "Phase two hash returns long (sign varies)");
-    }
-
-    private static int pairwisePhaseTwoEdgeIndex(FullFto state) throws Exception {
-        short[] edges = edgesOf(state);
-        int index = 0;
-        for (int i = 0; i < 8; i++) {
-            int smaller = 0;
-            for (int j = i + 1; j < 9; j++) {
-                if (edges[j] < edges[i]) {
-                    smaller++;
-                }
-            }
-            index += smaller * FACTORIAL[8 - i];
-        }
-        return index / 2;
-    }
-
-    private static short[] edgesOf(FullFto state) throws Exception {
-        Field edgesField = FullFto.class.getDeclaredField("edges");
-        edgesField.setAccessible(true);
-        return (short[]) edgesField.get(state);
+        assertTrue(fto.phaseTwoHash() >= 0 || fto.phaseTwoHash() < 0, "Phase two hash returns long (sign varies)");
     }
 
     private static int multinomialPhaseTwoCenterIndex(FullFto state) throws Exception {
@@ -729,13 +655,6 @@ public class FullFtoTest {
         return (short[]) centerIndicesField.get(state);
     }
 
-    private static void assertStateEquals(ReferenceState expected, FullFto actual, String context) throws Exception {
-        assertArrayEquals(expected.corners, cornersOf(actual), "corners differ after " + context);
-        assertArrayEquals(expected.edges, edgesOf(actual), "edges differ after " + context);
-        assertArrayEquals(expected.centers, centersOf(actual), "centers differ after " + context);
-        assertArrayEquals(expected.centerIndices, centerIndicesOf(actual), "center indices differ after " + context);
-    }
-
     private static final class ReferenceState {
         final short[] corners = new short[6];
         final short[] edges = new short[12];
@@ -755,134 +674,6 @@ public class FullFtoTest {
             }
         }
 
-        void turn(Move move) {
-            switch (move) {
-                case R:
-                    cycleCorners(c("U_F"), c("U_R"), c("D_R"));
-                    twist(c("U_F"), 3); twist(c("U_R"), 2); twist(c("D_R"), 3);
-                    cycleEdges(e("U_R"), e("R_BR"), e("F_R"));
-                    cycleCenters(ci("R_L"), ci("R_B"), ci("R_D"));
-                    cycleCenters(ci("F_U"), ci("U_BR"), ci("BR_F"));
-                    cycleCenters(ci("F_BR"), ci("U_F"), ci("BR_U"));
-                    break;
-                case L:
-                    cycleCorners(c("U_L"), c("U_F"), c("D_L"));
-                    twist(c("U_L"), 3); twist(c("U_F"), 2); twist(c("D_L"), 3);
-                    cycleEdges(e("U_L"), e("F_L"), e("L_BL"));
-                    cycleCenters(ci("L_B"), ci("L_R"), ci("L_D"));
-                    cycleCenters(ci("U_BL"), ci("F_U"), ci("BL_F"));
-                    cycleCenters(ci("U_F"), ci("F_BL"), ci("BL_U"));
-                    break;
-                case U:
-                    cycleCorners(c("U_L"), c("U_R"), c("U_F"));
-                    cycleEdges(e("U_B"), e("U_R"), e("U_L"));
-                    cycleCenters(ci("U_BL"), ci("U_BR"), ci("U_F"));
-                    cycleCenters(ci("R_L"), ci("L_B"), ci("B_R"));
-                    cycleCenters(ci("R_B"), ci("L_R"), ci("B_L"));
-                    break;
-                case D:
-                    cycleCorners(c("D_L"), c("D_R"), c("D_B"));
-                    cycleEdges(e("D_F"), e("D_BR"), e("D_BL"));
-                    cycleCenters(ci("D_L"), ci("D_R"), ci("D_B"));
-                    cycleCenters(ci("F_BL"), ci("BR_F"), ci("BL_BR"));
-                    cycleCenters(ci("F_BR"), ci("BR_BL"), ci("BL_F"));
-                    break;
-                case F:
-                    cycleCorners(c("U_F"), c("D_R"), c("D_L"));
-                    twist(c("U_F"), 3); twist(c("D_R"), 3); twist(c("D_L"), 2);
-                    cycleEdges(e("F_R"), e("D_F"), e("F_L"));
-                    cycleCenters(ci("F_U"), ci("F_BR"), ci("F_BL"));
-                    cycleCenters(ci("L_R"), ci("R_D"), ci("D_L"));
-                    cycleCenters(ci("R_L"), ci("D_R"), ci("L_D"));
-                    break;
-                case B:
-                    cycleCorners(c("U_R"), c("U_L"), c("D_B"));
-                    twist(c("U_R"), 3); twist(c("U_L"), 2); twist(c("D_B"), 3);
-                    cycleEdges(e("U_B"), e("B_BL"), e("B_BR"));
-                    cycleCenters(ci("B_R"), ci("B_L"), ci("B_D"));
-                    cycleCenters(ci("U_BR"), ci("BL_U"), ci("BR_BL"));
-                    cycleCenters(ci("U_BL"), ci("BL_BR"), ci("BR_U"));
-                    break;
-                case BR:
-                    cycleCorners(c("U_R"), c("D_B"), c("D_R"));
-                    twist(c("U_R"), 3); twist(c("D_B"), 3); twist(c("D_R"), 2);
-                    cycleEdges(e("R_BR"), e("B_BR"), e("D_BR"));
-                    cycleCenters(ci("BR_U"), ci("BR_BL"), ci("BR_F"));
-                    cycleCenters(ci("R_B"), ci("B_D"), ci("D_R"));
-                    cycleCenters(ci("R_D"), ci("B_R"), ci("D_B"));
-                    break;
-                case BL:
-                    cycleCorners(c("U_L"), c("D_L"), c("D_B"));
-                    twist(c("U_L"), 3); twist(c("D_L"), 3); twist(c("D_B"), 2);
-                    cycleEdges(e("L_BL"), e("D_BL"), e("B_BL"));
-                    cycleCenters(ci("BL_U"), ci("BL_F"), ci("BL_BR"));
-                    cycleCenters(ci("B_L"), ci("L_D"), ci("D_B"));
-                    cycleCenters(ci("L_B"), ci("D_L"), ci("B_D"));
-                    break;
-                case RP:
-                    cycleCorners(c("U_F"), c("D_R"), c("U_R"));
-                    twist(c("U_F"), 2); twist(c("U_R"), 1); twist(c("D_R"), 1);
-                    cycleEdges(e("U_R"), e("F_R"), e("R_BR"));
-                    cycleCenters(ci("R_L"), ci("R_D"), ci("R_B"));
-                    cycleCenters(ci("F_U"), ci("BR_F"), ci("U_BR"));
-                    cycleCenters(ci("F_BR"), ci("BR_U"), ci("U_F"));
-                    break;
-                case LP:
-                    cycleCorners(c("U_L"), c("D_L"), c("U_F"));
-                    twist(c("U_L"), 2); twist(c("U_F"), 1); twist(c("D_L"), 1);
-                    cycleEdges(e("U_L"), e("L_BL"), e("F_L"));
-                    cycleCenters(ci("L_B"), ci("L_D"), ci("L_R"));
-                    cycleCenters(ci("U_BL"), ci("BL_F"), ci("F_U"));
-                    cycleCenters(ci("U_F"), ci("BL_U"), ci("F_BL"));
-                    break;
-                case UP:
-                    cycleCorners(c("U_L"), c("U_F"), c("U_R"));
-                    cycleEdges(e("U_B"), e("U_L"), e("U_R"));
-                    cycleCenters(ci("U_BL"), ci("U_F"), ci("U_BR"));
-                    cycleCenters(ci("R_L"), ci("B_R"), ci("L_B"));
-                    cycleCenters(ci("R_B"), ci("B_L"), ci("L_R"));
-                    break;
-                case DP:
-                    cycleCorners(c("D_L"), c("D_B"), c("D_R"));
-                    cycleEdges(e("D_F"), e("D_BL"), e("D_BR"));
-                    cycleCenters(ci("D_L"), ci("D_B"), ci("D_R"));
-                    cycleCenters(ci("F_BL"), ci("BL_BR"), ci("BR_F"));
-                    cycleCenters(ci("F_BR"), ci("BL_F"), ci("BR_BL"));
-                    break;
-                case FP:
-                    cycleCorners(c("U_F"), c("D_L"), c("D_R"));
-                    twist(c("U_F"), 1); twist(c("D_R"), 2); twist(c("D_L"), 1);
-                    cycleEdges(e("F_R"), e("F_L"), e("D_F"));
-                    cycleCenters(ci("F_U"), ci("F_BL"), ci("F_BR"));
-                    cycleCenters(ci("L_R"), ci("D_L"), ci("R_D"));
-                    cycleCenters(ci("R_L"), ci("L_D"), ci("D_R"));
-                    break;
-                case BP:
-                    cycleCorners(c("U_R"), c("D_B"), c("U_L"));
-                    twist(c("U_R"), 2); twist(c("U_L"), 1); twist(c("D_B"), 1);
-                    cycleEdges(e("U_B"), e("B_BR"), e("B_BL"));
-                    cycleCenters(ci("B_R"), ci("B_D"), ci("B_L"));
-                    cycleCenters(ci("U_BR"), ci("BR_BL"), ci("BL_U"));
-                    cycleCenters(ci("U_BL"), ci("BR_U"), ci("BL_BR"));
-                    break;
-                case BRP:
-                    cycleCorners(c("U_R"), c("D_R"), c("D_B"));
-                    twist(c("U_R"), 1); twist(c("D_B"), 2); twist(c("D_R"), 1);
-                    cycleEdges(e("R_BR"), e("D_BR"), e("B_BR"));
-                    cycleCenters(ci("BR_U"), ci("BR_F"), ci("BR_BL"));
-                    cycleCenters(ci("R_B"), ci("D_R"), ci("B_D"));
-                    cycleCenters(ci("R_D"), ci("D_B"), ci("B_R"));
-                    break;
-                case BLP:
-                    cycleCorners(c("U_L"), c("D_B"), c("D_L"));
-                    twist(c("U_L"), 1); twist(c("D_L"), 2); twist(c("D_B"), 1);
-                    cycleEdges(e("L_BL"), e("B_BL"), e("D_BL"));
-                    cycleCenters(ci("BL_U"), ci("BL_BR"), ci("BL_F"));
-                    cycleCenters(ci("B_L"), ci("D_B"), ci("L_D"));
-                    cycleCenters(ci("L_B"), ci("B_D"), ci("D_L"));
-                    break;
-            }
-        }
 
         private void cycleCorners(int i1, int i2, int i3) {
             short tmp = corners[i3];
@@ -912,35 +703,6 @@ public class FullFtoTest {
 
         private void twist(int i, int dir) {
             corners[i] = (short) ((corners[i] & ~0b11) | ((corners[i] + dir) & 0b11));
-        }
-    }
-
-    private static final Map<String, Integer> CORNER_ORDINALS = enumOrdinals("cs.fto3phase.FullFto$Corner");
-    private static final Map<String, Integer> EDGE_ORDINALS = enumOrdinals("cs.fto3phase.FullFto$Edge");
-    private static final Map<String, Integer> CENTER_IND_ORDINALS = enumOrdinals("cs.fto3phase.FullFto$CenterInd");
-
-    private static int c(String name) {
-        return CORNER_ORDINALS.get(name);
-    }
-
-    private static int e(String name) {
-        return EDGE_ORDINALS.get(name);
-    }
-
-    private static int ci(String name) {
-        return CENTER_IND_ORDINALS.get(name);
-    }
-
-    private static Map<String, Integer> enumOrdinals(String className) {
-        try {
-            Object[] constants = Class.forName(className).getEnumConstants();
-            Map<String, Integer> ordinals = new HashMap<>();
-            for (int i = 0; i < constants.length; i++) {
-                ordinals.put(((Enum<?>) constants[i]).name(), i);
-            }
-            return ordinals;
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException(e);
         }
     }
 

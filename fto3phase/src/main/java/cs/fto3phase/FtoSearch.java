@@ -1,12 +1,7 @@
 package cs.fto3phase;
 
 import  java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import static cs.fto3phase.FullFto.Move;
 
@@ -279,7 +274,7 @@ public class FtoSearch {
      * @param fto fto
      */
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
-        long centerHash = fto.phaseTwoCentersHash();
+        long centerHash = fto.phaseTwoHash();
         long triples = fto.packPhaseTwoTripleData();
         HashSet<Long> lookup = phaseTwoPruningTable.get(centerHash);
 
@@ -357,6 +352,7 @@ public class FtoSearch {
         long totalTime = endTime - startTime;
         System.out.println("Total time (ms): " + totalTime);
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
+        FullFto.setCenterIndexTrackingDefault(false);
 //        System.exit(0);
     }
 
@@ -388,15 +384,15 @@ public class FtoSearch {
         nodes++;
 
         if (fto.isPhaseOne()){
-            Move lastMove = fto.moveStack.peek();
-            Move lastLastMove = fto.moveStack.get(fto.moveStack.size() - 2);
+            Move lastMove = fto.lastMove();
+            Move lastLastMove = fto.lastMove(1);
             //Nodes % n == 0
             //The performance of the solver is significantly better
             //when the phase 1 candidates are "spread out" (not too similar to each other)
             //so Nodes % n == 0 is a pseudo-random number generator which does that.
             double p = logisticRegression(fto, 19-fto.historyLength());
 
-            if (fto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > PHASE_ONE_CANDIDATE_THREASHOLD){
+            if (FullFto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > PHASE_ONE_CANDIDATE_THREASHOLD){
                 state.solution[0] = fto.history();
                 candidates.add(new FullFto(fto));
             }
@@ -458,13 +454,6 @@ public class FtoSearch {
             return false;
         }
 
-        if (depth < 10) {
-            int centerLookup = (int) (phaseTwoCenterPruningTable[fto.phaseTwoCenterIndex()]);
-            if (centerLookup > depth) {
-                return false;
-            }
-        }
-
         int ply = fto.historyLength();
         //Logistic Regression model determines the likelihood of the current subtree having a solution
         //Subtrees that are unlikely to have a solution are cut
@@ -483,7 +472,7 @@ public class FtoSearch {
 
         //IDA* lookup
         if (depth <= PHASE_TWO_PRUNING_DEPTH) {
-            HashSet<Long> lookup = phaseTwoPruningTable.get(fto.phaseTwoCentersHash());
+            HashSet<Long> lookup = phaseTwoPruningTable.get(fto.phaseTwoHash());
             if (lookup == null) {
                 return false;
             } else {
@@ -750,8 +739,6 @@ public class FtoSearch {
         System.out.print(",");
         System.out.print((int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]));
         System.out.print(",");
-        System.out.print((int)(phaseTwoCenterPruningTable[fto.phaseTwoCenterIndex()]));
-        System.out.print(",");
         System.out.print((int)(tripleLookup));
         System.out.print(",");
         System.out.print(depth);
@@ -765,24 +752,24 @@ public class FtoSearch {
      * Generates training data for pruning model
      * This is only called during development
      */
-    private static void genData(){
-
-        Random r = new Random();
-
-        for (int depth = 8; depth < 20; depth++) {
-            for (int iter = 0; iter < 2000; iter++) {
-                FullFto randomFto = new FullFto();
-                FullFto closeFto = new FullFto();
-
-                randomFto.scrambleRandomG2State(r);
-                closeFto.scrambleRandomG2State(r, depth);
-
-                write(randomFto, depth, false);
-                write(closeFto, depth, true);
-            }
-        }
-
-    }
+//    private static void genData(){
+//
+//        Random r = new Random();
+//
+//        for (int depth = 8; depth < 20; depth++) {
+//            for (int iter = 0; iter < 2000; iter++) {
+//                FullFto randomFto = new FullFto();
+//                FullFto closeFto = new FullFto();
+//
+//                randomFto.scrambleRandomG2State(r);
+//                closeFto.scrambleRandomG2State(r, depth);
+//
+//                write(randomFto, depth, false);
+//                write(closeFto, depth, true);
+//            }
+//        }
+//
+//    }
 
     public static long performanceTest(int num){
 
@@ -920,6 +907,10 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(100);
+        performanceTest(50);
+//        FullFto fto = new FullFto();
+//        fto.parseAlg("R D L' B' L R B' L' F' R' L B' L' F L' D' F D R F L' BR' U B' R' U F U'");
+//        FtoSearch s =  new FtoSearch();
+//        System.out.println(s.solution(fto));
     }
 }
