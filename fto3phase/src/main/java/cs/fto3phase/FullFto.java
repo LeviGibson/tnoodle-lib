@@ -131,12 +131,13 @@ public class FullFto {
      * Used for counting triples and triple pairs
      */
     static final int[][] MATCHING_CENTERS =  {
-        {0, 3, 3, 0}, // U_L
-        {0, 2, 2, 0}, // U_R
-        {0, 1, 1, 0}, // U_F
-        {1, 1, 3, 3}, // D_L
-        {2, 2, 1, 1}, // D_R
-        {3, 3, 2, 2} // D_B
+        {CenterOrd.U.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.U.ordinal()}, // U_L
+        {CenterOrd.U.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.U.ordinal()}, // U_R
+        {CenterOrd.U.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.U.ordinal()}, // U_F
+        {CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal()}, // D_L
+        {CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal()}, // D_R
+        {CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal()} // D_B
+
     };
 
     /**
@@ -163,8 +164,8 @@ public class FullFto {
         int testSpotOne = TRIPLE_LOCATIONS[cornerLocation][0];
         int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
 
-        return state.getCenter(testSpotOne) == matchingCenterOne &&
-                state.getCenter(testSpotTwo) == matchingCenterTwo;
+        return state.getCenterOrdinal(testSpotOne) == matchingCenterOne &&
+                state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo;
     }
 
     public int triplePairsOnCorner(int cornerLocation){
@@ -179,9 +180,9 @@ public class FullFto {
         int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
 
         int count = 0;
-        if (state.getCenter(testSpotOne) == matchingCenterOne)
+        if (state.getCenterOrdinal(testSpotOne) == matchingCenterOne)
             count++;
-        if (state.getCenter(testSpotTwo) == matchingCenterTwo)
+        if (state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo)
             count++;
 
         return count;
@@ -199,9 +200,9 @@ public class FullFto {
         int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
 
         int count = 0;
-        if (state.getCenter(testSpotOne) == matchingCenterOne)
+        if (state.getCenterOrdinal(testSpotOne) == matchingCenterOne)
             count |= 1;
-        if (state.getCenter(testSpotTwo) == matchingCenterTwo)
+        if (state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo)
             count |= 2;
 
         return count;
@@ -524,7 +525,7 @@ public class FullFto {
 
                 int matchingCenter = MATCHING_CENTERS[ci][(co + (2 * cside)) % 4];
 
-                if (state.getCenter((int)targetIndex) != matchingCenter){
+                if (state.getCenterOrdinal((int)targetIndex) != matchingCenter){
                     return false;
                 }
             }
@@ -700,10 +701,6 @@ public class FullFto {
         FullFto fto = new FullFto();
         fto.scrambleRandomState(r);
         return fto;
-    }
-
-    private void turnState(Move move, InnerState s){
-
     }
 
     public void turn(Move move){

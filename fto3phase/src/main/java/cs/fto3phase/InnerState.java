@@ -163,7 +163,7 @@ public class InnerState{
         setEdge(i2, e1);
     }
 
-    public int getCenter(int i){
+    private int getCenter(int i){
         return (int) ((centers >> (CENTER_BITS * i)) & CENTER_MASK);
     }
 
