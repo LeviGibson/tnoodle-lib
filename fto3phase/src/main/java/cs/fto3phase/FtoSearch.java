@@ -352,7 +352,6 @@ public class FtoSearch {
         long totalTime = endTime - startTime;
         System.out.println("Total time (ms): " + totalTime);
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
-        FullFto.setCenterIndexTrackingDefault(false);
 //        System.exit(0);
     }
 

@@ -14,27 +14,19 @@ public class FullFto {
     private InnerState rot2 = new InnerState();
 
 
-    private boolean trackCenterIndices;
-    private static boolean trackCenterIndicesByDefault = true;
-
     /**
      * History, used for undo() method
      */
     private Stack<InnerState> stateHistory = new Stack<InnerState>();
+    private Stack<InnerState> rot1History = new Stack<InnerState>();
+    private Stack<InnerState> rot2History = new Stack<InnerState>();
 
-    private Stack<Long> centerIndicesLowHistory = new Stack<Long>();
-    private Stack<Long> centerIndicesHighHistory = new Stack<Long>();
     private Stack<Move> moveHistory = new Stack<Move>();
 
     /**
      * Main Constructor
      */
     public FullFto(){
-        this.trackCenterIndices = trackCenterIndicesByDefault;
-    }
-
-    public static void setCenterIndexTrackingDefault(boolean enabled) {
-        trackCenterIndicesByDefault = enabled;
     }
 
     /**
@@ -45,11 +37,16 @@ public class FullFto {
         this.state.corners = fto.state.corners;
         this.state.edges = fto.state.edges;
         this.state.centers = fto.state.centers;
-        this.trackCenterIndices = fto.trackCenterIndices;
+        this.rot1.corners = fto.rot1.corners;
+        this.rot1.edges = fto.rot1.edges;
+        this.rot1.centers = fto.rot1.centers;
+        this.rot2.corners = fto.rot2.corners;
+        this.rot2.edges = fto.rot2.edges;
+        this.rot2.centers = fto.rot2.centers;
 
         this.stateHistory.addAll(fto.stateHistory);
-        this.centerIndicesLowHistory.addAll(fto.centerIndicesLowHistory);
-        this.centerIndicesHighHistory.addAll(fto.centerIndicesHighHistory);
+        this.rot1History.addAll(fto.rot1History);
+        this.rot2History.addAll(fto.rot2History);
         this.moveHistory.addAll(fto.moveHistory);
     }
 
@@ -59,6 +56,8 @@ public class FullFto {
      */
     public int historyLength() {
         assert (moveHistory.size() == stateHistory.size());
+        assert (moveHistory.size() == rot1History.size());
+        assert (moveHistory.size() == rot2History.size());
         return moveHistory.size();
     }
 
@@ -66,10 +65,10 @@ public class FullFto {
      * Get rid of history. undo() and isRepetition() are the effected methods.
      */
     public void clearMoveStack(){
-        centerIndicesLowHistory.clear();
-        centerIndicesHighHistory.clear();
         moveHistory.clear();
         stateHistory.clear();
+        rot1History.clear();
+        rot2History.clear();
     }
 
     /**
@@ -115,16 +114,6 @@ public class FullFto {
             this.id = id;
         }
     }
-
-    //------------------BITWISE HELPER OPERATIONS------------------//
-
-    private void ensureCenterIndexTracking() {
-        if (!trackCenterIndices) {
-            throw new IllegalStateException("Center index tracking is disabled for this FullFto instance");
-        }
-    }
-
-
 
     /**
      * MATCHING_CENTERS[getCornerIndex(corner)][corner orientation]
@@ -494,7 +483,6 @@ public class FullFto {
     };
 
     public long packPhaseTwoTripleData(){
-        ensureCenterIndexTracking();
         long hash = 0;
         for (int cid = 0; cid < 6; cid++) {
             for (int cside = 0; cside < 2; cside++){
@@ -703,21 +691,33 @@ public class FullFto {
         return fto;
     }
 
+    private final Move[] MOVE_TRANSFORM_ROT1 = {
+        Move.B, Move.R, Move.U, Move.D, Move.BR, Move.L, Move.BL, Move.F,
+        Move.BP, Move.RP, Move.UP, Move.DP, Move.BRP, Move.LP, Move.BLP, Move.FP
+    };
+
+    private final Move[] MOVE_TRANSFORM_ROT2 = {
+        Move.L, Move.B, Move.U, Move.D, Move.BL, Move.R, Move.F, Move.BR,
+        Move.LP, Move.BP, Move.UP, Move.DP, Move.BLP, Move.RP, Move.FP, Move.BRP,
+    };
+
     public void turn(Move move){
         moveHistory.push(move);
         stateHistory.push(new InnerState(state));
-        if (trackCenterIndices) {
-            centerIndicesLowHistory.push(state.packedCenterIndicesLow);
-            centerIndicesHighHistory.push(state.packedCenterIndicesHigh);
-        }
+        rot1History.push(new InnerState(rot1));
+        rot2History.push(new InnerState(rot2));
 
         state.turn(move);
+        rot1.turn(MOVE_TRANSFORM_ROT1[move.id]);
+        rot2.turn(MOVE_TRANSFORM_ROT2[move.id]);
     }
 
     public void undo(){
         if (!moveHistory.empty()) {
             moveHistory.pop();
             state = stateHistory.pop();
+            rot1 = rot1History.pop();
+            rot2 = rot2History.pop();
         }
     }
 
