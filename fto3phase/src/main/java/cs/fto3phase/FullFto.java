@@ -16,11 +16,11 @@ public class FullFto {
     /**
      * History, used for undo() method
      */
-    private Stack<InnerState> stateHistory = new Stack<InnerState>();
-    private Stack<InnerState> rot1History = new Stack<InnerState>();
-    private Stack<InnerState> rot2History = new Stack<InnerState>();
+    private final Stack<InnerState> stateHistory = new Stack<>();
+    private final Stack<InnerState> rot1History = new Stack<>();
+    private final Stack<InnerState> rot2History = new Stack<>();
 
-    private Stack<Move> moveHistory = new Stack<Move>();
+    private final Stack<Move> moveHistory = new Stack<>();
 
     /**
      * Main Constructor
@@ -145,8 +145,8 @@ public class FullFto {
 
     private boolean isTriple(int cornerLocation){
         int corner = state.getCorner(cornerLocation);
-        int cornerIndex = state.getCornerIndex(corner);
-        int cornerOrientation = state.getCornerOrientation(corner);
+        int cornerIndex = InnerState.getCornerIndex(corner);
+        int cornerOrientation = InnerState.getCornerOrientation(corner);
 
         int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
         int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation + 2) % 4];
@@ -160,8 +160,8 @@ public class FullFto {
 
     public int triplePairsOnCorner(int cornerLocation){
         int corner = state.getCorner(cornerLocation);
-        int cornerIndex = state.getCornerIndex(corner);
-        int cornerOrientation = state.getCornerOrientation(corner);
+        int cornerIndex = InnerState.getCornerIndex(corner);
+        int cornerOrientation = InnerState.getCornerOrientation(corner);
 
         int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
         int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation + 2) % 4];
@@ -180,8 +180,8 @@ public class FullFto {
 
     public int tripleIndexHelper(int cornerLocation){
         int corner = state.getCorner(cornerLocation);
-        int cornerIndex = state.getCornerIndex(corner);
-        int cornerOrientation = state.getCornerOrientation(corner);
+        int cornerIndex = InnerState.getCornerIndex(corner);
+        int cornerOrientation = InnerState.getCornerOrientation(corner);
 
         int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
         int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation + 2) % 4];
@@ -465,7 +465,7 @@ public class FullFto {
 
         for (int i = 0; i < 6; i++) {
             int corner = state.getCorner(i);
-            hash ^= PHASE3_CORNER_KEYS[i][state.getCornerIndex(corner)][state.getCornerOrientation(corner)];
+            hash ^= PHASE3_CORNER_KEYS[i][InnerState.getCornerIndex(corner)][InnerState.getCornerOrientation(corner)];
         }
 
         return hash;
@@ -488,8 +488,8 @@ public class FullFto {
         for (int cid = 0; cid < 6; cid++) {
             for (int cside = 0; cside < 2; cside++){
                 int corner = state.getCorner(cid);
-                int ci = state.getCornerIndex(corner);
-                int co = state.getCornerOrientation(corner);
+                int ci = InnerState.getCornerIndex(corner);
+                int co = InnerState.getCornerOrientation(corner);
                 int matchingCenter = MATCHING_CENTER_INDICES[ci][(co + (2 * cside)) % 4];
                 for (long i = 0; i < 24; i++) {
                     if (matchingCenter == state.getCenterIndex((int)i)){
@@ -506,8 +506,8 @@ public class FullFto {
         for (int cid = 0; cid < 6; cid++) {
             for (int cside = 0; cside < 2; cside++){
                 int corner = state.getCorner(cid);
-                int ci = state.getCornerIndex(corner);
-                int co = state.getCornerOrientation(corner);
+                int ci = InnerState.getCornerIndex(corner);
+                int co = InnerState.getCornerOrientation(corner);
 
                 long targetIndex = hash & 0b11111;
                 hash >>= 5;
@@ -556,10 +556,7 @@ public class FullFto {
         if (parallelMoves[0] == lastLastMove)
             return false;
 
-        if (parallelMoves[1] == lastLastMove)
-            return false;
-
-        return true;
+        return parallelMoves[1] != lastLastMove;
     }
 
     static final Move[] INVERT_MOVE = {Move.RP, Move.LP, Move.UP, Move.DP, Move.FP, Move.BP, Move.BRP, Move.BLP,
@@ -662,12 +659,12 @@ public class FullFto {
         parity = 0;
         for (int i = 0; i < 6; i++) {
             int corner = state.getCorner(i);
-            if ((i < 3) == (state.getCornerIndex(corner) < 3)){
+            if ((i < 3) == (InnerState.getCornerIndex(corner) < 3)){
                 state.twistCorner(i, r.nextInt(2) * 2);
             } else {
                 state.twistCorner(i, r.nextInt(2) * 2 + 1);
             }
-            parity += state.getCornerOrientation(state.getCorner(i));
+            parity += InnerState.getCornerOrientation(state.getCorner(i));
         }
 
         if (parity % 4 == 2){
@@ -817,7 +814,7 @@ public class FullFto {
             long solvedCenters = 0;
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 3; j++){
-                    solvedCenters |= (long) (i & CENTER_MASK) << (CENTER_BITS * ((i * 3) + j));
+                    solvedCenters |= (i & CENTER_MASK) << (CENTER_BITS * ((i * 3) + j));
                 }
             }
             SOLVED_CENTERS = solvedCenters;
@@ -942,8 +939,8 @@ public class FullFto {
 
         /**
          * Get center index in centerIndices
-         * @param i
-         * @return
+         * @param i index
+         * @return center
          */
         int getCenterIndex(int i){
             int packedIndex = i % 12;
