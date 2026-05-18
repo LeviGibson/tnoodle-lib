@@ -10,9 +10,8 @@ public class FullFto {
      */
 
     private InnerState state = new InnerState();
-    private InnerState rot1 = new InnerState();
-    private InnerState rot2 = new InnerState();
-
+    private InnerState rot1 = new InnerState(1);
+    private InnerState rot2 = new InnerState(2);
 
     /**
      * History, used for undo() method
@@ -34,15 +33,9 @@ public class FullFto {
      * @param fto copy from
      */
     public FullFto(FullFto fto){
-        this.state.corners = fto.state.corners;
-        this.state.edges = fto.state.edges;
-        this.state.centers = fto.state.centers;
-        this.rot1.corners = fto.rot1.corners;
-        this.rot1.edges = fto.rot1.edges;
-        this.rot1.centers = fto.rot1.centers;
-        this.rot2.corners = fto.rot2.corners;
-        this.rot2.edges = fto.rot2.edges;
-        this.rot2.centers = fto.rot2.centers;
+        this.state = new InnerState(fto.state);
+        this.rot1 = new InnerState(fto.rot1);
+        this.rot2 = new InnerState(fto.rot2);
 
         this.stateHistory.addAll(fto.stateHistory);
         this.rot1History.addAll(fto.rot1History);
@@ -83,6 +76,14 @@ public class FullFto {
         CenterOrd(int id) {
             this.id = id;
         }
+    }
+
+    enum Corner {
+        U_L, U_R, U_F, D_L, D_R, D_B
+    }
+
+    enum Edge {
+        U_B, U_R, U_L, F_L, F_R, R_BR, B_BL, B_BR, L_BL, D_F, D_BR, D_BL
     }
 
     /**
@@ -639,18 +640,24 @@ public class FullFto {
         clearMoveStack();
     }
 
+    private void swapCornersForAllRots(int i1, int i2){
+        state.swapCorners(i1, i2);
+        rot1.swapCorners(i1, i2);
+        rot2.swapCorners(i1, i2);
+    }
+
     private void scrambleRandomState(Random r){
         int parity = 0;
 
         for (int i = 0; i < 6; i++) {
             int target = r.nextInt(6);
-            state.swapCorners(i, target);
+            swapCornersForAllRots(i, target);
             if (i != target)
                 parity++;
         }
 
         if (parity % 2 == 1)
-            state.swapCorners(0, 1);
+            swapCornersForAllRots(0, 1);
 
         parity = 0;
         for (int i = 0; i < 6; i++) {
@@ -839,6 +846,10 @@ public class FullFto {
 
         }
 
+        public InnerState(int rotation){
+            rotate(rotation);
+        }
+
         public InnerState(InnerState state) {
             this.corners = state.corners;
             this.edges = state.edges;
@@ -982,6 +993,108 @@ public class FullFto {
 
         int getCenterOrdinal(int index){
             return (int)(centers >> (2 * index) & CENTER_MASK) + (index > 11 ? 4 : 0);
+        }
+
+        private static final int[] Y_ROTATION_CORNERS = {
+            Corner.U_F.ordinal(),
+            Corner.U_L.ordinal(),
+            Corner.U_R.ordinal(),
+            Corner.D_R.ordinal(),
+            Corner.D_B.ordinal(),
+            Corner.D_L.ordinal(),
+        };
+
+        private static final int[] Y_ROTATION_EDGES = {
+            Edge.U_L.ordinal(),
+            Edge.U_B.ordinal(),
+            Edge.U_R.ordinal(),
+            Edge.R_BR.ordinal(),
+            Edge.B_BR.ordinal(),
+            Edge.B_BL.ordinal(),
+            Edge.F_L.ordinal(),
+            Edge.L_BL.ordinal(),
+            Edge.F_R.ordinal(),
+            Edge.D_BR.ordinal(),
+            Edge.D_BL.ordinal(),
+            Edge.D_F.ordinal(),
+        };
+
+        private static final int[] Y_ROTATION_CENTERS = {
+            CenterOrd.U.ordinal(), CenterOrd.U.ordinal(), CenterOrd.U.ordinal(),
+            CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(),
+            CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(),
+            CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(),
+            CenterOrd.R.ordinal(), CenterOrd.R.ordinal(), CenterOrd.R.ordinal(),
+            CenterOrd.B.ordinal(), CenterOrd.B.ordinal(), CenterOrd.B.ordinal(),
+            CenterOrd.L.ordinal(), CenterOrd.L.ordinal(), CenterOrd.L.ordinal(),
+            CenterOrd.D.ordinal(), CenterOrd.D.ordinal(), CenterOrd.D.ordinal()
+        };
+
+        private static final int[] YP_ROTATION_CORNERS = {
+            Corner.U_R.ordinal(),
+            Corner.U_F.ordinal(),
+            Corner.U_L.ordinal(),
+            Corner.D_B.ordinal(),
+            Corner.D_L.ordinal(),
+            Corner.D_R.ordinal(),
+        };
+
+        private static final int[] YP_ROTATION_EDGES = {
+            Edge.U_R.ordinal(),
+            Edge.U_L.ordinal(),
+            Edge.U_B.ordinal(),
+            Edge.B_BL.ordinal(),
+            Edge.L_BL.ordinal(),
+            Edge.F_L.ordinal(),
+            Edge.R_BR.ordinal(),
+            Edge.F_R.ordinal(),
+            Edge.B_BR.ordinal(),
+            Edge.D_BL.ordinal(),
+            Edge.D_F.ordinal(),
+            Edge.D_BR.ordinal(),
+        };
+
+        private static final int[] YP_ROTATION_CENTERS = {
+            CenterOrd.U.ordinal(), CenterOrd.U.ordinal(), CenterOrd.U.ordinal(),
+            CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(),
+            CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(),
+            CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(),
+            CenterOrd.B.ordinal(), CenterOrd.B.ordinal(), CenterOrd.B.ordinal(),
+            CenterOrd.L.ordinal(), CenterOrd.L.ordinal(), CenterOrd.L.ordinal(),
+            CenterOrd.R.ordinal(), CenterOrd.R.ordinal(), CenterOrd.R.ordinal(),
+            CenterOrd.D.ordinal(), CenterOrd.D.ordinal(), CenterOrd.D.ordinal()
+        };
+
+
+        /**
+         * Do y / y' rotations!
+         * Note that the solver will always solve to white top
+         * green front no matter what orientation the puzzle starts in
+         * Can only be done on a solved cube
+         * @param n 1 = y, 2 = y'
+         */
+        void rotate(int n){
+            assert(this.isSolved());
+            assert(n == 1 || n == 2);
+
+            int[] co = n == 1 ? Y_ROTATION_CORNERS : YP_ROTATION_CORNERS;
+            int[] e = n == 1 ? Y_ROTATION_EDGES : YP_ROTATION_EDGES;
+            int[] ce = n == 1 ? Y_ROTATION_CENTERS : YP_ROTATION_CENTERS;
+
+            for (int i = 0; i < 6; i++) {
+                setCorner(i, encodeCorner(co[i], 0));
+            }
+
+            for (int i = 0; i < 12; i++) {
+                setEdge(i, e[i]);
+            }
+
+            for (int i = 0; i < 24; i++) {
+                // % 4:
+                //Internal representation of centers are packed to 2-bits per center
+                //This works because orbits are a thing on FTO
+                setCenter(i, ce[i] % 4);
+            }
         }
 
         public void turn(FullFto.Move move){
