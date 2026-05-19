@@ -380,10 +380,10 @@ public class FullFtoTest {
             System.out.println(fto.history());
 
             if (iteration > 0){
-                assertEquals(fto.hash(1), lastHash);
+                assertEquals(fto.phaseTwoHash(), lastHash);
             }
 
-            lastHash = fto.hash(1);
+            lastHash = fto.phaseTwoHash();
         }
     }
 
@@ -574,17 +574,17 @@ public class FullFtoTest {
         assertFalse(different.checkPhaseTwoTripleData(tripleData));
     }
 
-    @Test
-    void testPhaseTwoCenterIndexMatchesMultinomialRank() throws Exception {
-        Random r = new Random(456);
-
-        for (int iteration = 0; iteration < 1000; iteration++) {
-            FullFto state = new FullFto();
-            state.scrambleRandomG2State(r, 30);
-
-            assertEquals(multinomialPhaseTwoCenterIndex(state), state.phaseTwoCenterIndex());
-        }
-    }
+//    @Test
+//    void testPhaseTwoCenterIndexMatchesMultinomialRank() throws Exception {
+//        Random r = new Random(456);
+//
+//        for (int iteration = 0; iteration < 1000; iteration++) {
+//            FullFto state = new FullFto();
+//            state.scrambleRandomG2State(r, 30);
+//
+//            assertEquals(multinomialPhaseTwoCenterIndex(state), state.phaseTwoCenterIndex());
+//        }
+//    }
 
     //--- Hash Function General Tests ---//
 

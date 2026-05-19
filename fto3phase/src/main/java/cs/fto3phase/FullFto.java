@@ -64,8 +64,21 @@ public class FullFto {
         rot2History.clear();
     }
 
-    public int phaseTwoEdgeIndex() {
-        return state.phaseTwoEdgeIndex();
+//    private InnerState getNormalizedState(){
+//        return state;
+//    }
+
+    public int phaseTwoEdgeIndex(int angle) {
+        switch (angle){
+            case 0:
+                return state.phaseTwoEdgeIndex();
+            case 1:
+                return rot1.phaseTwoEdgeIndex();
+            case 2:
+                return rot2.phaseTwoEdgeIndex();
+            default:
+                 throw new IllegalArgumentException("Invalid angle: " + angle);
+        }
     }
 
     public long phaseOneHash() {

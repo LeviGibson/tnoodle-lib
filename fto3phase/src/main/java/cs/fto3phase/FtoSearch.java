@@ -134,7 +134,7 @@ public class FtoSearch {
         if (depth == 0)
             return;
 
-        int edgeIndex = fto.phaseTwoEdgeIndex();
+        int edgeIndex = fto.phaseTwoEdgeIndex(0);
         int ply = fto.historyLength();
 
         if (phaseTwoEdgePruningTable[edgeIndex] > ply){
@@ -427,6 +427,18 @@ public class FtoSearch {
 
     int nodes;
 
+    private static int edgeLookup(FullFto fto){
+        int i0 = fto.phaseTwoEdgeIndex(0);
+        int i1 = fto.phaseTwoEdgeIndex(1);
+        int i2 = fto.phaseTwoEdgeIndex(2);
+
+        int l1 = (int)phaseTwoEdgePruningTable[i0];
+        int l2 = (int)phaseTwoEdgePruningTable[i1];
+        int l3 = (int)phaseTwoEdgePruningTable[i2];
+
+        return Math.min(l1, Math.min(l2, l3));
+    }
+
     /**
      * IDA* recursive function for finding solutions for Phase 1 -> Phase 2
      * AKA. Bottom center solved -> Octaminx reduction
@@ -448,7 +460,7 @@ public class FtoSearch {
             return false;
         }
 
-        int edgeLookup = (int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]);
+        int edgeLookup = edgeLookup(fto);
         if (edgeLookup > depth) {
             return false;
         }
@@ -517,7 +529,7 @@ public class FtoSearch {
         int tripleLookup = phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()];
         if (tripleLookup == 25)
             tripleLookup = 10;
-        return logisticRegression(depth, fto, phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()], tripleLookup);
+        return logisticRegression(depth, fto, edgeLookup(fto), tripleLookup);
     }
 
     /**
@@ -736,7 +748,7 @@ public class FtoSearch {
         System.out.print(",");
         System.out.print(fto.triplePairCount());
         System.out.print(",");
-        System.out.print((int)(phaseTwoEdgePruningTable[fto.phaseTwoEdgeIndex()]));
+        System.out.print((int)(edgeLookup(fto)));
         System.out.print(",");
         System.out.print((int)(tripleLookup));
         System.out.print(",");
