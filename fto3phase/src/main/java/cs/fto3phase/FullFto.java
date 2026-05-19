@@ -64,6 +64,22 @@ public class FullFto {
         rot2History.clear();
     }
 
+    public int phaseTwoEdgeIndex() {
+        return state.phaseTwoEdgeIndex();
+    }
+
+    public long phaseOneHash() {
+        return state.phaseOneHash();
+    }
+
+    public long phaseTwoHash() {
+        return state.phaseTwoHash();
+    }
+
+    public long phaseThreeHash() {
+        return state.phaseThreeHash();
+    }
+
     /**
      * Ordinal values of the packedCenters
      * internal representation of packedCenters is {U, U, U, F, F, F ...}
@@ -228,69 +244,6 @@ public class FullFto {
         return count;
     }
 
-    /**
-     * Index with [CenterOrd][-]
-     */
-    static final int[][] EDGES_ON_FACE = {
-        {0, 2, 1},
-        {3, 9, 4},
-        {7, 10, 5},
-        {6, 11, 8},
-        {8, 3, 2},
-        {5, 1, 4},
-        {6, 7, 0},
-        {11, 10, 9},
-    };
-
-    private boolean areEdgesSolvedOnFace(CenterOrd face, int angle){
-        int faceIndex = face.ordinal();
-        int[] faceEdges = EDGES_ON_FACE[faceIndex];
-        for (int i = 0; i < 3; i++) {
-            if (state.getEdge(faceEdges[(i + angle) % 3]) != faceEdges[i]){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Index with [CenterOrd][-]
-     * Helps out areCentersSolvedOnFace
-     */
-    private static final int[][] CENTERS_ON_FACE = {
-        {0, 1, 2},
-        {5, 4, 3},
-        {7, 8, 6},
-        {9, 10, 11},
-        {12, 14, 13},
-        {16, 17, 15},
-        {19, 20, 18},
-        {23, 21, 22},
-    };
-
-    /**
-     * Are all the centers solved on a particular face?
-     * @param face face
-     * @return t/f
-     */
-    private boolean areCentersSolvedOnFace(CenterOrd face){
-        int centerId = face.id;
-        int[] faceCenters = CENTERS_ON_FACE[face.ordinal()];
-        for (int i = 0; i < 3; i++) {
-            if (state.getCenterOrdinal(faceCenters[i]) != centerId){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    boolean isFaceSolved(CenterOrd face){
-        return areCentersSolvedOnFace(face) &&
-            (areEdgesSolvedOnFace(face, 0) ||
-            areEdgesSolvedOnFace(face, 1) ||
-            areEdgesSolvedOnFace(face, 2));
-    }
-
     public boolean isPhaseOne(){
         if (state.getCenterOrdinal(21) != CenterOrd.D.id ||
             state.getCenterOrdinal(22) != CenterOrd.D.id ||
@@ -313,7 +266,7 @@ public class FullFto {
                 return false;
         }
 
-        return isFaceSolved(CenterOrd.R) && isFaceSolved(CenterOrd.L) && isFaceSolved(CenterOrd.B);
+        return state.isFaceSolved(CenterOrd.R) && state.isFaceSolved(CenterOrd.L) && state.isFaceSolved(CenterOrd.B);
     }
 
     //--------------- Hash Functions ---------------//
@@ -355,8 +308,6 @@ public class FullFto {
         }
     }
 
-
-
     private static boolean contains(int[] arr, int target) {
         for (int num : arr) {
             if (num == target) return true;
@@ -364,112 +315,6 @@ public class FullFto {
         return false;
     }
 
-    private int indexOfEdge(int target) {
-        for (int i = 0; i < 12; i++) {
-            if (target == state.getEdge(i)) return i;
-        }
-        return -1;
-    }
-
-    private long edgeHash(CenterOrd center){
-        int centerIndex = center.ordinal();
-        int[] e = Arrays.copyOf(EDGES_ON_FACE[centerIndex], 3);
-
-        int firstMatchingEdge = -1;
-        for (int i = 0; i < 12; i++){
-            int edge = state.getEdge(i);
-            if (contains(e, edge)){
-                firstMatchingEdge = edge;
-                break;
-            }
-        }
-
-        if (firstMatchingEdge == -1){
-            throw new IllegalStateException("Cannot find matching edge in edgeHash()");
-        }
-
-        while (e[0] != firstMatchingEdge){
-            int tmp = e[2];
-            e[2] = e[1];
-            e[1] = e[0];
-            e[0] = tmp;
-        }
-
-        e[0] = indexOfEdge(e[0]);
-        e[1] = indexOfEdge(e[1]);
-        e[2] = indexOfEdge(e[2]);
-
-        if (contains(e, -1)){
-            throw new IllegalStateException("Cannot find matching edge in edgeHash()");
-        }
-
-        long hash = 0;
-        long[][] edgeKeys = PHASE2_EDGE_KEYS[centerIndex];
-        for (int i = 0; i < 3; i++){
-            hash ^= edgeKeys[i][e[i]];
-        }
-
-        return hash;
-    }
-
-    private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
-
-    public int phaseTwoEdgeIndex() {
-        int index = 0;
-        int seen = 0;
-        for (int i = 8; i >= 0; i--) {
-            int edge = state.getEdge(i);
-            int smaller = Integer.bitCount(seen & ((1 << edge) - 1));
-            index += smaller * FACTORIAL[8 - i];
-            seen |= 1 << edge;
-        }
-        return index / 2;
-    }
-
-    private long centerHash(CenterOrd center){
-        long hash = 0;
-        int centerId = center.ordinal();
-        long[] centerKeys = PHASE2_CENTER_KEYS[center.ordinal()];
-
-        for (int i = 0; i < 24; i++) {
-            if (state.getCenterOrdinal(i) == centerId){
-                hash ^= centerKeys[i];
-            }
-        }
-
-        return hash;
-    }
-
-    public long phaseOneHash(){
-        return edgeHash(CenterOrd.D) ^ centerHash(CenterOrd.D);
-    }
-
-    public long phaseTwoHash(){
-        long hash = 0;
-
-        hash ^= (state.centers & 0b111111111111111111000000000000000000000000L);
-
-        hash ^= edgeHash(CenterOrd.R);
-        hash ^= edgeHash(CenterOrd.L);
-        hash ^= edgeHash(CenterOrd.B);
-
-        return hash;
-    }
-
-    public long phaseThreeHash(){
-        long hash = 0;
-
-        for (int i = 0; i < 9; i++) {
-            hash ^= PHASE3_EDGE_KEYS[i][state.getEdge(i)];
-        }
-
-        for (int i = 0; i < 6; i++) {
-            int corner = state.getCorner(i);
-            hash ^= PHASE3_CORNER_KEYS[i][InnerState.getCornerIndex(corner)][InnerState.getCornerOrientation(corner)];
-        }
-
-        return hash;
-    }
 
     /**
      * Reference table used for triple data
@@ -529,19 +374,6 @@ public class FullFto {
 
     public Move lastMove(int i){
         return moveHistory.get(moveHistory.size() - 1 - i);
-    }
-
-    public long hash(int phaseId){
-        switch (phaseId){
-            case 0:
-                return phaseOneHash();
-            case 1:
-                return phaseTwoHash();
-            case 2:
-                return phaseThreeHash();
-        }
-
-        throw new RuntimeException("Invalid Phase: " + phaseId);
     }
 
     public static boolean isPhaseOneBreakingMove(Move move){
@@ -712,8 +544,8 @@ public class FullFto {
         rot2History.push(new InnerState(rot2));
 
         state.turn(move);
-        rot1.turn(MOVE_TRANSFORM_ROT1[move.id]);
-        rot2.turn(MOVE_TRANSFORM_ROT2[move.id]);
+        rot1.turn(move);
+        rot2.turn(move);
     }
 
     public void undo(){
@@ -1093,6 +925,177 @@ public class FullFto {
                 setCenter(i, ce[i] % 4);
             }
         }
+
+        private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
+
+        public int phaseTwoEdgeIndex() {
+            int index = 0;
+            int seen = 0;
+            for (int i = 8; i >= 0; i--) {
+                int edge = getEdge(i);
+                int smaller = Integer.bitCount(seen & ((1 << edge) - 1));
+                index += smaller * FACTORIAL[8 - i];
+                seen |= 1 << edge;
+            }
+            return index / 2;
+        }
+
+        private long centerHash(CenterOrd center){
+            long hash = 0;
+            int centerId = center.ordinal();
+            long[] centerKeys = PHASE2_CENTER_KEYS[center.ordinal()];
+
+            for (int i = 0; i < 24; i++) {
+                if (getCenterOrdinal(i) == centerId){
+                    hash ^= centerKeys[i];
+                }
+            }
+
+            return hash;
+        }
+
+        private int indexOfEdge(int target) {
+            for (int i = 0; i < 12; i++) {
+                if (target == getEdge(i)) return i;
+            }
+            return -1;
+        }
+
+        /**
+         * Index with [CenterOrd][-]
+         */
+        static final int[][] EDGES_ON_FACE = {
+            {0, 2, 1},
+            {3, 9, 4},
+            {7, 10, 5},
+            {6, 11, 8},
+            {8, 3, 2},
+            {5, 1, 4},
+            {6, 7, 0},
+            {11, 10, 9},
+        };
+
+        private long edgeHash(CenterOrd center){
+            int centerIndex = center.ordinal();
+            int[] e = Arrays.copyOf(EDGES_ON_FACE[centerIndex], 3);
+
+            int firstMatchingEdge = -1;
+            for (int i = 0; i < 12; i++){
+                int edge = getEdge(i);
+                if (contains(e, edge)){
+                    firstMatchingEdge = edge;
+                    break;
+                }
+            }
+
+            if (firstMatchingEdge == -1){
+                throw new IllegalStateException("Cannot find matching edge in edgeHash()");
+            }
+
+            while (e[0] != firstMatchingEdge){
+                int tmp = e[2];
+                e[2] = e[1];
+                e[1] = e[0];
+                e[0] = tmp;
+            }
+
+            e[0] = indexOfEdge(e[0]);
+            e[1] = indexOfEdge(e[1]);
+            e[2] = indexOfEdge(e[2]);
+
+            if (contains(e, -1)){
+                throw new IllegalStateException("Cannot find matching edge in edgeHash()");
+            }
+
+            long hash = 0;
+            long[][] edgeKeys = PHASE2_EDGE_KEYS[centerIndex];
+            for (int i = 0; i < 3; i++){
+                hash ^= edgeKeys[i][e[i]];
+            }
+
+            return hash;
+        }
+
+        public long phaseOneHash(){
+            return edgeHash(CenterOrd.D) ^ centerHash(CenterOrd.D);
+        }
+
+        public long phaseTwoHash(){
+            long hash = 0;
+
+            hash ^= (centers & 0b111111111111111111000000000000000000000000L);
+
+            hash ^= edgeHash(CenterOrd.R);
+            hash ^= edgeHash(CenterOrd.L);
+            hash ^= edgeHash(CenterOrd.B);
+
+            return hash;
+        }
+
+        public long phaseThreeHash(){
+            long hash = 0;
+
+            for (int i = 0; i < 9; i++) {
+                hash ^= PHASE3_EDGE_KEYS[i][getEdge(i)];
+            }
+
+            for (int i = 0; i < 6; i++) {
+                int corner = getCorner(i);
+                hash ^= PHASE3_CORNER_KEYS[i][InnerState.getCornerIndex(corner)][InnerState.getCornerOrientation(corner)];
+            }
+
+            return hash;
+        }
+
+        public boolean areEdgesSolvedOnFace(CenterOrd face, int angle){
+            int faceIndex = face.ordinal();
+            int[] faceEdges = EDGES_ON_FACE[faceIndex];
+            for (int i = 0; i < 3; i++) {
+                if (getEdge(faceEdges[(i + angle) % 3]) != faceEdges[i]){
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         * Index with [CenterOrd][-]
+         * Helps out areCentersSolvedOnFace
+         */
+        private static final int[][] CENTERS_ON_FACE = {
+            {0, 1, 2},
+            {5, 4, 3},
+            {7, 8, 6},
+            {9, 10, 11},
+            {12, 14, 13},
+            {16, 17, 15},
+            {19, 20, 18},
+            {23, 21, 22},
+        };
+
+        /**
+         * Are all the centers solved on a particular face?
+         * @param face face
+         * @return t/f
+         */
+        private boolean areCentersSolvedOnFace(CenterOrd face){
+            int centerId = face.id;
+            int[] faceCenters = CENTERS_ON_FACE[face.ordinal()];
+            for (int i = 0; i < 3; i++) {
+                if (getCenterOrdinal(faceCenters[i]) != centerId){
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public boolean isFaceSolved(CenterOrd face){
+            return areCentersSolvedOnFace(face) &&
+                (areEdgesSolvedOnFace(face, 0) ||
+                    areEdgesSolvedOnFace(face, 1) ||
+                    areEdgesSolvedOnFace(face, 2));
+        }
+
 
         public void turn(FullFto.Move move){
             switch (move){
