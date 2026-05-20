@@ -590,6 +590,10 @@ public class FullFto {
         }
     }
 
+    public boolean isNormalized(){
+        return state.getCenterOrdinal(CenterInd.R_L.ordinal()) == CenterOrd.R.id;
+    }
+
     private static class InnerState{
         int corners = SOLVED_CORNERS;
         long edges = SOLVED_EDGES;

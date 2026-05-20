@@ -48,6 +48,13 @@ public class FtoSearch {
             angles[2].rotate(2);
         }
 
+        public FtoSymmetry(FtoSymmetry sym){
+            angles = new FullFto[3];
+            this.angles[0] = new FullFto(sym.angles[0]);
+            this.angles[1] = new FullFto(sym.angles[1]);
+            this.angles[2] = new FullFto(sym.angles[2]);
+        }
+
         public void turn(FullFto.Move move){
             angles[0].turn(move);
             angles[1].turn(move);
@@ -111,6 +118,27 @@ public class FtoSearch {
             for (FullFto angle : angles) {
                 angle.undo();
             }
+        }
+
+        public int triplePairCount() {
+            return angles[0].triplePairCount();
+        }
+
+        private FullFto normalize(){
+            for (int i = 0; i < 3; i++) {
+                if (angles[i].isNormalized())
+                    return angles[i];
+            }
+
+            throw new IllegalStateException("No angles are normalized");
+        }
+
+        public boolean isSolved() {
+            return normalize().isSolved();
+        }
+
+        public long phaseThreeHash(){
+            return normalize().phaseThreeHash();
         }
     }
 
@@ -445,10 +473,10 @@ public class FtoSearch {
     }
 
     private static class PhaseTwoCandidate {
-        FullFto phaseOneSolution;
-        FullFto phaseTwoSolution;
+        FtoSymmetry phaseOneSolution;
+        FtoSymmetry phaseTwoSolution;
 
-        PhaseTwoCandidate(FullFto phaseOneSolution, FullFto phaseTwoSolution) {
+        PhaseTwoCandidate(FtoSymmetry phaseOneSolution, FtoSymmetry phaseTwoSolution) {
             this.phaseOneSolution = phaseOneSolution;
             this.phaseTwoSolution = phaseTwoSolution;
         }
@@ -469,7 +497,7 @@ public class FtoSearch {
             //The performance of the solver is significantly better
             //when the phase 1 candidates are "spread out" (not too similar to each other)
             //so Nodes % n == 0 is a pseudo-random number generator which does that.
-            double p = logisticRegression(fto, 19-fto.historyLength());
+            double p = logisticRegression(new FtoSymmetry(fto), 19-fto.historyLength());
 
             if (fto.isValidPhaseOneFinishingSequence() && p > PHASE_ONE_CANDIDATE_THREASHOLD){
                 state.solution[0] = fto.history();
@@ -527,12 +555,12 @@ public class FtoSearch {
      * @param fto fto
      * @return Found solution? t/f
      */
-    private boolean searchPhaseTwo(int depth, State state, ArrayList<FullFto> candidates, FtoSymmetry fto){
+    private boolean searchPhaseTwo(int depth, State state, ArrayList<FtoSymmetry> candidates, FtoSymmetry fto){
         nodes++;
 
         if (fto.isPhaseTwo()){
             state.solution[1] = fto.history();
-            candidates.add(new FullFto(fto.angles[0]));
+            candidates.add(new FtoSymmetry(fto));
             return candidates.size() >= PHASE_TWO_CANDIDATE_LIMIT;
         }
 
@@ -548,19 +576,18 @@ public class FtoSearch {
         int ply = fto.historyLength();
         //Logistic Regression model determines the likelihood of the current subtree having a solution
         //Subtrees that are unlikely to have a solution are cut
-//        if (depth > PHASE_TWO_PRUNING_DEPTH && depth < 20 && ply > 0){
-//
-//            int tripleLookup = fto.tripleLookup();
-//
-//
-//            if (tripleLookup == 25)
-//                tripleLookup = 10;
-//
-//            double p = logisticRegression(depth, fto.angles[1], edgeLookup, tripleLookup);
-//
-//            if (p < THRESHOLDS[depth-8])
-//                return false;
-//        }
+        if (depth > PHASE_TWO_PRUNING_DEPTH && depth < 20 && ply > 0){
+
+            int tripleLookup = fto.tripleLookup();
+
+            if (tripleLookup == 25)
+                tripleLookup = 10;
+
+            double p = logisticRegression(depth, fto, edgeLookup, tripleLookup);
+
+            if (p < THRESHOLDS[depth-8])
+                return false;
+        }
 
         //IDA* lookup
         if (depth <= PHASE_TWO_PRUNING_DEPTH && !fto.getPhaseTwoLookup()) {
@@ -582,7 +609,7 @@ public class FtoSearch {
         return false;
     }
 
-    private static double logisticRegression(int depth, FullFto fto, int edgeLookup, int tripleLookup) {
+    private static double logisticRegression(int depth, FtoSymmetry fto, int edgeLookup, int tripleLookup) {
         double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double) fto.triplePairCount() + BETAS[depth][2] * (double)edgeLookup + BETAS[depth][3] * (double)tripleLookup;
 
         double odds = Math.pow(2.71828182846, logOdds);
@@ -590,11 +617,11 @@ public class FtoSearch {
         return odds/(1+odds);
     }
 
-    private static double logisticRegression(FullFto fto, int depth) {
-        int tripleLookup = phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()];
+    private static double logisticRegression(FtoSymmetry fto, int depth) {
+        int tripleLookup = fto.tripleLookup();
         if (tripleLookup == 25)
             tripleLookup = 10;
-        return logisticRegression(depth, fto, edgeLookup(fto), tripleLookup);
+        return logisticRegression(depth, fto, fto.minEdgeLookup(), tripleLookup);
     }
 
     /**
@@ -603,7 +630,7 @@ public class FtoSearch {
      * @param fto fto
      * @return found solution t/f
      */
-    private boolean searchPhaseThree(int depth, State state, FullFto fto){
+    private boolean searchPhaseThree(int depth, State state, FtoSymmetry fto){
         nodes++;
 
         if (fto.isSolved()){
@@ -688,11 +715,11 @@ public class FtoSearch {
                 FullFto copy = new FullFto(phaseOneCandidate);
                 copy.clearMoveStack();
 
-                ArrayList<FullFto> phaseTwoCandidateSolutions = new ArrayList<>();
+                ArrayList<FtoSymmetry> phaseTwoCandidateSolutions = new ArrayList<>();
                 boolean foundEnoughSolutions = searchPhaseTwo(depthForSearch, state, phaseTwoCandidateSolutions, new FtoSymmetry(copy));
 
-                for (FullFto phaseTwoCandidate : phaseTwoCandidateSolutions) {
-                    phaseTwoCandidates.add(new PhaseTwoCandidate(phaseOneCandidate, phaseTwoCandidate));
+                for (FtoSymmetry phaseTwoCandidate : phaseTwoCandidateSolutions) {
+                    phaseTwoCandidates.add(new PhaseTwoCandidate(new FtoSymmetry(phaseOneCandidate), (phaseTwoCandidate)));
                     if (phaseTwoCandidates.size() >= PHASE_TWO_CANDIDATE_LIMIT) {
                         break;
                     }
@@ -719,7 +746,8 @@ public class FtoSearch {
         int bestSolutionLength = Integer.MAX_VALUE;
 
         for (PhaseTwoCandidate candidate : phaseTwoCandidates) {
-            FullFto copy = new FullFto(candidate.phaseTwoSolution);
+
+            FtoSymmetry copy = new FtoSymmetry(candidate.phaseTwoSolution);
             copy.clearMoveStack();
 
             State candidateState = new State();
@@ -868,6 +896,8 @@ public class FtoSearch {
             String s = search.solution(fto);
             totalNodes += (long)search.nodes;
 
+            System.out.println(s);
+
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
 
@@ -877,6 +907,7 @@ public class FtoSearch {
         }
 
         System.out.println("Average Moves: " + (double)totalMoves / (double)num);
+        System.out.println("Average Time: " + (double)(totalTime / 1_000_000) / (double)num);
         return totalNodes;
     }
 
@@ -988,22 +1019,23 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-//        performanceTest(100);
-        FullFto fto = new FullFto();
-        fto.parseAlg("L' R D L' B' L R B' F' D B' F' L R F D L' D F' D F' BL L' F' L U' F");
-        fto.clearMoveStack();
-
-        FtoSearch search = new FtoSearch();
-
-        ArrayList<FullFto> candidates = search.solvePhaseOneCandidates(fto);
-
-        ArrayList<PhaseTwoCandidate> phaseTwoCandidates = search.solvePhaseTwoCandidates(candidates);
-
-        for (PhaseTwoCandidate phaseTwoCandidate : phaseTwoCandidates) {
-            System.out.print(phaseTwoCandidate.phaseOneSolution.history());
-            System.out.println(phaseTwoCandidate.phaseTwoSolution.history());
-        }
-
+        performanceTest(100);
+//        FullFto fto = new FullFto();
+//        fto.parseAlg("L' R D L' B' L R B' F' D B' F' L R F D L' D F' D F' BL L' F' L U' F");
+//        fto.clearMoveStack();
+//        for (int i = 0; i < 100; i++) {
+//            fto = FullFto.randomCube(new Random());
+//            FtoSearch search = new FtoSearch();
+//
+//            ArrayList<FullFto> candidates = search.solvePhaseOneCandidates(fto);
+//
+//            ArrayList<PhaseTwoCandidate> phaseTwoCandidates = search.solvePhaseTwoCandidates(candidates);
+//
+//            for (PhaseTwoCandidate phaseTwoCandidate : phaseTwoCandidates) {
+//                System.out.print(phaseTwoCandidate.phaseOneSolution.history());
+//                System.out.println(phaseTwoCandidate.phaseTwoSolution.history());
+//            }
+//        }
 
 //        fto.clearMoveStack();
 //        fto.rotate(1);
