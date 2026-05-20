@@ -16,7 +16,7 @@ import static cs.fto3phase.FullFto.Move;
 public class FtoSearch {
 
     //Depths at which the pruning tables are set to
-    private static final int PHASE_ONE_PRUNING_DEPTH = 6;
+    private static final int PHASE_ONE_PRUNING_DEPTH = 5;
     private static final int PHASE_TWO_PRUNING_DEPTH = 8;
     private static final int PHASE_THREE_PRUNING_DEPTH = 4;
 
@@ -343,16 +343,18 @@ public class FtoSearch {
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
+        phaseTwoPruningTable = new HashMap<Long, HashSet<Long>>();
+
+        long startTime = System.currentTimeMillis();
+
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
-        long startTime = System.currentTimeMillis();
-        phaseTwoPruningTable = new HashMap<Long, HashSet<Long>>();
         phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
+        phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
+
         long endTime = System.currentTimeMillis();
         long totalTime = endTime - startTime;
         System.out.println("Total time (ms): " + totalTime);
-        phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
-//        System.exit(0);
     }
 
     /**
@@ -918,10 +920,6 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-//        performanceTest(500);
-        FullFto fto = new FullFto();
-        fto.parseAlg("R D L' B' L R B' L' F' R' L B' L' F L' D' F D R F L' BR' U B' R' U F U'");
-        FtoSearch s =  new FtoSearch();
-        System.out.println(s.solution(fto));
+        performanceTest(100);
     }
 }

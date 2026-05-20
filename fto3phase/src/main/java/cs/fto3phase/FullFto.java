@@ -10,15 +10,11 @@ public class FullFto {
      */
 
     private InnerState state = new InnerState();
-    private InnerState rot1 = new InnerState(1);
-    private InnerState rot2 = new InnerState(2);
 
     /**
      * History, used for undo() method
      */
     private final Stack<InnerState> stateHistory = new Stack<>();
-    private final Stack<InnerState> rot1History = new Stack<>();
-    private final Stack<InnerState> rot2History = new Stack<>();
 
     private final Stack<Move> moveHistory = new Stack<>();
 
@@ -34,12 +30,8 @@ public class FullFto {
      */
     public FullFto(FullFto fto){
         this.state = new InnerState(fto.state);
-        this.rot1 = new InnerState(fto.rot1);
-        this.rot2 = new InnerState(fto.rot2);
 
         this.stateHistory.addAll(fto.stateHistory);
-        this.rot1History.addAll(fto.rot1History);
-        this.rot2History.addAll(fto.rot2History);
         this.moveHistory.addAll(fto.moveHistory);
     }
 
@@ -49,8 +41,6 @@ public class FullFto {
      */
     public int historyLength() {
         assert (moveHistory.size() == stateHistory.size());
-        assert (moveHistory.size() == rot1History.size());
-        assert (moveHistory.size() == rot2History.size());
         return moveHistory.size();
     }
 
@@ -60,8 +50,6 @@ public class FullFto {
     public void clearMoveStack(){
         moveHistory.clear();
         stateHistory.clear();
-        rot1History.clear();
-        rot2History.clear();
     }
 
 //    private InnerState getNormalizedState(){
@@ -69,16 +57,7 @@ public class FullFto {
 //    }
 
     public int phaseTwoEdgeIndex(int angle) {
-        switch (angle){
-            case 0:
-                return state.phaseTwoEdgeIndex();
-            case 1:
-                return rot1.phaseTwoEdgeIndex();
-            case 2:
-                return rot2.phaseTwoEdgeIndex();
-            default:
-                 throw new IllegalArgumentException("Invalid angle: " + angle);
-        }
+        return state.phaseTwoEdgeIndex();
     }
 
     public long phaseOneHash() {
@@ -172,7 +151,7 @@ public class FullFto {
         {11, 7} // D_B
     };
 
-    private boolean isTriple(int cornerLocation){
+    public boolean isTriple(int cornerLocation){
         int corner = state.getCorner(cornerLocation);
         int cornerIndex = InnerState.getCornerIndex(corner);
         int cornerOrientation = InnerState.getCornerOrientation(corner);
@@ -343,18 +322,17 @@ public class FullFto {
 
     public long packPhaseTwoTripleData(){
         long hash = 0;
+        long centerLocations = state.phaseTwoCenterIndexLocations();
         for (int cid = 0; cid < 6; cid++) {
-            for (int cside = 0; cside < 2; cside++){
-                int corner = state.getCorner(cid);
-                int ci = InnerState.getCornerIndex(corner);
-                int co = InnerState.getCornerOrientation(corner);
-                int matchingCenter = MATCHING_CENTER_INDICES[ci][(co + (2 * cside)) % 4];
-                for (long i = 0; i < 24; i++) {
-                    if (matchingCenter == state.getCenterIndex((int)i)){
-                        hash |= i << (10 * cid + 5 * cside);
-                    }
-                }
-            }
+            int corner = state.getCorner(cid);
+            int ci = InnerState.getCornerIndex(corner);
+            int co = InnerState.getCornerOrientation(corner);
+
+            int matchingCenterOne = MATCHING_CENTER_INDICES[ci][co];
+            int matchingCenterTwo = MATCHING_CENTER_INDICES[ci][(co + 2) & 0b11];
+
+            hash |= ((centerLocations >> (5 * matchingCenterOne)) & 0b11111) << (10 * cid);
+            hash |= ((centerLocations >> (5 * matchingCenterTwo)) & 0b11111) << (10 * cid + 5);
         }
 
         return hash;
@@ -482,24 +460,19 @@ public class FullFto {
         clearMoveStack();
     }
 
-    private void swapCornersForAllRots(int i1, int i2){
-        state.swapCorners(i1, i2);
-        rot1.swapCorners(i1, i2);
-        rot2.swapCorners(i1, i2);
-    }
 
     private void scrambleRandomState(Random r){
         int parity = 0;
 
         for (int i = 0; i < 6; i++) {
             int target = r.nextInt(6);
-            swapCornersForAllRots(i, target);
+            state.swapCorners(i, target);
             if (i != target)
                 parity++;
         }
 
         if (parity % 2 == 1)
-            swapCornersForAllRots(0, 1);
+            state.swapCorners(0, 1);
 
         parity = 0;
         for (int i = 0; i < 6; i++) {
@@ -553,21 +526,13 @@ public class FullFto {
     public void turn(Move move){
         moveHistory.push(move);
         stateHistory.push(new InnerState(state));
-        rot1History.push(new InnerState(rot1));
-        rot2History.push(new InnerState(rot2));
-
         state.turn(move);
-        rot1.turn(move);
-        rot2.turn(move);
     }
 
     public void undo(){
-        if (!moveHistory.empty()) {
-            moveHistory.pop();
-            state = stateHistory.pop();
-            rot1 = rot1History.pop();
-            rot2 = rot2History.pop();
-        }
+        assert (!moveHistory.isEmpty());
+        moveHistory.pop();
+        state = stateHistory.pop();
     }
 
     public boolean isSolved(){
@@ -791,6 +756,23 @@ public class FullFto {
             int packedIndex = i % 12;
             long packed = i < 12 ? packedCenterIndicesLow : packedCenterIndicesHigh;
             return (int) ((packed >> (CENTER_INDEX_BITS * packedIndex)) & CENTER_INDEX_MASK);
+        }
+
+        long phaseTwoCenterIndexLocations(){
+            long locations = 0;
+            for (int i = 0; i < 12; i++) {
+                long centerIndex = (packedCenterIndicesLow >> (CENTER_INDEX_BITS * i)) & CENTER_INDEX_MASK;
+                if (centerIndex < 12) {
+                    locations |= (long) i << (CENTER_INDEX_BITS * centerIndex);
+                }
+            }
+            for (int i = 0; i < 12; i++) {
+                long centerIndex = (packedCenterIndicesHigh >> (CENTER_INDEX_BITS * i)) & CENTER_INDEX_MASK;
+                if (centerIndex < 12) {
+                    locations |= (long) (i + 12) << (CENTER_INDEX_BITS * centerIndex);
+                }
+            }
+            return locations;
         }
 
         private void setCenterIndex(int i, int centerIndex){
