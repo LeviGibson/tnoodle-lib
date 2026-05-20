@@ -384,16 +384,14 @@ public class FtoSearch {
     private boolean searchPhaseOne(int depth, State state, ArrayList<FullFto> candidates, FullFto fto){
         nodes++;
 
-        if (fto.isPhaseOne()){
-            Move lastMove = fto.lastMove();
-            Move lastLastMove = fto.lastMove(1);
+        if (depth == 0 && fto.isPhaseOne()){
             //Nodes % n == 0
             //The performance of the solver is significantly better
             //when the phase 1 candidates are "spread out" (not too similar to each other)
             //so Nodes % n == 0 is a pseudo-random number generator which does that.
             double p = logisticRegression(fto, 19-fto.historyLength());
 
-            if (FullFto.isValidPhaseOneFinishingSequence(lastMove, lastLastMove) && p  > PHASE_ONE_CANDIDATE_THREASHOLD){
+            if (fto.isValidPhaseOneFinishingSequence() && p > PHASE_ONE_CANDIDATE_THREASHOLD){
                 state.solution[0] = fto.history();
                 candidates.add(new FullFto(fto));
             }
@@ -920,6 +918,15 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(100);
+//        performanceTest(100);
+        FullFto fto = new FullFto();
+        fto.parseAlg("L' D' B R D' R B' R' U B D' U R B R U' R U' R B BR' R' BL' BR D' L' U");
+        fto.clearMoveStack();
+        fto.rotate(1);
+        fto.rotate(1);
+
+        FtoSearch search = new FtoSearch();
+        String s = search.solution(fto);
+        System.out.println(s);
     }
 }

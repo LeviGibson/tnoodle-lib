@@ -371,7 +371,13 @@ public class FullFto {
         return move == Move.F || move == Move.FP || move == Move.BR || move == Move.BRP || move == Move.BL || move == Move.BLP;
     }
 
-    public static boolean isValidPhaseOneFinishingSequence(Move lastMove, Move lastLastMove){
+    public boolean isValidPhaseOneFinishingSequence(){
+
+        if (historyLength() < 2) return true;
+
+        Move lastMove = lastMove();
+        Move lastLastMove = lastMove(1);
+
         if (!isPhaseOneBreakingMove(lastMove))
             return false;
 
@@ -564,6 +570,24 @@ public class FullFto {
         }
 
         return builder.toString();
+    }
+
+    public void rotate(int n){
+        state.rotate(n);
+    }
+
+    public void print(){
+        for (int i = 0; i < 6; i++) {
+            System.out.println("Corner " + i + ":" + Corner.values()[InnerState.getCornerIndex(state.getCorner(i))]);
+        }
+
+        for (int i = 0; i < 12; i++) {
+            System.out.println("Edge " + i + ":" + Edge.values()[state.getEdge(i)]);
+        }
+
+        for (int i = 0; i < 24; i++) {
+            System.out.println("Center " + i + ":" + CenterOrd.values()[state.getCenterOrdinal(i)]);
+        }
     }
 
     private static class InnerState{
@@ -844,14 +868,14 @@ public class FullFto {
         };
 
         private static final int[] Y_ROTATION_CENTERS = {
-            CenterOrd.U.ordinal(), CenterOrd.U.ordinal(), CenterOrd.U.ordinal(),
-            CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(),
-            CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(),
-            CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(),
-            CenterOrd.R.ordinal(), CenterOrd.R.ordinal(), CenterOrd.R.ordinal(),
-            CenterOrd.B.ordinal(), CenterOrd.B.ordinal(), CenterOrd.B.ordinal(),
-            CenterOrd.L.ordinal(), CenterOrd.L.ordinal(), CenterOrd.L.ordinal(),
-            CenterOrd.D.ordinal(), CenterOrd.D.ordinal(), CenterOrd.D.ordinal()
+            CenterOrd.U.ordinal(),
+            CenterOrd.BR.ordinal(),
+            CenterOrd.BL.ordinal(),
+            CenterOrd.F.ordinal(),
+            CenterOrd.R.ordinal(),
+            CenterOrd.B.ordinal(),
+            CenterOrd.L.ordinal(),
+            CenterOrd.D.ordinal(),
         };
 
         private static final int[] YP_ROTATION_CORNERS = {
@@ -898,7 +922,6 @@ public class FullFto {
          * @param n 1 = y, 2 = y'
          */
         void rotate(int n){
-            assert(this.isSolved());
             assert(n == 1 || n == 2);
 
             int[] co = n == 1 ? Y_ROTATION_CORNERS : YP_ROTATION_CORNERS;
@@ -906,18 +929,18 @@ public class FullFto {
             int[] ce = n == 1 ? Y_ROTATION_CENTERS : YP_ROTATION_CENTERS;
 
             for (int i = 0; i < 6; i++) {
-                setCorner(i, encodeCorner(co[i], 0));
+                setCorner(i, encodeCorner(co[getCornerIndex(getCorner(i))], getCornerOrientation(getCorner(i))));
             }
 
             for (int i = 0; i < 12; i++) {
-                setEdge(i, e[i]);
+                setEdge(i, e[getEdge(i)]);
             }
 
             for (int i = 0; i < 24; i++) {
                 // % 4:
                 //Internal representation of centers are packed to 2-bits per center
                 //This works because orbits are a thing on FTO
-                setCenter(i, ce[i] % 4);
+                setCenter(i, ce[getCenterOrdinal(i)] % 4);
             }
         }
 
