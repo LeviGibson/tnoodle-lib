@@ -924,23 +924,23 @@ public class FullFto {
         void rotate(int n){
             assert(n == 1 || n == 2);
 
-            int[] co = n == 1 ? Y_ROTATION_CORNERS : YP_ROTATION_CORNERS;
-            int[] e = n == 1 ? Y_ROTATION_EDGES : YP_ROTATION_EDGES;
-            int[] ce = n == 1 ? Y_ROTATION_CENTERS : YP_ROTATION_CENTERS;
-
             for (int i = 0; i < 6; i++) {
-                setCorner(i, encodeCorner(co[getCornerIndex(getCorner(i))], getCornerOrientation(getCorner(i))));
+                setCorner(i, encodeCorner(Y_ROTATION_CORNERS[getCornerIndex(getCorner(i))], getCornerOrientation(getCorner(i))));
             }
 
             for (int i = 0; i < 12; i++) {
-                setEdge(i, e[getEdge(i)]);
+                setEdge(i, Y_ROTATION_EDGES[getEdge(i)]);
             }
 
             for (int i = 0; i < 24; i++) {
                 // % 4:
                 //Internal representation of centers are packed to 2-bits per center
                 //This works because orbits are a thing on FTO
-                setCenter(i, ce[getCenterOrdinal(i)] % 4);
+                setCenter(i, Y_ROTATION_CENTERS[getCenterOrdinal(i)] % 4);
+            }
+
+            if (n == 2){
+                rotate(1);
             }
         }
 
