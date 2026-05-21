@@ -321,6 +321,8 @@ public class FullFto {
     };
 
     public long packPhaseTwoTripleData(){
+        assert state.isTrackingCenterIndices();
+
         long hash = 0;
         long centerLocations = state.phaseTwoCenterIndexLocations();
         for (int cid = 0; cid < 6; cid++) {
@@ -535,6 +537,13 @@ public class FullFto {
         state.turn(move);
     }
 
+    public void enableCenterIndexTracking(){
+        if (!isSolved()) {
+            throw new IllegalStateException("Center index tracking can only be enabled from a solved state.");
+        }
+        state.enableCenterIndexTracking();
+    }
+
     public void undo(){
         assert (!moveHistory.isEmpty());
         moveHistory.pop();
@@ -607,6 +616,7 @@ public class FullFto {
 
         long packedCenterIndicesLow = SOLVED_CENTER_INDICES_LOW;
         long packedCenterIndicesHigh = SOLVED_CENTER_INDICES_HIGH;
+        boolean trackCenterIndices = false;
 
         private static final int SOLVED_CORNERS;
         private static final long SOLVED_EDGES;
@@ -697,6 +707,7 @@ public class FullFto {
             this.centers = state.centers;
             this.packedCenterIndicesHigh =  state.packedCenterIndicesHigh;
             this.packedCenterIndicesLow = state.packedCenterIndicesLow;
+            this.trackCenterIndices = state.trackCenterIndices;
 
         }
 
@@ -809,6 +820,17 @@ public class FullFto {
             return locations;
         }
 
+        boolean isTrackingCenterIndices(){
+            return trackCenterIndices;
+        }
+
+        void enableCenterIndexTracking(){
+            assert isSolved();
+            trackCenterIndices = true;
+            packedCenterIndicesLow = SOLVED_CENTER_INDICES_LOW;
+            packedCenterIndicesHigh = SOLVED_CENTER_INDICES_HIGH;
+        }
+
         private void setCenterIndex(int i, int centerIndex){
             int packedIndex = i % 12;
             int shift = CENTER_INDEX_BITS * packedIndex;
@@ -828,12 +850,14 @@ public class FullFto {
             setCenter(i2, c1);
             setCenter(i3, c2);
 
-            int ci1 = getCenterIndex(i1);
-            int ci2 = getCenterIndex(i2);
-            int ci3 = getCenterIndex(i3);
-            setCenterIndex(i1, ci3);
-            setCenterIndex(i2, ci1);
-            setCenterIndex(i3, ci2);
+            if (trackCenterIndices) {
+                int ci1 = getCenterIndex(i1);
+                int ci2 = getCenterIndex(i2);
+                int ci3 = getCenterIndex(i3);
+                setCenterIndex(i1, ci3);
+                setCenterIndex(i2, ci1);
+                setCenterIndex(i3, ci2);
+            }
         }
 
         void swapCenters(int i1, int i2){
@@ -843,10 +867,12 @@ public class FullFto {
             setCenter(i1, c2);
             setCenter(i2, c1);
 
-            int ci1 = getCenterIndex(i1);
-            int ci2 = getCenterIndex(i2);
-            setCenterIndex(i1, ci2);
-            setCenterIndex(i2, ci1);
+            if (trackCenterIndices) {
+                int ci1 = getCenterIndex(i1);
+                int ci2 = getCenterIndex(i2);
+                setCenterIndex(i1, ci2);
+                setCenterIndex(i2, ci1);
+            }
         }
 
         int getCenterOrdinal(int index){

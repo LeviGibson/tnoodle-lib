@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +56,32 @@ public class FullFtoTest {
         assertEquals(3, fto.historyLength());
         assertEquals(4, copy.historyLength());
         assertNotEquals(fto.history(), copy.history());
+    }
+
+    @Test
+    void testCenterIndexTrackingIsOffByDefault() throws Exception {
+        long solvedLocations = phaseTwoCenterIndexLocations(fto);
+
+        fto.turn(Move.R);
+
+        assertEquals(solvedLocations, phaseTwoCenterIndexLocations(fto));
+    }
+
+    @Test
+    void testCenterIndexTrackingCanBeEnabledFromSolvedState() throws Exception {
+        fto.enableCenterIndexTracking();
+        long solvedLocations = phaseTwoCenterIndexLocations(fto);
+
+        fto.turn(Move.R);
+
+        assertNotEquals(solvedLocations, phaseTwoCenterIndexLocations(fto));
+    }
+
+    @Test
+    void testCenterIndexTrackingCannotBeEnabledFromUnsolvedState() {
+        fto.turn(Move.R);
+
+        assertThrows(IllegalStateException.class, () -> fto.enableCenterIndexTracking());
     }
 
     //------------- Move Validation -------------//
@@ -557,6 +584,7 @@ public class FullFtoTest {
 
     @Test
     void testPhaseTwoTripleDataMatchesCurrentState() {
+        fto.enableCenterIndexTracking();
         fto.parseAlg("R U B L");
         long tripleData = fto.packPhaseTwoTripleData();
 
@@ -565,6 +593,7 @@ public class FullFtoTest {
 
     @Test
     void testPhaseTwoTripleDataRejectsDifferentState() {
+        fto.enableCenterIndexTracking();
         fto.parseAlg("R U B L");
         long tripleData = fto.packPhaseTwoTripleData();
 
@@ -653,6 +682,16 @@ public class FullFtoTest {
         Field centerIndicesField = FullFto.class.getDeclaredField("centerIndices");
         centerIndicesField.setAccessible(true);
         return (short[]) centerIndicesField.get(state);
+    }
+
+    private static long phaseTwoCenterIndexLocations(FullFto fto) throws Exception {
+        Field stateField = FullFto.class.getDeclaredField("state");
+        stateField.setAccessible(true);
+        Object state = stateField.get(fto);
+
+        Method method = state.getClass().getDeclaredMethod("phaseTwoCenterIndexLocations");
+        method.setAccessible(true);
+        return (long) method.invoke(state);
     }
 
     private static final class ReferenceState {

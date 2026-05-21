@@ -456,8 +456,11 @@ public class FtoSearch {
         long startTime = System.currentTimeMillis();
 
 
+        FullFto phaseTwoPruningFto = new FullFto();
+        phaseTwoPruningFto.enableCenterIndexTracking();
+
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
-        phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, new FullFto());
+        phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, phaseTwoPruningFto);
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
 
         long endTime = System.currentTimeMillis();
