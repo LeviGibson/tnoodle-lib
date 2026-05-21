@@ -594,6 +594,12 @@ public class FullFto {
         return state.getCenterOrdinal(CenterInd.R_L.ordinal()) == CenterOrd.R.id;
     }
 
+    public boolean equals(FullFto fto){
+        return fto.state.corners == this.state.corners &&
+                fto.state.edges == this.state.edges &&
+                fto.state.centers == this.state.centers;
+    }
+
     private static class InnerState{
         int corners = SOLVED_CORNERS;
         long edges = SOLVED_EDGES;

@@ -27,7 +27,7 @@ public class FtoSearch {
      */
     private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
     private static double PHASE_ONE_CANDIDATE_THREASHOLD = 0.1;
-    private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
+    private static final int PHASE_TWO_CANDIDATE_LIMIT = 20;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
@@ -741,6 +741,81 @@ public class FtoSearch {
         return phaseTwoCandidates;
     }
 
+    private static HashMap<String, String> rotatedMoves = new HashMap<>();
+
+    static{
+        rotatedMoves.put("R", "B");
+        rotatedMoves.put("B", "L");
+        rotatedMoves.put("L", "R");
+        rotatedMoves.put("F", "BR");
+        rotatedMoves.put("BR", "BL");
+        rotatedMoves.put("BL", "F");
+        rotatedMoves.put("U", "U");
+        rotatedMoves.put("D", "D");
+
+        rotatedMoves.put("R'", "B'");
+        rotatedMoves.put("B'", "L'");
+        rotatedMoves.put("L'", "R'");
+        rotatedMoves.put("F'", "BR'");
+        rotatedMoves.put("BR'", "BL'");
+        rotatedMoves.put("BL'", "F'");
+        rotatedMoves.put("U'", "U'");
+        rotatedMoves.put("D'", "D'");
+    }
+
+    private static String rotateSolution(String solution){
+        solution = solution.trim();
+        String[] moves = solution.split(" ");
+
+        String rotatedSolution = "";
+
+        for (String move : moves) {
+            rotatedSolution += rotatedMoves.get(move);
+            rotatedSolution += " ";
+        }
+
+        return rotatedSolution.trim();
+    }
+
+    /**
+     * This method does post-processing to ensure the
+     * scramble sequence matches the randomly generated state.
+     *
+     * 1. Invert the solution
+     * 2. Rotate the solution to white-top-green-front
+     * 3. Assert that the solution matches the random state
+     *
+     * Note: This often generates a y/y' rotation away from
+     * the randomly generated state. This is alright  because
+     * orientation does not matter.
+     *
+     * @param solution solution found in solution()
+     * @param randomState Random state the solution should match
+     * @return ready-to-go solution for TNoodle
+     */
+    private static String postProcess(String solution, FullFto randomState){
+        solution = invertSolution(solution);
+
+        FullFto test = new FullFto();
+        test.parseAlg(solution);
+
+        if (test.equals(randomState)){
+            return solution;
+        }
+
+        test.rotate(1);
+
+        if (test.equals(randomState)){
+            return rotateSolution(solution);
+        }
+
+        test.rotate(1);
+
+        assert (test.equals(randomState));
+
+        return rotateSolution(rotateSolution(solution));
+    }
+
     private String solvePhaseThreeBestCandidate(ArrayList<PhaseTwoCandidate> phaseTwoCandidates) {
         String bestSolution = null;
         int bestSolutionLength = Integer.MAX_VALUE;
@@ -807,10 +882,10 @@ public class FtoSearch {
         endTime = System.currentTimeMillis();
         totalTime = endTime - startTime;
 //        System.out.println("Phase 3 Time: " + totalTime + " ms");
-        return invertSolution(bestSolution);
+        return postProcess(bestSolution, fto);
     }
 
-    private String invertSolution(String s) {
+    private static String invertSolution(String s) {
         if (s == null || s.isEmpty()) return s;
 
         String[] moves = s.trim().split("\\s+");
@@ -1019,10 +1094,27 @@ public class FtoSearch {
 
     public static void main(String[] args) {
 //        System.out.println("Starting FTO Search");
-        performanceTest(100);
-//        FullFto fto = new FullFto();
-//        fto.parseAlg("L' R D L' B' L R B' F' D B' F' L R F D L' D F' D F' BL L' F' L U' F");
-//        fto.clearMoveStack();
+//        performanceTest(100);
+
+//        System.out.println(rotateSolution(rotateSolution("R' B' D R' D L' U L' R' B' U L' U' R' U R' U B R' BL B U BL B' D' BL'")));
+
+        FullFto fto = new FullFto();
+        fto.parseAlg("B' D' R D' R B L BR' R BR' B D BR' D L BR' R' D' L B F' BL' F BL' F R BL'");
+        fto.clearMoveStack();
+
+        FtoSearch search = new FtoSearch();
+        String s = search.solution(fto);
+        System.out.println(s);
+
+//        FullFto test = new FullFto();
+//        test.parseAlg(s);
+//
+//        System.out.println(test.equals(fto));
+//        fto.rotate(1);
+//        System.out.println(test.equals(fto));
+//        fto.rotate(1);
+//        System.out.println(test.equals(fto));
+
 //        for (int i = 0; i < 100; i++) {
 //            fto = FullFto.randomCube(new Random());
 //            FtoSearch search = new FtoSearch();
