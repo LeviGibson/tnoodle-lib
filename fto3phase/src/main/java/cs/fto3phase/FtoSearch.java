@@ -27,7 +27,7 @@ public class FtoSearch {
      */
     private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
     private static double PHASE_ONE_CANDIDATE_THREASHOLD = 0.1;
-    private static final int PHASE_TWO_CANDIDATE_LIMIT = 20;
+    private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
@@ -1093,48 +1093,6 @@ public class FtoSearch {
      **/
 
     public static void main(String[] args) {
-//        System.out.println("Starting FTO Search");
-//        performanceTest(100);
-
-//        System.out.println(rotateSolution(rotateSolution("R' B' D R' D L' U L' R' B' U L' U' R' U R' U B R' BL B U BL B' D' BL'")));
-
-        FullFto fto = new FullFto();
-        fto.parseAlg("B' D' R D' R B L BR' R BR' B D BR' D L BR' R' D' L B F' BL' F BL' F R BL'");
-        fto.clearMoveStack();
-
-        FtoSearch search = new FtoSearch();
-        String s = search.solution(fto);
-        System.out.println(s);
-
-//        FullFto test = new FullFto();
-//        test.parseAlg(s);
-//
-//        System.out.println(test.equals(fto));
-//        fto.rotate(1);
-//        System.out.println(test.equals(fto));
-//        fto.rotate(1);
-//        System.out.println(test.equals(fto));
-
-//        for (int i = 0; i < 100; i++) {
-//            fto = FullFto.randomCube(new Random());
-//            FtoSearch search = new FtoSearch();
-//
-//            ArrayList<FullFto> candidates = search.solvePhaseOneCandidates(fto);
-//
-//            ArrayList<PhaseTwoCandidate> phaseTwoCandidates = search.solvePhaseTwoCandidates(candidates);
-//
-//            for (PhaseTwoCandidate phaseTwoCandidate : phaseTwoCandidates) {
-//                System.out.print(phaseTwoCandidate.phaseOneSolution.history());
-//                System.out.println(phaseTwoCandidate.phaseTwoSolution.history());
-//            }
-//        }
-
-//        fto.clearMoveStack();
-//        fto.rotate(1);
-//        fto.rotate(1);
-//
-//        FtoSearch search = new FtoSearch();
-//        String s = search.solution(fto);
-//        System.out.println(s);
+        performanceTest(100);
     }
 }
