@@ -451,7 +451,7 @@ public class FtoSearch {
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
-        phaseTwoPruningTable = new HashMap<Long, HashSet<Long>>();
+        phaseTwoPruningTable = new HashMap<Long, HashSet<Long>>(71741);
 
         long startTime = System.currentTimeMillis();
 
