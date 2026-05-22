@@ -412,6 +412,20 @@ public class FullFto {
         {Move.R, Move.RP}, // BLP
     };
 
+    public boolean isValidParallelSequence(Move move){
+
+        if (moveHistory.isEmpty()) return true;
+
+        Move lastMove = moveHistory.peek();
+
+        Move[] parallelMoves = PARALLEL_MOVES[lastMove.id];
+        if ((move == parallelMoves[0] || move == parallelMoves[1]) && (move.id < lastMove.id)) {
+            return false;
+        }
+
+        return true;
+    }
+
     public boolean isRepetition(Move move){
 
         if (moveHistory.isEmpty())

@@ -209,6 +209,10 @@ public class FtoSearch {
         public long phaseThreeHash(){
             return normalize().phaseThreeHash();
         }
+
+        public boolean isValidParallelSequence(Move move) {
+            return angles[0].isValidParallelSequence(move);
+        }
     }
 
     //--------------- Static Pruning Table Generation ---------------//
@@ -440,6 +444,9 @@ public class FtoSearch {
             if (fto.isRepetition(move))
                 continue;
 
+            if (!fto.isValidParallelSequence(move))
+                continue;
+
             //Don't look at moves that don't break phase 2 as a first move
             if (fto.historyLength() == 0 && move != Move.U && move != Move.UP){
                 continue;
@@ -563,6 +570,9 @@ public class FtoSearch {
             if (fto.isRepetition(move))
                 continue;
 
+            if (!fto.isValidParallelSequence(move))
+                continue;
+
             fto.turn(move);
             boolean foundSolution = searchPhaseOne(depth-1, state, candidates, fto);
             fto.undo();
@@ -637,6 +647,9 @@ public class FtoSearch {
 
         for (Move move : PHASE_TWO_MOVES){
             if (fto.isRepetition(move))
+                continue;
+
+            if (!fto.isValidParallelSequence(move))
                 continue;
 
             fto.turn(move);
@@ -1147,6 +1160,6 @@ public class FtoSearch {
      **/
 
     public static void main(String[] args) {
-        performanceTest(1000);
+        performanceTest(100);
     }
 }
