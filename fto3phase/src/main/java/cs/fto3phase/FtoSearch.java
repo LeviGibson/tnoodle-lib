@@ -366,7 +366,6 @@ public class FtoSearch {
         try {
             phaseTwoTriplePruningTable = loadTable("triple_d10.dat", 2*2*2*2*2*2*2*2*2*2*2*2);
             phaseTwoEdgePruningTable = loadTable("edgeprun.dat", 362880/2);
-            phaseTwoCenterPruningTable = loadTable("centerprun.dat", 1680);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
