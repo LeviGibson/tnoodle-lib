@@ -654,15 +654,16 @@ public class FtoSearch {
         double triples = fto.angles[0].tripleCount();
         double triplePairs = fto.triplePairCount();
 
-        double logOdds = -1.5657068 +
-            (-0.2742060 * triples) +
-            (1.1212435 * triplePairs) +
-            (-0.8811171 * edgeLookup) +
-            (-0.4384708 * tripleLookup) +
-            (0.1885731 * depth) +
-            (-0.0089688 * depth * depth) +
-            (0.0142249 * triples * triplePairs) +
-            (0.0404380 * edgeLookup * depth);
+        double logOdds = -2.873964 +
+            (-0.219440 * triples) +
+            ( 1.861916 * triplePairs) +
+            ( 0.402323 * depth) +
+            (-0.868738 * edgeLookup) +
+            (-1.085977 * tripleLookup) +
+            (-0.017704 * depth * depth) +
+            (-0.049115 * triplePairs * depth) +
+            ( 0.039372 * edgeLookup * depth) +
+            ( 0.044133 * tripleLookup * depth);
 
         double odds = Math.pow(2.71828182846, logOdds);
 
