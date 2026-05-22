@@ -654,17 +654,18 @@ public class FtoSearch {
         double triples = fto.angles[0].tripleCount();
         double triplePairs = fto.triplePairCount();
 
-        double logOdds = -3.185113 +
-                        (-0.301080 * triples) +
-                        (1.116918 * triplePairs) +
-                        (-0.302535 * edgeLookup) +
-                        (-0.445113 * tripleLookup) +
-                        (0.171973 * depth) +
-                        (0.019945 * triplePairs * triples);
+        double logOdds = -4.4107647 +
+            (-0.3153070 * triples) +
+            (1.1131600 * triplePairs) +
+            (-0.3039633 * edgeLookup) +
+            (-0.4472325 * tripleLookup) +
+            (0.3663567 * depth) +
+            (-0.0070275 * depth * depth) +
+            (0.0227924 * triples * triplePairs);
 
         double odds = Math.pow(2.71828182846, logOdds);
 
-        return odds/(1+odds);
+        return odds / (1 + odds);
     }
 
     private static double logisticRegression(FtoSymmetry fto, int depth) {
@@ -1023,7 +1024,6 @@ public class FtoSearch {
             String s = search.solution(fto);
             totalNodes += (long)search.nodes;
 
-            System.out.println(s);
 
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
@@ -1145,6 +1145,6 @@ public class FtoSearch {
      **/
 
     public static void main(String[] args) {
-        performanceTest(100);
+        performanceTest(1000);
     }
 }
