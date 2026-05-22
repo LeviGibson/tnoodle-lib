@@ -31,8 +31,85 @@ public class FtoSearch {
 
     //Pruning tables
     private static HashMap<Long, Integer> phaseOnePruningTable;
-    private static HashMap<Long, HashSet<Long>> phaseTwoPruningTable;
+    private static HashMap<Long, LongSet> phaseTwoPruningTable;
     private static HashMap<Long, Integer> phaseThreePruningTable;
+
+    private static final class LongSet {
+        private static final float LOAD_FACTOR = 0.75f;
+
+        private long[] keys;
+        private boolean[] used;
+        private int size;
+        private int threshold;
+
+        private LongSet() {
+            this(4);
+        }
+
+        private LongSet(int capacity) {
+            int tableSize = 1;
+            while (tableSize < capacity) {
+                tableSize <<= 1;
+            }
+            keys = new long[tableSize];
+            used = new boolean[tableSize];
+            threshold = (int) (tableSize * LOAD_FACTOR);
+        }
+
+        private boolean add(long key) {
+            if (size >= threshold) {
+                resize();
+            }
+
+            int index = index(key, keys.length);
+            while (used[index]) {
+                if (keys[index] == key) {
+                    return false;
+                }
+                index = (index + 1) & (keys.length - 1);
+            }
+
+            used[index] = true;
+            keys[index] = key;
+            size++;
+            return true;
+        }
+
+        private boolean anyMatch(java.util.function.LongPredicate predicate) {
+            for (int i = 0; i < keys.length; i++) {
+                if (used[i] && predicate.test(keys[i])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void resize() {
+            long[] oldKeys = keys;
+            boolean[] oldUsed = used;
+
+            keys = new long[oldKeys.length << 1];
+            used = new boolean[keys.length];
+            threshold = (int) (keys.length * LOAD_FACTOR);
+            size = 0;
+
+            for (int i = 0; i < oldKeys.length; i++) {
+                if (oldUsed[i]) {
+                    add(oldKeys[i]);
+                }
+            }
+        }
+
+        private static int index(long key, int length) {
+            long hash = key;
+            hash ^= hash >>> 33;
+            hash *= 0xff51afd7ed558ccdL;
+            hash ^= hash >>> 33;
+            hash *= 0xc4ceb9fe1a85ec53L;
+            hash ^= hash >>> 33;
+            return (int) hash & (length - 1);
+        }
+    }
 
     private class FtoSymmetry {
 
@@ -66,16 +143,8 @@ public class FtoSearch {
         }
 
         private boolean phaseTwoLookupHelper(int angle){
-            HashSet<Long> lookup = phaseTwoPruningTable.get(angles[angle].phaseTwoHash());
-            if (lookup != null) {
-                for (long triples : lookup) {
-                    if (angles[angle].checkPhaseTwoTripleData(triples)) {
-                        return true;
-                    }
-                }
-
-            }
-            return false;
+            LongSet lookup = phaseTwoPruningTable.get(angles[angle].phaseTwoHash());
+            return lookup != null && lookup.anyMatch(triples -> angles[angle].checkPhaseTwoTripleData(triples));
         }
 
         public boolean getPhaseTwoLookup(){
@@ -384,10 +453,10 @@ public class FtoSearch {
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
         long centerHash = fto.phaseTwoHash();
         long triples = fto.packPhaseTwoTripleData();
-        HashSet<Long> lookup = phaseTwoPruningTable.get(centerHash);
+        LongSet lookup = phaseTwoPruningTable.get(centerHash);
 
         if (lookup == null){
-            HashSet<Long> entry = new HashSet<>();
+            LongSet entry = new LongSet();
             entry.add(triples);
             phaseTwoPruningTable.put(centerHash, entry);
         } else {
@@ -451,7 +520,7 @@ public class FtoSearch {
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
-        phaseTwoPruningTable = new HashMap<Long, HashSet<Long>>(71741);
+        phaseTwoPruningTable = new HashMap<Long, LongSet>(71741);
 
         long startTime = System.currentTimeMillis();
 
@@ -1096,6 +1165,6 @@ public class FtoSearch {
      **/
 
     public static void main(String[] args) {
-        performanceTest(100);
+//        performanceTest(100);
     }
 }
