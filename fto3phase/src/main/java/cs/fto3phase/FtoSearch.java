@@ -111,7 +111,7 @@ public class FtoSearch {
         }
     }
 
-    private class FtoSymmetry {
+    private static class FtoSymmetry {
 
         public FullFto[] angles;
 
@@ -214,33 +214,6 @@ public class FtoSearch {
     //--------------- Static Pruning Table Generation ---------------//
 
     /**
-     * Betas for logistic regression model
-     * This is used for pruning during phase two in depths 8-19
-     */
-    private static final double[][] BETAS = {
-        {0, 0, 0}, // 0
-        {0, 0, 0}, // 1
-        {0, 0, 0}, // 2
-        {0, 0, 0}, // 3
-        {0, 0, 0}, // 4
-        {0, 0, 0}, // 5
-        {0, 0, 0}, // 6
-        {0, 0, 0}, // 7
-        {2.60980, 1.39171, -1.08659, -0.67610}, // 8
-        {5.02109, 1.13821, -1.10259, -0.73025}, // 9
-        {2.54998, 1.23541, -0.90102, -0.54790}, // 10
-        {2.56226, 1.07618, -0.72079, -0.56310}, // 11
-        {-0.17529, 1.25463, -0.65238, -0.32376}, // 12
-        {1.76425, 1.00602, -0.53846, -0.50472}, // 13
-        {-0.23506, 1.08614, -0.54071, -0.23815}, // 14
-        {1.47921, 0.97283, -0.56099, -0.36157}, // 15
-        {1.89530, 0.80994, -0.43749, -0.42357}, // 16
-        {-0.03786, 0.92725, -0.31888, -0.31122}, // 17
-        {0.21819, 0.88277, -0.37334, -0.24598}, // 18
-        {0.64805, 0.78102, -0.30848, -0.29557}, // 19
-    };
-
-    /**
      * Thresholds to prune at for logistic pruning index=depth
      */
     public static double[] THRESHOLDS = {
@@ -268,10 +241,7 @@ public class FtoSearch {
     public static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
 
     private static byte[] phaseTwoEdgePruningTable;
-    private static byte[] phaseTwoCenterPruningTable;
     private static byte[] phaseTwoTriplePruningTable;
-
-
 
     /**
      * Saves .dat files in main/resources
@@ -682,7 +652,16 @@ public class FtoSearch {
     }
 
     private static double logisticRegression(int depth, FtoSymmetry fto, int edgeLookup, int tripleLookup) {
-        double logOdds = BETAS[depth][0] + BETAS[depth][1] * (double) fto.triplePairCount() + BETAS[depth][2] * (double)edgeLookup + BETAS[depth][3] * (double)tripleLookup;
+        double triples = fto.angles[0].tripleCount();
+        double triplePairs = fto.triplePairCount();
+
+        double logOdds = -3.185113 +
+                        (-0.301080 * triples) +
+                        (1.116918 * triplePairs) +
+                        (-0.302535 * edgeLookup) +
+                        (-0.445113 * tripleLookup) +
+                        (0.171973 * depth) +
+                        (0.019945 * triplePairs * triples);
 
         double odds = Math.pow(2.71828182846, logOdds);
 
@@ -989,13 +968,15 @@ public class FtoSearch {
         if (tripleLookup == 25)
             tripleLookup = 10;
 
+        FtoSymmetry sym = new FtoSymmetry(fto);
+
         System.out.print(fto.tripleCount());
         System.out.print(",");
         System.out.print(fto.triplePairCount());
         System.out.print(",");
-        System.out.print((int)(edgeLookup(fto)));
+        System.out.print((int)(sym.minEdgeLookup()));
         System.out.print(",");
-        System.out.print((int)(tripleLookup));
+        System.out.print((int)(sym.tripleLookup()));
         System.out.print(",");
         System.out.print(depth);
         System.out.print(",");
@@ -1008,24 +989,24 @@ public class FtoSearch {
      * Generates training data for pruning model
      * This is only called during development
      */
-//    private static void genData(){
-//
-//        Random r = new Random();
-//
-//        for (int depth = 8; depth < 20; depth++) {
-//            for (int iter = 0; iter < 2000; iter++) {
-//                FullFto randomFto = new FullFto();
-//                FullFto closeFto = new FullFto();
-//
-//                randomFto.scrambleRandomG2State(r);
-//                closeFto.scrambleRandomG2State(r, depth);
-//
-//                write(randomFto, depth, false);
-//                write(closeFto, depth, true);
-//            }
-//        }
-//
-//    }
+    private static void genData(){
+
+        Random r = new Random();
+
+        for (int depth = 8; depth < 20; depth++) {
+            for (int iter = 0; iter < 2000; iter++) {
+                FullFto randomFto = new FullFto();
+                FullFto closeFto = new FullFto();
+
+                randomFto.scrambleRandomG2State(r);
+                closeFto.scrambleRandomG2State(r, depth);
+
+                write(randomFto, depth, false);
+                write(closeFto, depth, true);
+            }
+        }
+
+    }
 
     public static long performanceTest(int num){
 
