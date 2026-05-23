@@ -247,18 +247,6 @@ public class FtoSearch {
     private static byte[] phaseTwoEdgePruningTable;
     private static byte[] phaseTwoTriplePruningTable;
 
-    /**
-     * Saves .dat files in main/resources
-     * @param table table
-     * @param filename name of file
-     * @throws IOException exception
-     */
-    private static void saveTable(byte[] table, String filename) throws IOException {
-        try (FileOutputStream fos = new FileOutputStream(filename);
-             BufferedOutputStream bos = new BufferedOutputStream(fos)) {
-            bos.write(table);
-        }
-    }
 
     /**
      * Loads .dat files in main/resources
@@ -409,7 +397,7 @@ public class FtoSearch {
         }
     }
 
-    //Generate pruning tables (2000ms on first program run depending on your machine)
+    //Generate pruning tables (3600ms on first program run depending on your machine)
     static{
         phaseOnePruningTable = new HashMap<Long, Integer>();
         phaseThreePruningTable = new HashMap<Long, Integer>();
@@ -503,6 +491,12 @@ public class FtoSearch {
 
     int nodes;
 
+    /**
+     * Lookup the distance to solved edges
+     * Very fast lookup, used for pruning the search
+     * @param fto fto
+     * @return distance to solved edges
+     */
     private static int edgeLookup(FullFto fto){
         int index = fto.phaseTwoEdgeIndex();
 
@@ -574,6 +568,14 @@ public class FtoSearch {
         return false;
     }
 
+    /**
+     * Get the probability that an FTO will
+     * have a phase 2 solution within the given depth
+     *
+     * @param fto fto
+     * @param depth depth test
+     * @return percentage between 0 and 1
+     */
     private static double logisticRegression(int depth, FtoSymmetry fto, int edgeLookup, int tripleLookup) {
         double triples = fto.angles[0].tripleCount();
         double triplePairs = fto.triplePairCount();
@@ -594,6 +596,14 @@ public class FtoSearch {
         return odds / (1 + odds);
     }
 
+    /**
+     * Get the probability that an FTO will
+     * have a phase 2 solution within the given depth
+     *
+     * @param fto fto
+     * @param depth depth test
+     * @return percentage between 0 and 1
+     */
     private static double logisticRegression(FtoSymmetry fto, int depth) {
         int tripleLookup = fto.tripleLookup();
         if (tripleLookup == 25)
@@ -641,13 +651,15 @@ public class FtoSearch {
         return false;
     }
 
-    private int algLen(String alg){
-        if (alg == null || alg.trim().isEmpty()) {
-            return 0;
-        }
-        return alg.trim().split("\\s+").length;
-    }
-
+    /**
+     * Finds a bunch of phase one solutions
+     *
+     * These are filtered using logisticRegression() so they
+     * have a high probability of giving short phase-2 solutions
+     *
+     * @param fto fto to solve
+     * @return phase 1 candidates
+     */
     private ArrayList<FullFto> solvePhaseOneCandidates(FullFto fto) {
 
         if (fto.historyLength() != 0){
@@ -656,8 +668,6 @@ public class FtoSearch {
 
         State state = new State();
         ArrayList<FullFto> candidates = new ArrayList<>();
-
-        long startTime = System.currentTimeMillis();
 
         //Run IDA* search for phase 1
         for (int depth = 0; depth < 100; depth++) {
@@ -671,13 +681,19 @@ public class FtoSearch {
             }
         }
 
-        long endTime = System.currentTimeMillis();
-        long totalTime = endTime - startTime;
-//        System.out.println("FTO Phase 1 solution time: " + totalTime + " ms");
-
         return candidates;
     }
 
+    /**
+     * Function for solving phase two candidates
+     *
+     * 1. Pass in a bunch of phase 1 FTOs from solvePhaseOneCandidates
+     * 2. Perform iterative deepening on all of them at the same time
+     * 3. Return a bunch of phase 2 solved FTOs
+     *
+     * @param candidates from solvePhaseOneCandidates()
+     * @return phase 2 candidates
+     */
     private ArrayList<PhaseTwoCandidate> solvePhaseTwoCandidates(ArrayList<FullFto> candidates) {
         State state = new State();
         ArrayList<PhaseTwoCandidate> phaseTwoCandidates = new ArrayList<>();
@@ -718,8 +734,10 @@ public class FtoSearch {
         return phaseTwoCandidates;
     }
 
-    private static HashMap<String, String> rotatedMoves = new HashMap<>();
-
+    /**
+     * Helper hashmap for rotateSolution()
+     */
+    private static final HashMap<String, String> rotatedMoves = new HashMap<>();
     static{
         rotatedMoves.put("R", "B");
         rotatedMoves.put("B", "L");
@@ -740,6 +758,14 @@ public class FtoSearch {
         rotatedMoves.put("D'", "D'");
     }
 
+    /**
+     * Simple static function that rotates a solution string along the y axis
+     *
+     * Example: R U R' -> B U B'
+     *
+     * @param solution
+     * @return
+     */
     private static String rotateSolution(String solution){
         solution = solution.trim();
         String[] moves = solution.split(" ");
@@ -793,6 +819,17 @@ public class FtoSearch {
         return rotateSolution(rotateSolution(solution));
     }
 
+    /**
+     * 1. Take a bunch of phase two FTO's
+     * 2. Solve each of them
+     * 3. return the shortest solution
+     *
+     * NOTE: The returned solution string MUST be run through the postprocess() function
+     * Otherwise it's not truly random state
+     *
+     * @param phaseTwoCandidates from solvePhaseTwoCandidates()
+     * @return Solution string
+     */
     private String solvePhaseThreeBestCandidate(ArrayList<PhaseTwoCandidate> phaseTwoCandidates) {
         String bestSolution = null;
         int bestSolutionLength = Integer.MAX_VALUE;
@@ -851,6 +888,12 @@ public class FtoSearch {
         return postProcess(bestSolution, fto);
     }
 
+    /**
+     * Invert a solution string
+     * Used for post-processing of scramble
+     * @param s scramble to invert
+     * @return inverted scramble
+     */
     private static String invertSolution(String s) {
         if (s == null || s.isEmpty()) return s;
 
@@ -871,58 +914,23 @@ public class FtoSearch {
     }
 
     /**
-     * Helper function to genData
-     * This is only called during development
-     * @param fto
-     * @param depth
-     * @param label
+     * Simple static function for finding the length of an alg
+     * @param alg alg
+     * @return length of alg
      */
-    private static void write(FullFto fto, int depth, boolean label){
-
-        int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
-        if (tripleLookup == 25)
-            tripleLookup = 10;
-
-        FtoSymmetry sym = new FtoSymmetry(fto);
-
-        System.out.print(fto.tripleCount());
-        System.out.print(",");
-        System.out.print(fto.triplePairCount());
-        System.out.print(",");
-        System.out.print((int)(sym.minEdgeLookup()));
-        System.out.print(",");
-        System.out.print((int)(sym.tripleLookup()));
-        System.out.print(",");
-        System.out.print(depth);
-        System.out.print(",");
-        System.out.print(label);
-        System.out.println();
+    private static int algLen(String alg){
+        if (alg == null || alg.trim().isEmpty()) {
+            return 0;
+        }
+        return alg.trim().split("\\s+").length;
     }
-
 
     /**
-     * Generates training data for pruning model
-     * This is only called during development
+     * Main benchmarking function
+     * Prints out average moves, average time per scramble
+     * @param num
+     * @return
      */
-    private static void genData(){
-
-        Random r = new Random();
-
-        for (int depth = 8; depth < 20; depth++) {
-            for (int iter = 0; iter < 2000; iter++) {
-                FullFto randomFto = new FullFto();
-                FullFto closeFto = new FullFto();
-
-                randomFto.scrambleRandomG2State(r);
-                closeFto.scrambleRandomG2State(r, depth);
-
-                write(randomFto, depth, false);
-                write(closeFto, depth, true);
-            }
-        }
-
-    }
-
     public static long performanceTest(int num){
 
         long totalTime = 0;
@@ -956,6 +964,28 @@ public class FtoSearch {
     }
 
 
+    /**
+     * Generates training data for pruning model
+     * This is only called during development
+     */
+    private static void genData(){
+
+        Random r = new Random();
+
+        for (int depth = 8; depth < 20; depth++) {
+            for (int iter = 0; iter < 2000; iter++) {
+                FullFto randomFto = new FullFto();
+                FullFto closeFto = new FullFto();
+
+                randomFto.scrambleRandomG2State(r);
+                closeFto.scrambleRandomG2State(r, depth);
+
+                write(randomFto, depth, false);
+                write(closeFto, depth, true);
+            }
+        }
+
+    }
 
         /**
      * Code for generating .dat files IN main/resources
@@ -1157,6 +1187,50 @@ public class FtoSearch {
         }
     }
 
+     **/
+
+    /**
+     * Helper function to genData
+     * This is only called during development
+     * @param fto
+     * @param depth
+     * @param label
+     */
+    private static void write(FullFto fto, int depth, boolean label){
+
+        int tripleLookup = (int)(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+        if (tripleLookup == 25)
+            tripleLookup = 10;
+
+        FtoSymmetry sym = new FtoSymmetry(fto);
+
+        System.out.print(fto.tripleCount());
+        System.out.print(",");
+        System.out.print(fto.triplePairCount());
+        System.out.print(",");
+        System.out.print((int)(sym.minEdgeLookup()));
+        System.out.print(",");
+        System.out.print((int)(sym.tripleLookup()));
+        System.out.print(",");
+        System.out.print(depth);
+        System.out.print(",");
+        System.out.print(label);
+        System.out.println();
+    }
+
+    /**
+     * Saves .dat files in main/resources
+     * @param table table
+     * @param filename name of file
+     * @throws IOException exception
+     */
+    /**
+    private static void saveTable(byte[] table, String filename) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(filename);
+             BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+            bos.write(table);
+        }
+    }
      **/
 
     public static void main(String[] args) {
