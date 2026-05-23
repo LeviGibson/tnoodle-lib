@@ -276,100 +276,11 @@ public class FtoSearch {
         }
     }
 
-    /**
-     * This is a function that generates edgeprun.dat
-     * Don't run this function unless you want to wait for several hours
-     */
-    private static void phaseTwoEdgePruningSearch(int depth, FullFto fto){
-
-        if (depth == 0)
-            return;
-
-        int edgeIndex = fto.phaseTwoEdgeIndex(0);
-        int ply = fto.historyLength();
-
-        if (phaseTwoEdgePruningTable[edgeIndex] > ply){
-            phaseTwoEdgePruningTable[edgeIndex] = (byte)ply;
-        }
-
-        for (Move move : PHASE_TWO_MOVES){
-            if (fto.isRepetition(move))
-                continue;
-
-            if (move == Move.D || move == Move.DP)
-                continue;
-
-            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
-                continue;
-
-            fto.turn(move);
-            phaseTwoEdgePruningSearch(depth-1, fto);
-            fto.undo();
-        }
-
-    }
-
-    /**
-     * This is a function that generates edgeprun.dat
-     * Don't run this function unless you want to wait for several hours
-     */
-    private static void generateEdgePruning(){
-
-        for (int i = 0; i < 362880/2; i++) {
-            phaseTwoEdgePruningTable[i] = 25;
-        }
-
-        FullFto[] angles = new FullFto[27];
-        int anglesFound = 0;
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                for (int k = 0; k < 3; k++) {
-                    angles[anglesFound] = new FullFto();
-
-                    for (int l = 0; l < i; l++) {
-                        angles[anglesFound].turn(Move.R);
-                    }
-                    for (int l = 0; l < j; l++) {
-                        angles[anglesFound].turn(Move.L);
-                    }
-                    for (int l = 0; l < k; l++) {
-                        angles[anglesFound].turn(Move.B);
-                    }
-
-                    anglesFound++;
-                }
-            }
-        }
-
-        for (int depth = 0; depth < 20; depth++) {
-            System.out.println("Searching depth " + Integer.toString(depth));
-
-            for (int i = 0; i < 3*3*3; i++) {
-                angles[i].clearMoveStack();
-                phaseTwoEdgePruningSearch(depth, angles[i]);
-            }
-
-            int capacity = 362880/2;
-            for (int i = 0; i < 362880/2; i++) {
-                if (phaseTwoEdgePruningTable[i] != 25){
-                    capacity--;
-                }
-            }
-
-            System.out.println("Left: " + Integer.toString(capacity));
-
-            try {
-                saveTable(phaseTwoEdgePruningTable, "fto3phase/src/resources/edgeprun.dat");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 
     static{
         try {
             phaseTwoTriplePruningTable = loadTable("triple_d10.dat", 4096);
-            phaseTwoEdgePruningTable = loadTable("edgeprun.dat", 362880/2);
+            phaseTwoEdgePruningTable = loadTable("edgeprun.dat", 181440);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -380,7 +291,7 @@ public class FtoSearch {
             }
         }
 
-        for (int i = 0; i < 362880/2; i++) {
+        for (int i = 0; i < 181440; i++) {
             if (phaseTwoEdgePruningTable[i] == 24){
                 phaseTwoEdgePruningTable[i] = 11;
             }
@@ -937,23 +848,12 @@ public class FtoSearch {
 
         fto.clearMoveStack();
 
-        long startTime = System.currentTimeMillis();
         ArrayList<FullFto> candidates = solvePhaseOneCandidates(fto);
-        long endTime = System.currentTimeMillis();
-        long totalTime = endTime - startTime;
-//        System.out.println("Phase 1 Time: " + totalTime + " ms");
 
-        startTime = System.currentTimeMillis();
         ArrayList<PhaseTwoCandidate> phaseTwoCandidates = solvePhaseTwoCandidates(candidates);
-        endTime = System.currentTimeMillis();
-        totalTime = endTime - startTime;
-//        System.out.println("Phase 2 Time: " + totalTime + " ms");
 
-        startTime = System.currentTimeMillis();
         String bestSolution = solvePhaseThreeBestCandidate(phaseTwoCandidates);
-        endTime = System.currentTimeMillis();
-        totalTime = endTime - startTime;
-//        System.out.println("Phase 3 Time: " + totalTime + " ms");
+
         return postProcess(bestSolution, fto);
     }
 
@@ -1061,6 +961,8 @@ public class FtoSearch {
         return totalNodes;
     }
 
+
+
         /**
      * Code for generating .dat files IN main/resources
      * These files are packaged with the build, so no need to keep this code in
@@ -1162,6 +1064,102 @@ public class FtoSearch {
             saveTable(phaseTwoCenterPruningTable, "fto3phase/src/resources/centerprun.dat");
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+     **/
+
+        /**
+     * This is a function that generates edgeprun.dat
+     * Don't run this function unless you want to wait for several hours
+     */
+    /**
+    private static void phaseTwoEdgePruningSearch(int depth, FullFto fto){
+
+        if (depth == 0)
+            return;
+
+        int edgeIndex = fto.phaseTwoEdgeIndex(0);
+        int ply = fto.historyLength();
+
+        if (phaseTwoEdgePruningTable[edgeIndex] > ply){
+            phaseTwoEdgePruningTable[edgeIndex] = (byte)ply;
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            if (move == Move.D || move == Move.DP)
+                continue;
+
+            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
+                continue;
+
+            fto.turn(move);
+            phaseTwoEdgePruningSearch(depth-1, fto);
+            fto.undo();
+        }
+
+    }
+     **/
+
+    /**
+     * This is a function that generates edgeprun.dat
+     * Don't run this function unless you want to wait for several hours
+     */
+
+    /**
+    private static void generateEdgePruning(){
+
+        for (int i = 0; i < 362880/2; i++) {
+            phaseTwoEdgePruningTable[i] = 25;
+        }
+
+        FullFto[] angles = new FullFto[27];
+        int anglesFound = 0;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                for (int k = 0; k < 3; k++) {
+                    angles[anglesFound] = new FullFto();
+
+                    for (int l = 0; l < i; l++) {
+                        angles[anglesFound].turn(Move.R);
+                    }
+                    for (int l = 0; l < j; l++) {
+                        angles[anglesFound].turn(Move.L);
+                    }
+                    for (int l = 0; l < k; l++) {
+                        angles[anglesFound].turn(Move.B);
+                    }
+
+                    anglesFound++;
+                }
+            }
+        }
+
+        for (int depth = 0; depth < 20; depth++) {
+            System.out.println("Searching depth " + Integer.toString(depth));
+
+            for (int i = 0; i < 3*3*3; i++) {
+                angles[i].clearMoveStack();
+                phaseTwoEdgePruningSearch(depth, angles[i]);
+            }
+
+            int capacity = 181440;
+            for (int i = 0; i < 181440; i++) {
+                if (phaseTwoEdgePruningTable[i] != 25){
+                    capacity--;
+                }
+            }
+
+            System.out.println("Left: " + Integer.toString(capacity));
+
+            try {
+                saveTable(phaseTwoEdgePruningTable, "fto3phase/src/resources/edgeprun.dat");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
