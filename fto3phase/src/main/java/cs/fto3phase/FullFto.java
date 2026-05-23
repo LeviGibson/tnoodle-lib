@@ -535,16 +535,6 @@ public class FullFto {
         return fto;
     }
 
-    private final Move[] MOVE_TRANSFORM_ROT1 = {
-        Move.B, Move.R, Move.U, Move.D, Move.BR, Move.L, Move.BL, Move.F,
-        Move.BP, Move.RP, Move.UP, Move.DP, Move.BRP, Move.LP, Move.BLP, Move.FP
-    };
-
-    private final Move[] MOVE_TRANSFORM_ROT2 = {
-        Move.L, Move.B, Move.U, Move.D, Move.BL, Move.R, Move.F, Move.BR,
-        Move.LP, Move.BP, Move.UP, Move.DP, Move.BLP, Move.RP, Move.FP, Move.BRP,
-    };
-
     public void turn(Move move){
         moveHistory.push(move);
         stateHistory.push(new InnerState(state));

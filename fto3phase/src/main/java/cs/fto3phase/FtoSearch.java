@@ -319,7 +319,7 @@ public class FtoSearch {
             phaseTwoEdgePruningTable[i] = 25;
         }
 
-        FullFto[] angles = new FullFto[3*3*3];
+        FullFto[] angles = new FullFto[27];
         int anglesFound = 0;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -368,10 +368,16 @@ public class FtoSearch {
 
     static{
         try {
-            phaseTwoTriplePruningTable = loadTable("triple_d10.dat", 2*2*2*2*2*2*2*2*2*2*2*2);
+            phaseTwoTriplePruningTable = loadTable("triple_d10.dat", 4096);
             phaseTwoEdgePruningTable = loadTable("edgeprun.dat", 362880/2);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+
+        for (int i = 0; i < 4096; i++) {
+            if (phaseTwoTriplePruningTable[i] == 25){
+                phaseTwoTriplePruningTable[i] = 10;
+            }
         }
 
         for (int i = 0; i < 362880/2; i++) {
@@ -1038,6 +1044,8 @@ public class FtoSearch {
             FtoSearch search = new FtoSearch();
             String s = search.solution(fto);
             totalNodes += (long)search.nodes;
+
+            System.out.println(s);
 
 
             long endTime = System.nanoTime();
