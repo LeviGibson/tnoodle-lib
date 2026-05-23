@@ -8,14 +8,12 @@ public class FullFto {
     /**
      * Internal State
      */
-
     private InnerState state = new InnerState();
 
     /**
-     * History, used for undo() method
+     * History stacks, used for undo() method
      */
     private final Stack<InnerState> stateHistory = new Stack<>();
-
     private final Stack<Move> moveHistory = new Stack<>();
 
     /**
@@ -52,11 +50,11 @@ public class FullFto {
         stateHistory.clear();
     }
 
-//    private InnerState getNormalizedState(){
-//        return state;
-//    }
-
-    public int phaseTwoEdgeIndex(int angle) {
+    /**
+     * Turns the permutation of the phase 2 edges into a compact index
+     * @return
+     */
+    public int phaseTwoEdgeIndex() {
         return state.phaseTwoEdgeIndex();
     }
 

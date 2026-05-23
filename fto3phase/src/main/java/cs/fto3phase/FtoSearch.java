@@ -504,15 +504,9 @@ public class FtoSearch {
     int nodes;
 
     private static int edgeLookup(FullFto fto){
-        int i0 = fto.phaseTwoEdgeIndex(0);
-        int i1 = fto.phaseTwoEdgeIndex(1);
-        int i2 = fto.phaseTwoEdgeIndex(2);
+        int index = fto.phaseTwoEdgeIndex();
 
-        int l1 = (int)phaseTwoEdgePruningTable[i0];
-        int l2 = (int)phaseTwoEdgePruningTable[i1];
-        int l3 = (int)phaseTwoEdgePruningTable[i2];
-
-        return Math.min(l1, Math.min(l2, l3));
+        return (int)phaseTwoEdgePruningTable[index];
     }
 
     /**
