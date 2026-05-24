@@ -5,26 +5,20 @@ import java.util.Random;
 import java.util.Stack;
 
 public class FullFto {
-    /**
-     * Internal State
-     */
+    /** The internal representation of the FTO puzzle state. */
     private InnerState state = new InnerState();
 
-    /**
-     * History stacks, used for undo() method
-     */
+    /** History stacks supporting {@link #undo()} and {@link #isRepetition(Move)}. */
     private final Stack<InnerState> stateHistory = new Stack<>();
     private final Stack<Move> moveHistory = new Stack<>();
 
-    /**
-     * Main Constructor
-     */
+    /** Creates a new FullFto in the solved state. */
     public FullFto(){
     }
 
     /**
-     * Copy Constructor
-     * @param fto copy from
+     * Creates a copy of the given FullFto.
+     * @param fto the FullFto to copy
      */
     public FullFto(FullFto fto){
         this.state = new InnerState(fto.state);
@@ -34,8 +28,8 @@ public class FullFto {
     }
 
     /**
-     * Get number of moves applied to the FTO
-     * @return number of moves
+     * Returns the number of moves applied to the FTO.
+     * @return the number of moves in the move history
      */
     public int historyLength() {
         assert (moveHistory.size() == stateHistory.size());
@@ -43,7 +37,7 @@ public class FullFto {
     }
 
     /**
-     * Get rid of history. undo() and isRepetition() are the effected methods.
+     * Clears the move and state history. Affects {@link #undo()} and {@link #isRepetition(Move)}.
      */
     public void clearMoveStack(){
         moveHistory.clear();
@@ -51,28 +45,43 @@ public class FullFto {
     }
 
     /**
-     * Turns the permutation of the phase 2 edges into a compact index
-     * @return
+     * Converts the phase 2 edge permutation into a compact index.
+     * @return a compact index representing the edge permutation
      */
     public int phaseTwoEdgeIndex() {
         return state.phaseTwoEdgeIndex();
     }
 
+    /**
+     * Returns the Zobrist hash for phase 1.
+     * Incorporates D-face edges and centers.
+     * @return the phase 1 hash
+     */
     public long phaseOneHash() {
         return state.phaseOneHash();
     }
 
+    /**
+     * Returns the Zobrist hash for phase 2.
+     * Incorporates R, L, B face edges and centers.
+     * @return the phase 2 hash
+     */
     public long phaseTwoHash() {
         return state.phaseTwoHash();
     }
 
+    /**
+     * Returns the Zobrist hash for phase 3.
+     * Incorporates all remaining corners and edges.
+     * @return the phase 3 hash
+     */
     public long phaseThreeHash() {
         return state.phaseThreeHash();
     }
 
     /**
-     * Ordinal values of the packedCenters
-     * internal representation of packedCenters is {U, U, U, F, F, F ...}
+     * Ordinal values of the centers.
+     * The internal representation of packedCenters is {U, U, U, F, F, F ...}
      */
     private enum CenterOrd {
         U(0), F(1), BR(2), BL(3), L(4), R(5), B(6), D(7);
@@ -109,7 +118,7 @@ public class FullFto {
     }
 
     /**
-     * PUBLIC! Move enum. Used in the public interface
+     * Puzzle moves including both clockwise and counter-clockwise variants.
      */
     public enum Move{
         R(0), L(1), U(2), D(3), F(4), B(5), BR(6), BL(7),
@@ -123,8 +132,8 @@ public class FullFto {
     }
 
     /**
-     * MATCHING_CENTERS[getCornerIndex(corner)][corner orientation]
-     * Used for counting triples and triple pairs
+     * Indexed as MATCHING_CENTERS[cornerIndex][cornerOrientation].
+     * Used for counting triples and triple pairs.
      */
     static final int[][] MATCHING_CENTERS =  {
         {CenterOrd.U.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.U.ordinal()}, // U_L
@@ -137,8 +146,8 @@ public class FullFto {
     };
 
     /**
-     * Helper table to triple functions
-     * Contains the location of where the matching centers should be
+     * Helper table for triple functions.
+     * Contains the location of where the matching centers should be.
      */
     static final int[][] TRIPLE_LOCATIONS =  {
         {0, 9}, // U_L
@@ -149,6 +158,11 @@ public class FullFto {
         {11, 7} // D_B
     };
 
+    /**
+     * Returns whether the given corner forms a triple with its adjacent centers.
+     * @param cornerLocation the corner index (0-5)
+     * @return true if both matching centers are in the correct positions
+     */
     public boolean isTriple(int cornerLocation){
         int corner = state.getCorner(cornerLocation);
         int cornerIndex = InnerState.getCornerIndex(corner);
@@ -164,6 +178,11 @@ public class FullFto {
                 state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo;
     }
 
+    /**
+     * Counts how many matching centers are in the correct position for the given corner (0-2).
+     * @param cornerLocation the corner index (0-5)
+     * @return the number of correctly positioned matching centers (0, 1, or 2)
+     */
     public int triplePairsOnCorner(int cornerLocation){
         int corner = state.getCorner(cornerLocation);
         int cornerIndex = InnerState.getCornerIndex(corner);
@@ -184,6 +203,12 @@ public class FullFto {
         return count;
     }
 
+    /**
+     * Returns a 2-bit bitmask indicating which matching centers are correct for the given corner.
+     * Bit 0 = first matching center, Bit 1 = second matching center.
+     * @param cornerLocation the corner index (0-5)
+     * @return bitmask of correctly positioned matching centers (0-3)
+     */
     public int tripleIndexHelper(int cornerLocation){
         int corner = state.getCorner(cornerLocation);
         int cornerIndex = InnerState.getCornerIndex(corner);
@@ -204,6 +229,11 @@ public class FullFto {
         return count;
     }
 
+    /**
+     * Returns a packed index representing the triple state of all 6 corners.
+     * Each corner contributes 2 bits via {@link #tripleIndexHelper(int)}.
+     * @return packed triple index
+     */
     public int phaseTwoTripleIndex(){
         int index = 0;
         for (int i = 0; i < 6; i++) {
@@ -212,6 +242,10 @@ public class FullFto {
         return index;
     }
 
+    /**
+     * Returns the total number of complete triples on the puzzle.
+     * @return count of complete triples (0-6)
+     */
     public int tripleCount(){
         int count = 0;
 
@@ -224,6 +258,10 @@ public class FullFto {
         return count;
     }
 
+    /**
+     * Returns the total number of correctly positioned matching center pairs across all corners.
+     * @return total pair count (0-12)
+     */
     public int triplePairCount(){
         int count = 0;
 
@@ -234,6 +272,11 @@ public class FullFto {
         return count;
     }
 
+    /**
+     * Checks whether the puzzle is in phase 1 of the solve.
+     * D-face centers must be solved and D-face edges must be in a valid cycle.
+     * @return true if the puzzle state satisfies phase 1 requirements
+     */
     public boolean isPhaseOne(){
         if (state.getCenterOrdinal(21) != CenterOrd.D.id ||
             state.getCenterOrdinal(22) != CenterOrd.D.id ||
@@ -250,6 +293,11 @@ public class FullFto {
                     state.getEdge(11) == 9);
     }
 
+    /**
+     * Checks whether the puzzle is in phase 2 of the solve.
+     * All corners must form complete triples, and the R, L, and B faces must be solved.
+     * @return true if the puzzle state satisfies phase 2 requirements
+     */
     public boolean isPhaseTwo(){
         for (int i = 0; i < 6; i++) {
             if (!isTriple(i))
@@ -259,7 +307,7 @@ public class FullFto {
         return state.isFaceSolved(CenterOrd.R) && state.isFaceSolved(CenterOrd.L) && state.isFaceSolved(CenterOrd.B);
     }
 
-    //--------------- Hash Functions ---------------//
+    //--------------- Zobrist Hash Keys ---------------//
 
     private static final long[][] PHASE2_CENTER_KEYS = new long[8][24];
     private static final long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
@@ -307,7 +355,7 @@ public class FullFto {
 
 
     /**
-     * Reference table used for triple data
+     * Reference table used for triple data.
      */
     static final int[][] MATCHING_CENTER_INDICES =  {
         {0, 9, 9, 0}, // U_L
@@ -318,6 +366,10 @@ public class FullFto {
         {11, 11, 7, 7} // D_B
     };
 
+    /**
+     * Packs the phase 2 triple data into a compact hash.
+     * @return packed triple data
+     */
     public long packPhaseTwoTripleData(){
         assert state.isTrackingCenterIndices();
 
@@ -338,6 +390,11 @@ public class FullFto {
         return hash;
     }
 
+    /**
+     * Verifies that the given packed triple data matches the current puzzle state.
+     * @param hash packed triple data to verify
+     * @return true if the data is consistent with the current state
+     */
     public boolean checkPhaseTwoTripleData(long hash){
         for (int cid = 0; cid < 6; cid++) {
             for (int cside = 0; cside < 2; cside++){
@@ -359,18 +416,36 @@ public class FullFto {
         return true;
     }
 
+    /**
+     * Returns the most recently applied move.
+     * @return the last move
+     */
     public Move lastMove(){
         return moveHistory.peek();
     }
 
+    /**
+     * Returns the i-th most recent move (0 = most recent).
+     * @param i offset from the most recent move
+     * @return the move at the given offset
+     */
     public Move lastMove(int i){
         return moveHistory.get(moveHistory.size() - 1 - i);
     }
 
+    /**
+     * Returns true if the given move would break phase 1 constraints (F, BR, BL and their inverses).
+     * @param move the move to check
+     * @return true if the move breaks phase 1
+     */
     public static boolean isPhaseOneBreakingMove(Move move){
         return move == Move.F || move == Move.FP || move == Move.BR || move == Move.BRP || move == Move.BL || move == Move.BLP;
     }
 
+    /**
+     * Checks whether the last two moves form a valid phase 1 finishing sequence.
+     * @return true if the sequence is valid or if fewer than 2 moves have been applied
+     */
     public boolean isValidPhaseOneFinishingSequence(){
 
         if (historyLength() < 2) return true;
@@ -410,6 +485,11 @@ public class FullFto {
         {Move.R, Move.RP}, // BLP
     };
 
+    /**
+     * Validates whether the given move can be applied without creating a redundant parallel sequence.
+     * @param move the move to validate
+     * @return true if the move is valid in the current sequence
+     */
     public boolean isValidParallelSequence(Move move){
 
         if (moveHistory.isEmpty()) return true;
@@ -424,6 +504,12 @@ public class FullFto {
         return true;
     }
 
+    /**
+     * Checks whether applying the given move would immediately repeat or invert the last move(s),
+     * considering parallel move relationships.
+     * @param move the move to check
+     * @return true if the move would create a repetition
+     */
     public boolean isRepetition(Move move){
 
         if (moveHistory.isEmpty())
@@ -449,10 +535,19 @@ public class FullFto {
         return false;
     }
 
+    /**
+     * Scrambles the puzzle into a random G2 state with a default of 500 moves.
+     * @param r random number source
+     */
     public void scrambleRandomG2State(Random r){
         scrambleRandomG2State(r, 500);
     }
 
+    /**
+     * Scrambles the puzzle into a random G2 state using the given number of moves.
+     * @param r random number source
+     * @param numMoves number of phase-2 moves to apply
+     */
     public void scrambleRandomG2State(Random r, int numMoves){
         Move[] phaseTwoMoves = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
         Move[] phaseThreeMoves = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
@@ -472,7 +567,7 @@ public class FullFto {
 
             do {
                 move = phaseTwoMoves[r.nextInt(phaseTwoMoves.length)];
-            } while (isRepetition(move));
+            } while (isRepetition(move) && (i != 0 || move == Move.U || move == Move.UP));
 
             turn(move);
         }
@@ -527,18 +622,32 @@ public class FullFto {
         clearMoveStack();
     }
 
+    /**
+     * Creates a new FullFto in a random scrambled state.
+     * @param r random number source
+     * @return a randomly scrambled FullFto
+     */
     public static FullFto randomCube(Random r){
         FullFto fto = new FullFto();
         fto.scrambleRandomState(r);
         return fto;
     }
 
+    /**
+     * Applies a move to the puzzle, saving the previous state to the history stack.
+     * @param move the move to apply
+     */
     public void turn(Move move){
         moveHistory.push(move);
         stateHistory.push(new InnerState(state));
         state.turn(move);
     }
 
+    /**
+     * Enables tracking of center indices.
+     * Must be called from the solved state.
+     * @throws IllegalStateException if the puzzle is not solved
+     */
     public void enableCenterIndexTracking(){
         if (!isSolved()) {
             throw new IllegalStateException("Center index tracking can only be enabled from a solved state.");
@@ -546,16 +655,28 @@ public class FullFto {
         state.enableCenterIndexTracking();
     }
 
+    /**
+     * Reverts the most recent move, restoring the previous state.
+     */
     public void undo(){
         assert (!moveHistory.isEmpty());
         moveHistory.pop();
         state = stateHistory.pop();
     }
 
+    /**
+     * Returns whether the puzzle is in the solved state.
+     * @return true if solved
+     */
     public boolean isSolved(){
         return state.isSolved();
     }
 
+    /**
+     * Parses and applies an algorithm string.
+     * Moves are separated by whitespace; prime moves use the ' suffix (e.g. "R'").
+     * @param alg the algorithm string to parse and apply
+     */
     public void parseAlg(String alg){
         String[] tokens = alg.trim().split("\\s+");
         for (String token : tokens) {
@@ -568,9 +689,8 @@ public class FullFto {
     }
 
     /**
-     * Get all previous moves as string
-     * Used for sending scramble to TNoodle
-     * @return scramble string
+     * Returns all previous moves as a space-separated string.
+     * @return the move history as a string
      */
     public String history(){
         StringBuilder builder = new StringBuilder();
@@ -583,10 +703,17 @@ public class FullFto {
         return builder.toString();
     }
 
+    /**
+     * Rotates the entire puzzle. Only valid on a solved cube.
+     * @param n 1 = y rotation, 2 = y' rotation
+     */
     public void rotate(int n){
         state.rotate(n);
     }
 
+    /**
+     * Prints the current corner, edge, and center state to stdout.
+     */
     public void print(){
         for (int i = 0; i < 6; i++) {
             System.out.println("Corner " + i + ":" + Corner.values()[InnerState.getCornerIndex(state.getCorner(i))]);
@@ -601,10 +728,19 @@ public class FullFto {
         }
     }
 
+    /**
+     * Returns whether the puzzle is in a normalized orientation (R face center at R_L position).
+     * @return true if normalized
+     */
     public boolean isNormalized(){
         return state.getCenterOrdinal(CenterInd.R_L.ordinal()) == CenterOrd.R.id;
     }
 
+    /**
+     * Compares this FullFto with another for structural equality.
+     * @param fto the FullFto to compare with
+     * @return true if the internal corner, edge, and center state match
+     */
     public boolean equals(FullFto fto){
         return fto.state.corners == this.state.corners &&
                 fto.state.edges == this.state.edges &&
@@ -627,7 +763,7 @@ public class FullFto {
         private static final long SOLVED_CENTER_INDICES_HIGH;
 
         /**
-         * Initialization of bit-hacking
+         * Bit-width constants and masks used for packing puzzle state into integers and longs.
          */
         private static final int CORNER_BITS = 5;
         private static final int CORNER_MASK = 0b11111;
@@ -795,9 +931,9 @@ public class FullFto {
 
 
         /**
-         * Get center index in centerIndices
-         * @param i index
-         * @return center
+         * Returns the center index at the given position.
+         * @param i position index (0-23)
+         * @return the center index at that position
          */
         int getCenterIndex(int i){
             int packedIndex = i % 12;
@@ -953,11 +1089,10 @@ public class FullFto {
 
 
         /**
-         * Do y / y' rotations!
-         * Note that the solver will always solve to white top
-         * green front no matter what orientation the puzzle starts in
-         * Can only be done on a solved cube
-         * @param n 1 = y, 2 = y'
+         * Performs y / y' rotations on the puzzle.
+         * Note that the solver always solves with white top, green front regardless of the initial orientation.
+         * Can only be performed on a solved cube.
+         * @param n 1 = y rotation, 2 = y' rotation
          */
         void rotate(int n){
             assert(n == 1 || n == 2);
@@ -1018,7 +1153,7 @@ public class FullFto {
         }
 
         /**
-         * Index with [CenterOrd][-]
+         * Indexed by CenterOrd. Each entry lists the 3 edge indices on that face.
          */
         static final int[][] EDGES_ON_FACE = {
             {0, 2, 1},
@@ -1115,8 +1250,7 @@ public class FullFto {
         }
 
         /**
-         * Index with [CenterOrd][-]
-         * Helps out areCentersSolvedOnFace
+         * Indexed by CenterOrd. Each entry lists the 3 center indices on that face.
          */
         private static final int[][] CENTERS_ON_FACE = {
             {0, 1, 2},
@@ -1130,9 +1264,9 @@ public class FullFto {
         };
 
         /**
-         * Are all the centers solved on a particular face?
-         * @param face face
-         * @return t/f
+         * Returns whether all three centers on the given face match the face color.
+         * @param face the face to check
+         * @return true if all centers on the face are solved
          */
         private boolean areCentersSolvedOnFace(CenterOrd face){
             int centerId = face.id;
@@ -1145,6 +1279,11 @@ public class FullFto {
             return true;
         }
 
+        /**
+         * Returns whether the given face is fully solved (centers and edges).
+         * @param face the face to check
+         * @return true if the face is solved
+         */
         public boolean isFaceSolved(CenterOrd face){
             return areCentersSolvedOnFace(face) &&
                 (areEdgesSolvedOnFace(face, 0) ||

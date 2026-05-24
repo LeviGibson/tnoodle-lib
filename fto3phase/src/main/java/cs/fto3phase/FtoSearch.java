@@ -30,9 +30,9 @@ public class FtoSearch {
     private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
 
     //Pruning tables
-    private static HashMap<Long, Integer> phaseOnePruningTable;
-    private static HashMap<Long, LongSet> phaseTwoPruningTable;
-    private static HashMap<Long, Integer> phaseThreePruningTable;
+    private static final HashMap<Long, Integer> phaseOnePruningTable;
+    private static final HashMap<Long, LongSet> phaseTwoPruningTable;
+    private static final HashMap<Long, Integer> phaseThreePruningTable;
 
     private static final class LongSet {
         private static final float LOAD_FACTOR = 0.75f;
@@ -953,7 +953,7 @@ public class FtoSearch {
             long endTime = System.nanoTime();
             long duration = (endTime - startTime); // total time in nanoseconds
 
-            System.out.println("NEW," + (duration / 1_000_000));
+//            System.out.println("NEW," + (duration / 1_000_000));
             totalTime += duration;
             totalMoves += s.split(" ").length;
         }
@@ -1234,6 +1234,6 @@ public class FtoSearch {
      **/
 
     public static void main(String[] args) {
-        performanceTest(100);
+        performanceTest(500);
     }
 }
