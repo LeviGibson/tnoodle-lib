@@ -18,20 +18,16 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
     private enum Move {R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
     private static final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
 
-    enum Corner {
+    private enum Corner {
         U_L, U_R, U_F, D_L, D_R, D_B
     }
 
-    enum Edge {
-        U_B, U_R, U_L, //U face edges
-        F_L, F_R, R_BR, B_BL, B_BR, L_BL, //Middle slice edges,
-        D_F, D_BR, D_BL //D face edges
+    private enum Edge {
+        U_B, U_R, U_L,
+        F_L, F_R, R_BR, B_BL, B_BR, L_BL,
+        D_F, D_BR, D_BL
     }
 
-    /**
-     * Ordinal values of the centers
-     * internal representation of centers is {U, U, U, F, F, F ...}
-     */
     private enum CenterOrd {
         U, F, BR, BL, L, R, B, D
     }
@@ -60,10 +56,10 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         defaultColorScheme.put("B", Color.BLUE);
         defaultColorScheme.put("D", Color.YELLOW);
         defaultColorScheme.put("F", Color.GREEN);
-        defaultColorScheme.put("L", new Color(124, 2, 158)); // Purple #7c029e
+        defaultColorScheme.put("L", new Color(124, 2, 158));
         defaultColorScheme.put("R", Color.RED);
         defaultColorScheme.put("U", Color.WHITE);
-        defaultColorScheme.put("BL", new Color(255, 128, 0)); // Orange #FF8000
+        defaultColorScheme.put("BL", new Color(255, 128, 0));
         defaultColorScheme.put("BR", Color.GRAY);
     }
 
@@ -71,7 +67,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
     public Map<String, Color> getDefaultColorScheme() {
         return new HashMap<>(defaultColorScheme);
     }
-
 
     private static final int FACE_TURNING_OCTAHEDRON_UNIT_SIZE = 36;
     private static final int FACE_TURNING_OCTAHEDRON_MARGIN = 4;
@@ -128,7 +123,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         return new PuzzleStateAndGenerator(state, scramble);
     }
 
-
     public class FaceTurningOctahedronState extends PuzzleState {
 
         private int[] corners = new int[6];
@@ -162,10 +156,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             }
         }
 
-        /**
-         * Copy constructor
-         * @param copyFrom state to copy from
-         */
         public FaceTurningOctahedronState(FaceTurningOctahedronState copyFrom) {
             System.arraycopy(copyFrom.corners, 0, corners, 0, 6);
             System.arraycopy(copyFrom.edges, 0, edges, 0, 12);
@@ -206,9 +196,8 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
         @Override
         protected Svg drawScramble(Map<String, Color> colorSchemeMap) {
-
             Color[] scheme = new Color[8];
-            for(int i = 0; i < scheme.length; i++) {
+            for (int i = 0; i < scheme.length; i++) {
                 scheme[i] = colorSchemeMap.get(CenterOrd.values()[i].toString());
             }
 
@@ -216,40 +205,19 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
             int unit = FACE_TURNING_OCTAHEDRON_UNIT_SIZE;
             int margin = FACE_TURNING_OCTAHEDRON_MARGIN;
+            int m = margin;
             Svg svg = new Svg(getImageSize(unit));
 
-            drawFace(svg, image[4], scheme,
-                margin, margin,
-                margin, margin + 6 * unit,
-                margin + 3 * unit, margin + 3 * unit);
-            drawFace(svg, image[0], scheme,
-                margin, margin,
-                margin + 6 * unit, margin,
-                margin + 3 * unit, margin + 3 * unit);
-            drawFace(svg, image[1], scheme,
-                margin, margin + 6 * unit,
-                margin + 6 * unit, margin + 6 * unit,
-                margin + 3 * unit, margin + 3 * unit);
-            drawFace(svg, image[5], scheme,
-                margin + 3 * unit, margin + 3 * unit,
-                margin + 6 * unit, margin,
-                margin + 6 * unit, margin + 6 * unit);
-            drawFace(svg, image[3], scheme,
-                margin + 6 * unit, margin,
-                margin + 9 * unit, margin + 3 * unit,
-                margin + 6 * unit, margin + 6 * unit);
-            drawFace(svg, image[6], scheme,
-                margin + 6 * unit, margin,
-                margin + 12 * unit, margin,
-                margin + 9 * unit, margin + 3 * unit);
-            drawFace(svg, image[7], scheme,
-                margin + 6 * unit, margin + 6 * unit,
-                margin + 12 * unit, margin + 6 * unit,
-                margin + 9 * unit, margin + 3 * unit);
-            drawFace(svg, image[2], scheme,
-                margin + 12 * unit, margin,
-                margin + 12 * unit, margin + 6 * unit,
-                margin + 9 * unit, margin + 3 * unit);
+            //@formatter:off
+            drawFace(svg, image[4], scheme, m,        m,        m,        m + 6*unit, m + 3*unit, m + 3*unit);
+            drawFace(svg, image[0], scheme, m,        m,        m + 6*unit, m,          m + 3*unit, m + 3*unit);
+            drawFace(svg, image[1], scheme, m,        m + 6*unit, m + 6*unit, m + 6*unit, m + 3*unit, m + 3*unit);
+            drawFace(svg, image[5], scheme, m + 3*unit, m + 3*unit, m + 6*unit, m,          m + 6*unit, m + 6*unit);
+            drawFace(svg, image[3], scheme, m + 6*unit, m,          m + 9*unit, m + 3*unit, m + 6*unit, m + 6*unit);
+            drawFace(svg, image[6], scheme, m + 6*unit, m,          m + 12*unit, m,          m + 9*unit, m + 3*unit);
+            drawFace(svg, image[7], scheme, m + 6*unit, m + 6*unit, m + 12*unit, m + 6*unit, m + 9*unit, m + 3*unit);
+            drawFace(svg, image[2], scheme, m + 12*unit, m,          m + 12*unit, m + 6*unit, m + 9*unit, m + 3*unit);
+            //@formatter:on
 
             return svg;
         }
@@ -321,7 +289,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             svg.appendChild(sticker);
         }
 
-        int[][] CORNER_COLORS = {
+        private int[][] CORNER_COLORS = {
             {CenterOrd.U.ordinal(), CenterOrd.B.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.L.ordinal()},
             {CenterOrd.U.ordinal(), CenterOrd.R.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.B.ordinal()},
             {CenterOrd.U.ordinal(), CenterOrd.L.ordinal(), CenterOrd.F.ordinal(), CenterOrd.R.ordinal()},
@@ -330,7 +298,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             {CenterOrd.D.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.B.ordinal(), CenterOrd.BR.ordinal()}
         };
 
-        int[][] EDGE_COLORS = {
+        private int[][] EDGE_COLORS = {
             {CenterOrd.U.ordinal(), CenterOrd.B.ordinal()}, // U_B
             {CenterOrd.U.ordinal(), CenterOrd.R.ordinal()}, // U_R
             {CenterOrd.U.ordinal(), CenterOrd.L.ordinal()}, // U_L
@@ -347,10 +315,8 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
         private int cornerColor(Corner index, int orientation){
             int corner = corners[index.ordinal()];
-            return CORNER_COLORS[getCornerIndex(corner)][(getCornerOrientation(corner) + orientation)%4];
+            return             CORNER_COLORS[getCornerIndex(corner)][(getCornerOrientation(corner) + orientation)%4];
         }
-
-
 
         private int edgeColor(Edge index, int orientation){
             int edge = edges[index.ordinal()];
@@ -358,7 +324,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         }
 
         private int[][] getImage(){
-
             int[][] image = new int[8][9];
 
             //U face
@@ -459,13 +424,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             corners[i1] = tmp;
         }
 
-        /**
-         * Cycles edges without impacting orientation
-         *
-         * @param i1 first index
-         * @param i2 second index
-         * @param i3 third index
-         */
         private void cycleEdges(int i1, int i2, int i3) {
             int tmp = edges[i3];
             edges[i3] = edges[i2];
@@ -473,13 +431,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             edges[i1] = tmp;
         }
 
-        /**
-         * Cycles centers
-         *
-         * @param i1 first index
-         * @param i2 second index
-         * @param i3 third index
-         */
         private void cycleThreeCenters(int i1, int i2, int i3) {
             int tmp = centers[i3];
             centers[i3] = centers[i2];
@@ -487,16 +438,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             centers[i1] = tmp;
         }
 
-        private void swapCorners(int i1, int i2) {
-            int tmp = corners[i2];
-            corners[i2] = corners[i1];
-            corners[i1] = tmp;
-        }
-
         private void twistCorner(int i, int dir) {
             corners[i] = encodeCorner(getCornerIndex(corners[i]), (getCornerOrientation(corners[i]) + dir) % 4);
         }
-
 
         public void turn(Move move) {
             switch (move) {
