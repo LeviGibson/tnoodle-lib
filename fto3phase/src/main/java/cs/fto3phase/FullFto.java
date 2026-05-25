@@ -287,9 +287,9 @@ public class FullFto {
     /**
      * Returns whether the given corner forms a triple with its adjacent centers.
      * @param cornerLocation the corner index (0-5)
-     * @return true if both matching centers are in the correct positions
+     * @return 3 if both matching centers are in the correct positions
      */
-    public boolean isTriple(int cornerLocation){
+    private int triplePairsMask(int cornerLocation) {
         int corner = state.getCorner(cornerLocation);
         int cornerIndex = InnerState.getCornerIndex(corner);
         int cornerOrientation = InnerState.getCornerOrientation(corner);
@@ -300,8 +300,14 @@ public class FullFto {
         int testSpotOne = TRIPLE_LOCATIONS[cornerLocation][0];
         int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
 
-        return state.getCenterOrdinal(testSpotOne) == matchingCenterOne &&
-                state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo;
+        int mask = 0;
+        if (state.getCenterOrdinal(testSpotOne) == matchingCenterOne) mask |= 1;
+        if (state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo) mask |= 2;
+        return mask;
+    }
+
+    public boolean isTriple(int cornerLocation){
+        return triplePairsMask(cornerLocation) == 3;
     }
 
     /**
@@ -310,60 +316,18 @@ public class FullFto {
      * @return the number of correctly positioned matching centers (0, 1, or 2)
      */
     public int triplePairsOnCorner(int cornerLocation){
-        int corner = state.getCorner(cornerLocation);
-        int cornerIndex = InnerState.getCornerIndex(corner);
-        int cornerOrientation = InnerState.getCornerOrientation(corner);
-
-        int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
-        int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation + 2) % 4];
-
-        int testSpotOne = TRIPLE_LOCATIONS[cornerLocation][0];
-        int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
-
-        int count = 0;
-        if (state.getCenterOrdinal(testSpotOne) == matchingCenterOne)
-            count++;
-        if (state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo)
-            count++;
-
-        return count;
-    }
-
-    /**
-     * Returns a 2-bit bitmask indicating which matching centers are correct for the given corner.
-     * Bit 0 = first matching center, Bit 1 = second matching center.
-     * @param cornerLocation the corner index (0-5)
-     * @return bitmask of correctly positioned matching centers (0-3)
-     */
-    public int tripleIndexHelper(int cornerLocation){
-        int corner = state.getCorner(cornerLocation);
-        int cornerIndex = InnerState.getCornerIndex(corner);
-        int cornerOrientation = InnerState.getCornerOrientation(corner);
-
-        int matchingCenterOne = MATCHING_CENTERS[cornerIndex][cornerOrientation];
-        int matchingCenterTwo = MATCHING_CENTERS[cornerIndex][(cornerOrientation + 2) % 4];
-
-        int testSpotOne = TRIPLE_LOCATIONS[cornerLocation][0];
-        int testSpotTwo = TRIPLE_LOCATIONS[cornerLocation][1];
-
-        int count = 0;
-        if (state.getCenterOrdinal(testSpotOne) == matchingCenterOne)
-            count |= 1;
-        if (state.getCenterOrdinal(testSpotTwo) == matchingCenterTwo)
-            count |= 2;
-
-        return count;
+        return Integer.bitCount(triplePairsMask(cornerLocation));
     }
 
     /**
      * Returns a packed index representing the triple state of all 6 corners.
-     * Each corner contributes 2 bits via {@link #tripleIndexHelper(int)}.
+     * Each corner contributes 2 bits via {@link #triplePairsMask(int)}.
      * @return packed triple index
      */
     public int phaseTwoTripleIndex(){
         int index = 0;
         for (int i = 0; i < 6; i++) {
-            index |= tripleIndexHelper(i) << (2 * i);
+            index |= triplePairsMask(i) << (2 * i);
         }
         return index;
     }
@@ -856,10 +820,6 @@ public class FullFto {
 
         }
 
-        public InnerState(int rotation){
-            rotate(rotation);
-        }
-
         public InnerState(InnerState state) {
             this.corners = state.corners;
             this.edges = state.edges;
@@ -1071,41 +1031,6 @@ public class FullFto {
             CenterOrd.B.ordinal(),
             CenterOrd.L.ordinal(),
             CenterOrd.D.ordinal(),
-        };
-
-        private static final int[] YP_ROTATION_CORNERS = {
-            Corner.U_R.ordinal(),
-            Corner.U_F.ordinal(),
-            Corner.U_L.ordinal(),
-            Corner.D_B.ordinal(),
-            Corner.D_L.ordinal(),
-            Corner.D_R.ordinal(),
-        };
-
-        private static final int[] YP_ROTATION_EDGES = {
-            Edge.U_R.ordinal(),
-            Edge.U_L.ordinal(),
-            Edge.U_B.ordinal(),
-            Edge.B_BL.ordinal(),
-            Edge.L_BL.ordinal(),
-            Edge.F_L.ordinal(),
-            Edge.R_BR.ordinal(),
-            Edge.F_R.ordinal(),
-            Edge.B_BR.ordinal(),
-            Edge.D_BL.ordinal(),
-            Edge.D_F.ordinal(),
-            Edge.D_BR.ordinal(),
-        };
-
-        private static final int[] YP_ROTATION_CENTERS = {
-            CenterOrd.U.ordinal(), CenterOrd.U.ordinal(), CenterOrd.U.ordinal(),
-            CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(),
-            CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(),
-            CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(),
-            CenterOrd.B.ordinal(), CenterOrd.B.ordinal(), CenterOrd.B.ordinal(),
-            CenterOrd.L.ordinal(), CenterOrd.L.ordinal(), CenterOrd.L.ordinal(),
-            CenterOrd.R.ordinal(), CenterOrd.R.ordinal(), CenterOrd.R.ordinal(),
-            CenterOrd.D.ordinal(), CenterOrd.D.ordinal(), CenterOrd.D.ordinal()
         };
 
 
