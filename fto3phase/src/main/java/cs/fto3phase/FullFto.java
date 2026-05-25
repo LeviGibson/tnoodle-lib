@@ -242,10 +242,11 @@ public class FullFto {
      * @return true if the puzzle state satisfies phase 1 requirements
      */
     public boolean isPhaseOne(){
-        if (state.getCenterOrdinal(21) != CenterOrd.D.id ||
-            state.getCenterOrdinal(22) != CenterOrd.D.id ||
-            state.getCenterOrdinal(23) != CenterOrd.D.id)
+        //Are centers on D face solved?
+        if ((state.centers >> 42 & 0b111111) != 0b111111)
             return false;
+
+        //Are edgeso on D face solved?
         return (state.getEdge(9) == 9 &&
             state.getEdge(10) == 10 &&
             state.getEdge(11) == 11) ||
@@ -1215,14 +1216,10 @@ public class FullFto {
          * @return true if all centers on the face are solved
          */
         private boolean areCentersSolvedOnFace(CenterOrd face){
-            int centerId = face.id;
-            int[] faceCenters = CENTERS_ON_FACE[face.ordinal()];
-            for (int i = 0; i < 3; i++) {
-                if (getCenterOrdinal(faceCenters[i]) != centerId){
-                    return false;
-                }
-            }
-            return true;
+            int shift = face.ordinal() * 6;
+            int raw = face.ordinal() & 3;
+            int expected = raw | (raw << 2) | (raw << 4);
+            return ((int)(centers >> shift) & 0b111111) == expected;
         }
 
         /**
