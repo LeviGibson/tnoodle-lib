@@ -48,7 +48,6 @@ object Publications {
     }
 
     fun Project.configureSignatures(publication: PublishingExtension) {
-        if (project.findProperty("signing.skip") == "true") return
         configure<SigningExtension> {
             sign(publication.publications[derivePublicationName()])
         }

@@ -28,7 +28,6 @@ public class FtoSearch {
      */
     private static int PHASE_ONE_CANDIDATE_LIMIT = 1000;
     private static double PHASE_ONE_CANDIDATE_THREASHOLD = 0.3;
-    private static final int PHASE_TWO_CANDIDATE_LIMIT = 1;
 
     //--------------- Instance Fields ---------------//
 
@@ -53,18 +52,15 @@ public class FtoSearch {
      * @return the scramble string using TNoodle-compatible move names
      */
     public String solution(FullFto fto){
-        fto = new FullFto(fto); // Make a copy
+        fto = new FullFto(fto);
         nodes = 0;
-
         fto.clearMoveStack();
 
-        ArrayList<FullFto> candidates = solvePhaseOneCandidates(fto);
+        ArrayList<FullFto> candidates = iteratePhaseOneCandidates(fto);
+        FtoSymmetry phaseTwoSym = iteratePhaseTwo(candidates);
+        String solvedSolution = iteratePhaseThree(phaseTwoSym);
 
-        ArrayList<PhaseTwoCandidate> phaseTwoCandidates = solvePhaseTwoCandidates(candidates);
-
-        String bestSolution = solvePhaseThreeBestCandidate(phaseTwoCandidates);
-
-        return postProcess(bestSolution, fto);
+        return postProcess(solvedSolution, fto);
     }
 
     /**
@@ -116,18 +112,17 @@ public class FtoSearch {
      * @throws IllegalArgumentException if {@code fto} has a non-empty move history
      * @throws RuntimeException if no phase-one solution is found within the depth limit
      */
-    private ArrayList<FullFto> solvePhaseOneCandidates(FullFto fto) {
+    private ArrayList<FullFto> iteratePhaseOneCandidates(FullFto fto) {
 
         if (fto.historyLength() != 0){
             throw new IllegalArgumentException("FTO must have cleared history to find phase 1 candidates");
         }
 
-        State state = new State();
         ArrayList<FullFto> candidates = new ArrayList<>();
 
         //Run IDA* search for phase 1
         for (int depth = 0; depth < 100; depth++) {
-            boolean foundEnoughSolutions = searchPhaseOne(depth, state, candidates, fto);
+            boolean foundEnoughSolutions = searchPhaseOne(depth, candidates, fto);
 
             if (foundEnoughSolutions)
                 break;
@@ -143,23 +138,17 @@ public class FtoSearch {
     /**
      * IDA* search for phase one: solve the D-face center and edge orbit.
      * @param depth remaining search depth
-     * @param state accumulates solution strings
      * @param candidates collects promising phase-one completions
      * @param fto current puzzle state
      * @return {@code true} if enough candidates have been collected
      */
-    private boolean searchPhaseOne(int depth, State state, ArrayList<FullFto> candidates, FullFto fto){
+    private boolean searchPhaseOne(int depth, ArrayList<FullFto> candidates, FullFto fto){
         nodes++;
 
         if (depth == 0 && fto.isPhaseOne()){
-            //Nodes % n == 0
-            //The performance of the solver is significantly better
-            //when the phase 1 candidates are "spread out" (not too similar to each other)
-            //so Nodes % n == 0 is a pseudo-random number generator which does that.
             double p = logisticRegression(new FtoSymmetry(fto), 19-fto.historyLength());
 
             if (fto.isValidPhaseOneFinishingSequence() && p > PHASE_ONE_CANDIDATE_THREASHOLD){
-                state.solution[0] = fto.history();
                 candidates.add(new FullFto(fto));
             }
 
@@ -185,81 +174,42 @@ public class FtoSearch {
                 continue;
 
             fto.turn(move);
-            boolean foundSolution = searchPhaseOne(depth-1, state, candidates, fto);
-            fto.undo();
-
-            if (foundSolution)
+            if (searchPhaseOne(depth-1, candidates, fto))
                 return true;
+            fto.undo();
         }
 
         return false;
     }
 
-    /**
-     * Extends phase-one candidates into phase-two solutions.
-     * Iterative-deepening search is run across all candidates in parallel;
-     * the first completion found is returned.
-     * @param candidates the phase-one candidates from {@link #solvePhaseOneCandidates(FullFto)}
-     * @return list of phase-two-completed candidates
-     * @throws RuntimeException if no phase-two solution is found within the depth limit
-     */
-    private ArrayList<PhaseTwoCandidate> solvePhaseTwoCandidates(ArrayList<FullFto> candidates) {
-        State state = new State();
-        ArrayList<PhaseTwoCandidate> phaseTwoCandidates = new ArrayList<>();
+    private FtoSymmetry iteratePhaseTwo(ArrayList<FullFto> candidates) {
+        for (int totalDepth = 0; totalDepth < 100; totalDepth++) {
+            for (FullFto candidate : candidates) {
+                int phaseTwoDepth = totalDepth - candidate.historyLength();
+                if (phaseTwoDepth <= 0) continue;
 
-        for (int depth = 0; depth < 100; depth++) {
-            for (FullFto phaseOneCandidate : candidates){
-                int depthForSearch = Math.max(0, depth-phaseOneCandidate.historyLength());
-
-                if (depthForSearch == 0)
-                    continue;
-
-                FullFto copy = new FullFto(phaseOneCandidate);
-                copy.clearMoveStack();
-
-                ArrayList<FtoSymmetry> phaseTwoCandidateSolutions = new ArrayList<>();
-                boolean foundEnoughSolutions = searchPhaseTwo(depthForSearch, state, phaseTwoCandidateSolutions, new FtoSymmetry(copy));
-
-                for (FtoSymmetry phaseTwoCandidate : phaseTwoCandidateSolutions) {
-                    phaseTwoCandidates.add(new PhaseTwoCandidate(new FtoSymmetry(phaseOneCandidate), (phaseTwoCandidate)));
-                    if (phaseTwoCandidates.size() >= PHASE_TWO_CANDIDATE_LIMIT) {
-                        break;
-                    }
-                }
-
-                if (foundEnoughSolutions || phaseTwoCandidates.size() >= PHASE_TWO_CANDIDATE_LIMIT) {
-                    break;
-                }
-            }
-
-            if (phaseTwoCandidates.size() >= PHASE_TWO_CANDIDATE_LIMIT)
-                break;
-
-            if (depth == 99 && phaseTwoCandidates.isEmpty()){
-                throw new RuntimeException("Could not find FTO Phase 2 solution");
+                FtoSymmetry sym = new FtoSymmetry(candidate);
+                if (searchPhaseTwo(phaseTwoDepth, sym))
+                    return sym;
             }
         }
-
-        return phaseTwoCandidates;
+        throw new RuntimeException("Could not find FTO Phase 2 solution");
     }
 
-    /**
-     * IDA* search for phase two: reduce to the octaminx subgroup.
-     * This phase requires the most moves and is pruned aggressively
-     * using both look-up tables and a logistic regression model.
-     * @param depth remaining search depth
-     * @param state accumulates solution strings
-     * @param candidates collects completed phase-two symmetry states
-     * @param fto current symmetry state
-     * @return {@code true} if enough candidates have been found
-     */
-    private boolean searchPhaseTwo(int depth, State state, ArrayList<FtoSymmetry> candidates, FtoSymmetry fto){
+    private String iteratePhaseThree(FtoSymmetry sym) {
+        for (int depth = 0; depth < 100; depth++) {
+            FtoSymmetry copy = new FtoSymmetry(sym);
+            if (searchPhaseThree(depth, copy))
+                return copy.history();
+        }
+        throw new RuntimeException("Could not find FTO Phase 3 solution");
+    }
+
+    private boolean searchPhaseTwo(int depth, FtoSymmetry fto){
         nodes++;
 
         if (fto.isPhaseTwo()){
-            state.solution[1] = fto.history();
-            candidates.add(new FtoSymmetry(fto));
-            return candidates.size() >= PHASE_TWO_CANDIDATE_LIMIT;
+            return true;
         }
 
         if (depth == 0){
@@ -300,75 +250,24 @@ public class FtoSearch {
                 continue;
 
             fto.turn(move);
-            boolean foundSolution = searchPhaseTwo(depth-1, state, candidates, fto);
-            fto.undo();
-
-            if (foundSolution)
+            if (searchPhaseTwo(depth-1, fto))
                 return true;
+            fto.undo();
         }
 
         return false;
     }
 
     /**
-     * Runs the phase-three search on every phase-two candidate and
-     * returns the shortest complete solution found.
-     *
-     * <p><b>Note:</b> The returned solution must still be passed through
-     * {@link #postProcess(String, FullFto)} to produce a valid random-state scramble.
-     *
-     * @param phaseTwoCandidates the candidates from {@link #solvePhaseTwoCandidates(ArrayList)}
-     * @return the shortest concatenated three-phase solution found
-     * @throws RuntimeException if no phase-three solution is found within the depth limit
-     */
-    private String solvePhaseThreeBestCandidate(ArrayList<PhaseTwoCandidate> phaseTwoCandidates) {
-        String bestSolution = null;
-        int bestSolutionLength = Integer.MAX_VALUE;
-
-        for (PhaseTwoCandidate candidate : phaseTwoCandidates) {
-
-            FtoSymmetry copy = new FtoSymmetry(candidate.phaseTwoSolution);
-            copy.clearMoveStack();
-
-            State candidateState = new State();
-            candidateState.solution[0] = candidate.phaseOneSolution.history();
-            candidateState.solution[1] = candidate.phaseTwoSolution.history();
-
-            //IDA* search for phase 3
-            for (int depth = 0; depth < 100; depth++) {
-                boolean foundSolution = searchPhaseThree(depth, candidateState, copy);
-
-                if (foundSolution)
-                    break;
-
-                if (depth == 99){
-                    throw new RuntimeException("Could not find FTO Phase 3 solution");
-                }
-            }
-
-            String candidateSolution = candidateState.solution[0] + candidateState.solution[1] + candidateState.solution[2];
-            int candidateSolutionLength = algLen(candidateSolution);
-            if (candidateSolutionLength < bestSolutionLength) {
-                bestSolution = candidateSolution;
-                bestSolutionLength = candidateSolutionLength;
-            }
-        }
-
-        return bestSolution;
-    }
-
-    /**
      * IDA* search for phase three: solve the reduced octaminx state.
      * @param depth remaining search depth
-     * @param state accumulates solution strings
      * @param fto current symmetry state
      * @return {@code true} if a solution was found
      */
-    private boolean searchPhaseThree(int depth, State state, FtoSymmetry fto){
+    private boolean searchPhaseThree(int depth, FtoSymmetry fto){
         nodes++;
 
         if (fto.isSolved()){
-            state.solution[2] = fto.history();
             return true;
         }
 
@@ -388,11 +287,9 @@ public class FtoSearch {
                 continue;
 
             fto.turn(move);
-            boolean foundSolution = searchPhaseThree(depth-1, state, fto);
-            fto.undo();
-
-            if (foundSolution)
+            if (searchPhaseThree(depth-1, fto))
                 return true;
+            fto.undo();
         }
 
         return false;
@@ -850,20 +747,6 @@ public class FtoSearch {
     /**
      * Accumulates the concatenated solution strings from each of the three phases.
      */
-    private static class State{
-        String[] solution = new String[3];
-    }
-
-    private static class PhaseTwoCandidate {
-        FtoSymmetry phaseOneSolution;
-        FtoSymmetry phaseTwoSolution;
-
-        PhaseTwoCandidate(FtoSymmetry phaseOneSolution, FtoSymmetry phaseTwoSolution) {
-            this.phaseOneSolution = phaseOneSolution;
-            this.phaseTwoSolution = phaseTwoSolution;
-        }
-    }
-
     private static final class LongSet {
         private static final float LOAD_FACTOR = 0.75f;
 
