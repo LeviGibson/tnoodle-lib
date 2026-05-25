@@ -1,16 +1,16 @@
 package cs.fto3phase;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.Stack;
 
 public class FullFto {
     /** The internal representation of the FTO puzzle state. */
     private InnerState state = new InnerState();
 
     /** History stacks supporting {@link #undo()} and {@link #isRepetition(Move)}. */
-    private final Stack<InnerState> stateHistory = new Stack<>();
-    private final Stack<Move> moveHistory = new Stack<>();
+    private final ArrayList<InnerState> stateHistory = new ArrayList<>();
+    private final ArrayList<Move> moveHistory = new ArrayList<>();
 
     //--------------- Constructors ---------------//
 
@@ -90,8 +90,8 @@ public class FullFto {
      * @param move the move to apply
      */
     public void turn(Move move){
-        moveHistory.push(move);
-        stateHistory.push(new InnerState(state));
+        moveHistory.add(move);
+        stateHistory.add(new InnerState(state));
         state.turn(move);
     }
 
@@ -100,8 +100,8 @@ public class FullFto {
      */
     public void undo(){
         assert (!moveHistory.isEmpty());
-        moveHistory.pop();
-        state = stateHistory.pop();
+        moveHistory.remove(moveHistory.size() - 1);
+        state = stateHistory.remove(stateHistory.size() - 1);
     }
 
     /**
@@ -126,7 +126,7 @@ public class FullFto {
      * @return the last move
      */
     public Move lastMove(){
-        return moveHistory.peek();
+        return moveHistory.get(moveHistory.size() - 1);
     }
 
     /**
@@ -149,7 +149,7 @@ public class FullFto {
         if (moveHistory.isEmpty())
             return false;
 
-        Move lastMove = moveHistory.peek();
+        Move lastMove = moveHistory.get(moveHistory.size() - 1);
         int moveId = move.id;
         if (move == lastMove || INVERT_MOVE[moveId] == lastMove) {
             return true;
@@ -178,7 +178,7 @@ public class FullFto {
 
         if (moveHistory.isEmpty()) return true;
 
-        Move lastMove = moveHistory.peek();
+        Move lastMove = moveHistory.get(moveHistory.size() - 1);
 
         Move[] parallelMoves = PARALLEL_MOVES[lastMove.id];
         if ((move == parallelMoves[0] || move == parallelMoves[1]) && (move.id < lastMove.id)) {
