@@ -12,6 +12,8 @@ public class FullFto {
     private final Stack<InnerState> stateHistory = new Stack<>();
     private final Stack<Move> moveHistory = new Stack<>();
 
+    //--------------- Constructors ---------------//
+
     /** Creates a new FullFto in the solved state. */
     public FullFto(){
     }
@@ -27,57 +29,7 @@ public class FullFto {
         this.moveHistory.addAll(fto.moveHistory);
     }
 
-    /**
-     * Returns the number of moves applied to the FTO.
-     * @return the number of moves in the move history
-     */
-    public int historyLength() {
-        assert (moveHistory.size() == stateHistory.size());
-        return moveHistory.size();
-    }
-
-    /**
-     * Clears the move and state history. Affects {@link #undo()} and {@link #isRepetition(Move)}.
-     */
-    public void clearMoveStack(){
-        moveHistory.clear();
-        stateHistory.clear();
-    }
-
-    /**
-     * Converts the phase 2 edge permutation into a compact index.
-     * @return a compact index representing the edge permutation
-     */
-    public int phaseTwoEdgeIndex() {
-        return state.phaseTwoEdgeIndex();
-    }
-
-    /**
-     * Returns the Zobrist hash for phase 1.
-     * Incorporates D-face edges and centers.
-     * @return the phase 1 hash
-     */
-    public long phaseOneHash() {
-        return state.phaseOneHash();
-    }
-
-    /**
-     * Returns the Zobrist hash for phase 2.
-     * Incorporates R, L, B face edges and centers.
-     * @return the phase 2 hash
-     */
-    public long phaseTwoHash() {
-        return state.phaseTwoHash();
-    }
-
-    /**
-     * Returns the Zobrist hash for phase 3.
-     * Incorporates all remaining corners and edges.
-     * @return the phase 3 hash
-     */
-    public long phaseThreeHash() {
-        return state.phaseThreeHash();
-    }
+    //--------------- Enums ---------------//
 
     /**
      * Ordinal values of the centers.
@@ -131,32 +83,206 @@ public class FullFto {
         }
     }
 
-    /**
-     * Indexed as MATCHING_CENTERS[cornerIndex][cornerOrientation].
-     * Used for counting triples and triple pairs.
-     */
-    static final int[][] MATCHING_CENTERS =  {
-        {CenterOrd.U.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.U.ordinal()}, // U_L
-        {CenterOrd.U.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.U.ordinal()}, // U_R
-        {CenterOrd.U.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.U.ordinal()}, // U_F
-        {CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal()}, // D_L
-        {CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal()}, // D_R
-        {CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal()} // D_B
-
-    };
+    //--------------- Move History Operations ---------------//
 
     /**
-     * Helper table for triple functions.
-     * Contains the location of where the matching centers should be.
+     * Applies a move to the puzzle, saving the previous state to the history stack.
+     * @param move the move to apply
      */
-    static final int[][] TRIPLE_LOCATIONS =  {
-        {0, 9}, // U_L
-        {1, 6}, // U_R
-        {2, 3}, // U_F
-        {5, 10}, // D_L
-        {8, 4}, // D_R
-        {11, 7} // D_B
-    };
+    public void turn(Move move){
+        moveHistory.push(move);
+        stateHistory.push(new InnerState(state));
+        state.turn(move);
+    }
+
+    /**
+     * Reverts the most recent move, restoring the previous state.
+     */
+    public void undo(){
+        assert (!moveHistory.isEmpty());
+        moveHistory.pop();
+        state = stateHistory.pop();
+    }
+
+    /**
+     * Returns the number of moves applied to the FTO.
+     * @return the number of moves in the move history
+     */
+    public int historyLength() {
+        assert (moveHistory.size() == stateHistory.size());
+        return moveHistory.size();
+    }
+
+    /**
+     * Clears the move and state history. Affects {@link #undo()} and {@link #isRepetition(Move)}.
+     */
+    public void clearMoveStack(){
+        moveHistory.clear();
+        stateHistory.clear();
+    }
+
+    /**
+     * Returns the most recently applied move.
+     * @return the last move
+     */
+    public Move lastMove(){
+        return moveHistory.peek();
+    }
+
+    /**
+     * Returns the i-th most recent move (0 = most recent).
+     * @param i offset from the most recent move
+     * @return the move at the given offset
+     */
+    public Move lastMove(int i){
+        return moveHistory.get(moveHistory.size() - 1 - i);
+    }
+
+    /**
+     * Checks whether applying the given move would immediately repeat or invert the last move(s),
+     * considering parallel move relationships.
+     * @param move the move to check
+     * @return true if the move would create a repetition
+     */
+    public boolean isRepetition(Move move){
+
+        if (moveHistory.isEmpty())
+            return false;
+
+        Move lastMove = moveHistory.peek();
+        int moveId = move.id;
+        if (move == lastMove || INVERT_MOVE[moveId] == lastMove) {
+            return true;
+        }
+
+        if (moveHistory.size() < 2){
+            return false;
+        }
+
+        Move lastLastmove = moveHistory.get(moveHistory.size()-2);
+
+        if (move == lastLastmove || INVERT_MOVE[moveId] == lastLastmove) {
+            Move[] parallelMoves = PARALLEL_MOVES[lastLastmove.id];
+            return parallelMoves[0] == move || parallelMoves[1] == move;
+        }
+
+        return false;
+    }
+
+    /**
+     * Validates whether the given move can be applied without creating a redundant parallel sequence.
+     * @param move the move to validate
+     * @return true if the move is valid in the current sequence
+     */
+    public boolean isValidParallelSequence(Move move){
+
+        if (moveHistory.isEmpty()) return true;
+
+        Move lastMove = moveHistory.peek();
+
+        Move[] parallelMoves = PARALLEL_MOVES[lastMove.id];
+        if ((move == parallelMoves[0] || move == parallelMoves[1]) && (move.id < lastMove.id)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns true if the given move would break phase 1 constraints (F, BR, BL and their inverses).
+     * @param move the move to check
+     * @return true if the move breaks phase 1
+     */
+    public static boolean isPhaseOneBreakingMove(Move move){
+        return move == Move.F || move == Move.FP || move == Move.BR || move == Move.BRP || move == Move.BL || move == Move.BLP;
+    }
+
+    /**
+     * Checks whether the last two moves form a valid phase 1 finishing sequence.
+     * @return true if the sequence is valid or if fewer than 2 moves have been applied
+     */
+    public boolean isValidPhaseOneFinishingSequence(){
+
+        if (historyLength() < 2) return true;
+
+        Move lastMove = lastMove();
+        Move lastLastMove = lastMove(1);
+
+        if (!isPhaseOneBreakingMove(lastMove))
+            return false;
+
+        Move[] parallelMoves = PARALLEL_MOVES[lastMove.id];
+        if (parallelMoves[0] == lastLastMove)
+            return false;
+
+        return parallelMoves[1] != lastLastMove;
+    }
+
+    //--------------- State Queries ---------------//
+
+    /**
+     * Returns whether the puzzle is in the solved state.
+     * @return true if solved
+     */
+    public boolean isSolved(){
+        return state.isSolved();
+    }
+
+    /**
+     * Returns whether the puzzle is in a normalized orientation (R face center at R_L position).
+     * @return true if normalized
+     */
+    public boolean isNormalized(){
+        return state.getCenterOrdinal(CenterInd.R_L.ordinal()) == CenterOrd.R.id;
+    }
+
+    /**
+     * Checks whether the puzzle is in phase 1 of the solve.
+     * D-face centers must be solved and D-face edges must be in a valid cycle.
+     * @return true if the puzzle state satisfies phase 1 requirements
+     */
+    public boolean isPhaseOne(){
+        if (state.getCenterOrdinal(21) != CenterOrd.D.id ||
+            state.getCenterOrdinal(22) != CenterOrd.D.id ||
+            state.getCenterOrdinal(23) != CenterOrd.D.id)
+            return false;
+        return (state.getEdge(9) == 9 &&
+            state.getEdge(10) == 10 &&
+            state.getEdge(11) == 11) ||
+                (state.getEdge(9) == 11 &&
+                    state.getEdge(10) == 9 &&
+                    state.getEdge(11) == 10) ||
+                (state.getEdge(9) == 10 &&
+                    state.getEdge(10) == 11 &&
+                    state.getEdge(11) == 9);
+    }
+
+    /**
+     * Checks whether the puzzle is in phase 2 of the solve.
+     * All corners must form complete triples, and the R, L, and B faces must be solved.
+     * @return true if the puzzle state satisfies phase 2 requirements
+     */
+    public boolean isPhaseTwo(){
+        for (int i = 0; i < 6; i++) {
+            if (!isTriple(i))
+                return false;
+        }
+
+        return state.isFaceSolved(CenterOrd.R) && state.isFaceSolved(CenterOrd.L) && state.isFaceSolved(CenterOrd.B);
+    }
+
+    /**
+     * Compares this FullFto with another for structural equality.
+     * @param fto the FullFto to compare with
+     * @return true if the internal corner, edge, and center state match
+     */
+    public boolean equals(FullFto fto){
+        return fto.state.corners == this.state.corners &&
+                fto.state.edges == this.state.edges &&
+                fto.state.centers == this.state.centers;
+    }
+
+    //--------------- Triple Methods ---------------//
 
     /**
      * Returns whether the given corner forms a triple with its adjacent centers.
@@ -273,100 +399,6 @@ public class FullFto {
     }
 
     /**
-     * Checks whether the puzzle is in phase 1 of the solve.
-     * D-face centers must be solved and D-face edges must be in a valid cycle.
-     * @return true if the puzzle state satisfies phase 1 requirements
-     */
-    public boolean isPhaseOne(){
-        if (state.getCenterOrdinal(21) != CenterOrd.D.id ||
-            state.getCenterOrdinal(22) != CenterOrd.D.id ||
-            state.getCenterOrdinal(23) != CenterOrd.D.id)
-            return false;
-        return (state.getEdge(9) == 9 &&
-            state.getEdge(10) == 10 &&
-            state.getEdge(11) == 11) ||
-                (state.getEdge(9) == 11 &&
-                    state.getEdge(10) == 9 &&
-                    state.getEdge(11) == 10) ||
-                (state.getEdge(9) == 10 &&
-                    state.getEdge(10) == 11 &&
-                    state.getEdge(11) == 9);
-    }
-
-    /**
-     * Checks whether the puzzle is in phase 2 of the solve.
-     * All corners must form complete triples, and the R, L, and B faces must be solved.
-     * @return true if the puzzle state satisfies phase 2 requirements
-     */
-    public boolean isPhaseTwo(){
-        for (int i = 0; i < 6; i++) {
-            if (!isTriple(i))
-                return false;
-        }
-
-        return state.isFaceSolved(CenterOrd.R) && state.isFaceSolved(CenterOrd.L) && state.isFaceSolved(CenterOrd.B);
-    }
-
-    //--------------- Zobrist Hash Keys ---------------//
-
-    private static final long[][] PHASE2_CENTER_KEYS = new long[8][24];
-    private static final long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
-    private static final long[][][] PHASE3_CORNER_KEYS = new long[6][6][4];
-    private static final long[][] PHASE3_EDGE_KEYS = new long[9][9];
-
-    static {
-        Random r =  new Random();
-
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 24; j++) {
-                PHASE2_CENTER_KEYS[i][j] = r.nextLong();
-            }
-        }
-
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 3; j++) {
-                for (int k = 0; k < 12; k++) {
-                    PHASE2_EDGE_KEYS[i][j][k] = r.nextLong();
-                }
-            }
-        }
-
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                for (int k = 0; k < 4; k++) {
-                    PHASE3_CORNER_KEYS[i][j][k] = r.nextLong();
-                }
-            }
-        }
-
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                PHASE3_EDGE_KEYS[i][j] = r.nextLong();
-            }
-        }
-    }
-
-    private static boolean contains(int[] arr, int target) {
-        for (int num : arr) {
-            if (num == target) return true;
-        }
-        return false;
-    }
-
-
-    /**
-     * Reference table used for triple data.
-     */
-    static final int[][] MATCHING_CENTER_INDICES =  {
-        {0, 9, 9, 0}, // U_L
-        {1, 6, 6, 1}, // U_R
-        {2, 3, 3, 2}, // U_F
-        {5, 5, 10, 10}, // D_L
-        {8, 8, 4, 4}, // D_R
-        {11, 11, 7, 7} // D_B
-    };
-
-    /**
      * Packs the phase 2 triple data into a compact hash.
      * @return packed triple data
      */
@@ -416,124 +448,44 @@ public class FullFto {
         return true;
     }
 
+    //--------------- Hash / Index Methods ---------------//
+
     /**
-     * Returns the most recently applied move.
-     * @return the last move
+     * Converts the phase 2 edge permutation into a compact index.
+     * @return a compact index representing the edge permutation
      */
-    public Move lastMove(){
-        return moveHistory.peek();
+    public int phaseTwoEdgeIndex() {
+        return state.phaseTwoEdgeIndex();
     }
 
     /**
-     * Returns the i-th most recent move (0 = most recent).
-     * @param i offset from the most recent move
-     * @return the move at the given offset
+     * Returns the Zobrist hash for phase 1.
+     * Incorporates D-face edges and centers.
+     * @return the phase 1 hash
      */
-    public Move lastMove(int i){
-        return moveHistory.get(moveHistory.size() - 1 - i);
+    public long phaseOneHash() {
+        return state.phaseOneHash();
     }
 
     /**
-     * Returns true if the given move would break phase 1 constraints (F, BR, BL and their inverses).
-     * @param move the move to check
-     * @return true if the move breaks phase 1
+     * Returns the Zobrist hash for phase 2.
+     * Incorporates R, L, B face edges and centers.
+     * @return the phase 2 hash
      */
-    public static boolean isPhaseOneBreakingMove(Move move){
-        return move == Move.F || move == Move.FP || move == Move.BR || move == Move.BRP || move == Move.BL || move == Move.BLP;
+    public long phaseTwoHash() {
+        return state.phaseTwoHash();
     }
 
     /**
-     * Checks whether the last two moves form a valid phase 1 finishing sequence.
-     * @return true if the sequence is valid or if fewer than 2 moves have been applied
+     * Returns the Zobrist hash for phase 3.
+     * Incorporates all remaining corners and edges.
+     * @return the phase 3 hash
      */
-    public boolean isValidPhaseOneFinishingSequence(){
-
-        if (historyLength() < 2) return true;
-
-        Move lastMove = lastMove();
-        Move lastLastMove = lastMove(1);
-
-        if (!isPhaseOneBreakingMove(lastMove))
-            return false;
-
-        Move[] parallelMoves = PARALLEL_MOVES[lastMove.id];
-        if (parallelMoves[0] == lastLastMove)
-            return false;
-
-        return parallelMoves[1] != lastLastMove;
+    public long phaseThreeHash() {
+        return state.phaseThreeHash();
     }
 
-    static final Move[] INVERT_MOVE = {Move.RP, Move.LP, Move.UP, Move.DP, Move.FP, Move.BP, Move.BRP, Move.BLP,
-        Move.R, Move.L, Move.U, Move.D, Move.F, Move.B, Move.BR, Move.BL};
-
-    static final Move[][] PARALLEL_MOVES = {
-        {Move.BL, Move.BLP}, // R
-        {Move.BR, Move.BRP}, // L
-        {Move.D, Move.DP}, // U
-        {Move.U, Move.UP}, // D
-        {Move.B, Move.BP}, // F
-        {Move.F, Move.FP}, // B
-        {Move.L, Move.LP}, // BR
-        {Move.R, Move.RP}, // BL
-        {Move.BL, Move.BLP}, // RP
-        {Move.BR, Move.BRP}, // LP
-        {Move.D, Move.DP}, // UP
-        {Move.U, Move.UP}, // DP
-        {Move.B, Move.BP}, // FP
-        {Move.F, Move.FP}, // BP
-        {Move.L, Move.LP}, // BRP
-        {Move.R, Move.RP}, // BLP
-    };
-
-    /**
-     * Validates whether the given move can be applied without creating a redundant parallel sequence.
-     * @param move the move to validate
-     * @return true if the move is valid in the current sequence
-     */
-    public boolean isValidParallelSequence(Move move){
-
-        if (moveHistory.isEmpty()) return true;
-
-        Move lastMove = moveHistory.peek();
-
-        Move[] parallelMoves = PARALLEL_MOVES[lastMove.id];
-        if ((move == parallelMoves[0] || move == parallelMoves[1]) && (move.id < lastMove.id)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Checks whether applying the given move would immediately repeat or invert the last move(s),
-     * considering parallel move relationships.
-     * @param move the move to check
-     * @return true if the move would create a repetition
-     */
-    public boolean isRepetition(Move move){
-
-        if (moveHistory.isEmpty())
-            return false;
-
-        Move lastMove = moveHistory.peek();
-        int moveId = move.id;
-        if (move == lastMove || INVERT_MOVE[moveId] == lastMove) {
-            return true;
-        }
-
-        if (moveHistory.size() < 2){
-            return false;
-        }
-
-        Move lastLastmove = moveHistory.get(moveHistory.size()-2);
-
-        if (move == lastLastmove || INVERT_MOVE[moveId] == lastLastmove) {
-            Move[] parallelMoves = PARALLEL_MOVES[lastLastmove.id];
-            return parallelMoves[0] == move || parallelMoves[1] == move;
-        }
-
-        return false;
-    }
+    //--------------- Scramble Methods ---------------//
 
     /**
      * Scrambles the puzzle into a random G2 state with a default of 500 moves.
@@ -633,44 +585,7 @@ public class FullFto {
         return fto;
     }
 
-    /**
-     * Applies a move to the puzzle, saving the previous state to the history stack.
-     * @param move the move to apply
-     */
-    public void turn(Move move){
-        moveHistory.push(move);
-        stateHistory.push(new InnerState(state));
-        state.turn(move);
-    }
-
-    /**
-     * Enables tracking of center indices.
-     * Must be called from the solved state.
-     * @throws IllegalStateException if the puzzle is not solved
-     */
-    public void enableCenterIndexTracking(){
-        if (!isSolved()) {
-            throw new IllegalStateException("Center index tracking can only be enabled from a solved state.");
-        }
-        state.enableCenterIndexTracking();
-    }
-
-    /**
-     * Reverts the most recent move, restoring the previous state.
-     */
-    public void undo(){
-        assert (!moveHistory.isEmpty());
-        moveHistory.pop();
-        state = stateHistory.pop();
-    }
-
-    /**
-     * Returns whether the puzzle is in the solved state.
-     * @return true if solved
-     */
-    public boolean isSolved(){
-        return state.isSolved();
-    }
+    //--------------- I/O Methods ---------------//
 
     /**
      * Parses and applies an algorithm string.
@@ -704,14 +619,6 @@ public class FullFto {
     }
 
     /**
-     * Rotates the entire puzzle. Only valid on a solved cube.
-     * @param n 1 = y rotation, 2 = y' rotation
-     */
-    public void rotate(int n){
-        state.rotate(n);
-    }
-
-    /**
      * Prints the current corner, edge, and center state to stdout.
      */
     public void print(){
@@ -728,24 +635,138 @@ public class FullFto {
         }
     }
 
+    //--------------- Other Methods ---------------//
+
     /**
-     * Returns whether the puzzle is in a normalized orientation (R face center at R_L position).
-     * @return true if normalized
+     * Enables tracking of center indices.
+     * Must be called from the solved state.
+     * @throws IllegalStateException if the puzzle is not solved
      */
-    public boolean isNormalized(){
-        return state.getCenterOrdinal(CenterInd.R_L.ordinal()) == CenterOrd.R.id;
+    public void enableCenterIndexTracking(){
+        if (!isSolved()) {
+            throw new IllegalStateException("Center index tracking can only be enabled from a solved state.");
+        }
+        state.enableCenterIndexTracking();
     }
 
     /**
-     * Compares this FullFto with another for structural equality.
-     * @param fto the FullFto to compare with
-     * @return true if the internal corner, edge, and center state match
+     * Rotates the entire puzzle. Only valid on a solved cube.
+     * @param n 1 = y rotation, 2 = y' rotation
      */
-    public boolean equals(FullFto fto){
-        return fto.state.corners == this.state.corners &&
-                fto.state.edges == this.state.edges &&
-                fto.state.centers == this.state.centers;
+    public void rotate(int n){
+        state.rotate(n);
     }
+
+    //--------------- Static Tables ---------------//
+
+    /**
+     * Indexed as MATCHING_CENTERS[cornerIndex][cornerOrientation].
+     * Used for counting triples and triple pairs.
+     */
+    static final int[][] MATCHING_CENTERS =  {
+        {CenterOrd.U.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.U.ordinal()}, // U_L
+        {CenterOrd.U.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.U.ordinal()}, // U_R
+        {CenterOrd.U.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.U.ordinal()}, // U_F
+        {CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal()}, // D_L
+        {CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal()}, // D_R
+        {CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal()} // D_B
+
+    };
+
+    /**
+     * Helper table for triple functions.
+     * Contains the location of where the matching centers should be.
+     */
+    static final int[][] TRIPLE_LOCATIONS =  {
+        {0, 9}, // U_L
+        {1, 6}, // U_R
+        {2, 3}, // U_F
+        {5, 10}, // D_L
+        {8, 4}, // D_R
+        {11, 7} // D_B
+    };
+
+    /**
+     * Reference table used for triple data.
+     */
+    static final int[][] MATCHING_CENTER_INDICES =  {
+        {0, 9, 9, 0}, // U_L
+        {1, 6, 6, 1}, // U_R
+        {2, 3, 3, 2}, // U_F
+        {5, 5, 10, 10}, // D_L
+        {8, 8, 4, 4}, // D_R
+        {11, 11, 7, 7} // D_B
+    };
+
+    static final Move[] INVERT_MOVE = {Move.RP, Move.LP, Move.UP, Move.DP, Move.FP, Move.BP, Move.BRP, Move.BLP,
+        Move.R, Move.L, Move.U, Move.D, Move.F, Move.B, Move.BR, Move.BL};
+
+    static final Move[][] PARALLEL_MOVES = {
+        {Move.BL, Move.BLP}, // R
+        {Move.BR, Move.BRP}, // L
+        {Move.D, Move.DP}, // U
+        {Move.U, Move.UP}, // D
+        {Move.F, Move.FP}, // F
+        {Move.B, Move.BP}, // B
+        {Move.L, Move.LP}, // BR
+        {Move.R, Move.RP}, // BL
+        {Move.BL, Move.BLP}, // RP
+        {Move.BR, Move.BRP}, // LP
+        {Move.D, Move.DP}, // UP
+        {Move.U, Move.UP}, // DP
+        {Move.F, Move.FP}, // FP
+        {Move.B, Move.BP}, // BP
+        {Move.L, Move.LP}, // BRP
+        {Move.R, Move.RP}, // BLP
+    };
+
+    //--------------- Zobrist Hash Keys ---------------//
+
+    private static final long[][] PHASE2_CENTER_KEYS = new long[8][24];
+    private static final long[][][] PHASE2_EDGE_KEYS = new long[12][3][12];
+    private static final long[][][] PHASE3_CORNER_KEYS = new long[6][6][4];
+    private static final long[][] PHASE3_EDGE_KEYS = new long[9][9];
+
+    static {
+        Random r =  new Random();
+
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 24; j++) {
+                PHASE2_CENTER_KEYS[i][j] = r.nextLong();
+            }
+        }
+
+        for (int i = 0; i < 12; i++) {
+            for (int j = 0; j < 3; j++) {
+                for (int k = 0; k < 12; k++) {
+                    PHASE2_EDGE_KEYS[i][j][k] = r.nextLong();
+                }
+            }
+        }
+
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 6; j++) {
+                for (int k = 0; k < 4; k++) {
+                    PHASE3_CORNER_KEYS[i][j][k] = r.nextLong();
+                }
+            }
+        }
+
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                PHASE3_EDGE_KEYS[i][j] = r.nextLong();
+            }
+        }
+    }
+
+    private static boolean contains(int[] arr, int target) {
+        for (int num : arr) {
+            if (num == target) return true;
+        }
+        return false;
+    }
+
+    //--------------- Inner State ---------------//
 
     private static class InnerState{
         int corners = SOLVED_CORNERS;
@@ -1449,6 +1470,8 @@ public class FullFto {
             return corners == SOLVED_CORNERS && edges == SOLVED_EDGES && centers == SOLVED_CENTERS;
         }
     }
+
+    //--------------- Main ---------------//
 
     public static void main(String[] args) {
         FullFto fto = new  FullFto();

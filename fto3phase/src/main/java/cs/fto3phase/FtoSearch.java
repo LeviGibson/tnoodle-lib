@@ -1039,6 +1039,6 @@ public class FtoSearch {
      * @param args ignored
      */
     public static void main(String[] args) {
-        performanceTest(500);
+        performanceTest(100);
     }
 }
