@@ -188,7 +188,7 @@ public class FtoSearch {
                 if (phaseTwoDepth <= 0) continue;
 
                 FtoSymmetry sym = new FtoSymmetry(candidate);
-                if (searchPhaseTwo(phaseTwoDepth, sym))
+                if (searchPhaseTwo(phaseTwoDepth, 0, sym))
                     return sym;
             }
         }
@@ -204,7 +204,7 @@ public class FtoSearch {
         throw new RuntimeException("Could not find FTO Phase 3 solution");
     }
 
-    private boolean searchPhaseTwo(int depth, FtoSymmetry fto){
+    private boolean searchPhaseTwo(int depth, int ply, FtoSymmetry fto){
         nodes++;
 
         if (fto.isPhaseTwo()){
@@ -220,7 +220,6 @@ public class FtoSearch {
             return false;
         }
 
-        int ply = fto.historyLength();
         //Logistic Regression model determines the likelihood of the current subtree having a solution
         //Subtrees that are unlikely to have a solution are cut
         if (depth > PHASE_TWO_PRUNING_DEPTH && depth < 20 && ply > 0){
@@ -245,11 +244,11 @@ public class FtoSearch {
             if (fto.isRepetition(move))
                 continue;
 
-            if (!fto.isValidParallelSequence(move))
+            if (ply != 0 && !fto.isValidParallelSequence(move))
                 continue;
 
             fto.turn(move);
-            if (searchPhaseTwo(depth-1, fto))
+            if (searchPhaseTwo(depth-1, ply+1, fto))
                 return true;
             fto.undo();
         }

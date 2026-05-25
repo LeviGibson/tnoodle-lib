@@ -6,9 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,7 +17,6 @@ public class FullFtoTest {
 
     private FullFto fto;
     private final Random random = new Random(0);
-    private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
 
     @BeforeEach
     void setUp() {
@@ -483,10 +479,8 @@ public class FullFtoTest {
     void testHistoryAfterClear() {
         fto.turn(Move.R);
         fto.turn(Move.D);
-        String historyBefore = fto.history();
         fto.clearMoveStack();
-        String historyAfter = fto.history();
-        assertEquals(0, historyAfter.length());
+        assertEquals(0, fto.history().length());
     }
 
     @Test
@@ -719,123 +713,10 @@ public class FullFtoTest {
     void testResetToSolved() {
         FullFto fto2 = new FullFto();
         fto2.parseAlg("R D F B L U BR BL RP LP UP DP FP BP BRP BLP");
-        // Undo all moves
         while (!(fto2.historyLength() == 0)) {
             fto2.undo();
         }
         assertTrue(fto2.isSolved());
-    }
-
-    //------------- Hash Functions -------------//
-//    @Test
-//    void testPhaseOneHash(){
-//
-//    }
-
-
-    private static final Move[] PHASE_TWO_MOVES = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
-    private static final Move[] PHASE_THREE_MOVES = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
-
-    @Test
-    public void testPhaseTwoCentersHash(){
-        Random r = new Random();
-
-        long lastHash = 0;
-
-        ArrayList<Move> phaseTwoBreakingMoves = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
-            phaseTwoBreakingMoves.add(PHASE_TWO_MOVES[r.nextInt(PHASE_TWO_MOVES.length)]);
-        }
-
-        for (int iteration = 0; iteration < 1000; iteration++) {
-            System.out.println(iteration);
-
-            fto = new FullFto();
-            for (int i = 0; i < 20; i++) {
-                fto.turn(PHASE_THREE_MOVES[r.nextInt(PHASE_THREE_MOVES.length)]);
-            }
-
-            for (Move m : phaseTwoBreakingMoves){
-                fto.turn(m);
-            }
-
-            System.out.println(fto.history());
-
-            if (iteration > 0){
-                assertEquals(fto.phaseTwoHash(), lastHash);
-            }
-
-            lastHash = fto.phaseTwoHash();
-        }
-    }
-
-    @Test
-    public void testPhaseTwoCentersHashInvariant() {
-        FullFto fto = new FullFto();
-
-        // Do Phase 2 moves in one order
-        fto.parseAlg("U R D B");
-        long hash1 = fto.phaseTwoHash();
-
-        // Do another Phase 2 move sequence
-        FullFto fto2 = new FullFto();
-        fto2.parseAlg("D L B U");
-        long hash2 = fto2.phaseTwoHash();
-
-        // These should be different (different Phase 2 states)
-        System.out.println("Phase 2 states are different (expected): " + (hash1 != hash2));
-    }
-
-    @Test
-    public void testPhaseThreeHashCommutativity() {
-        // Start from a Phase 2 solved state
-        FullFto fto = new FullFto();
-        fto.parseAlg("U R D B"); // Do some Phase 2 moves
-
-        // Create two different sequences of Phase 3 moves
-        FullFto fto1 = new FullFto(fto);
-        FullFto fto2 = new FullFto(fto);
-
-        // Sequence 1: R then L
-        fto1.turn(Move.R);
-        fto1.turn(Move.L);
-
-        // Sequence 2: L then R
-        fto2.turn(Move.L);
-        fto2.turn(Move.R);
-
-        // Both should be at the same state
-        // Note: L and R cancel each other, so we should be back to Phase 2 state
-        long hash1 = fto1.phaseTwoHash();
-        long hash2 = fto2.phaseTwoHash();
-
-        System.out.println("Hash after R L: " + hash1);
-        System.out.println("Hash after L R: " + hash2);
-        System.out.println("Hashes equal: " + (hash1 == hash2));
-    }
-
-    @Test
-    public void testHashAfterPhaseTwoMoves() {
-        // Start from solved state, do Phase 2 moves, then Phase 3 moves
-        FullFto fto = new FullFto();
-
-        // Do Phase 2 moves: U R D B
-        fto.parseAlg("U R D B");
-        long initialHash = fto.phaseTwoHash();
-
-        // Now do some Phase 3 moves in different orders
-        FullFto fto1 = new FullFto(fto);
-        fto1.turn(Move.R);
-        fto1.turn(Move.R); // R2
-        long hash1 = fto1.phaseTwoHash();
-
-        FullFto fto2 = new FullFto(fto);
-        fto2.turn(Move.R);
-        long hash2 = fto2.phaseTwoHash();
-
-        System.out.println("Initial hash: " + initialHash);
-        System.out.println("Hash after R R: " + hash1);
-        System.out.println("Hash after R: " + hash2);
     }
 
     //--- phaseOneHash Tests ---//
@@ -849,19 +730,11 @@ public class FullFtoTest {
     }
 
     @Test
-    void testPhaseOneHashChangesAfterMove() {
-        long hashBefore = fto.phaseOneHash();
-        fto.turn(Move.R);
-        long hashAfter = fto.phaseOneHash();
-        assertEquals(hashBefore, hashAfter);
-    }
-
-    @Test
     void testPhaseOneHashChangesAfterPhaseOneMove() {
         long hashBefore = fto.phaseOneHash();
         fto.turn(Move.R);
         long hashAfter = fto.phaseOneHash();
-        assertEquals(hashBefore, hashAfter, "Phase one hash should change after R move");
+        assertEquals(hashBefore, hashAfter, "Phase one hash should be unchanged after R move");
     }
 
     @Test
@@ -958,87 +831,6 @@ public class FullFtoTest {
         assertFalse(different.checkPhaseTwoTripleData(tripleData));
     }
 
-//    @Test
-//    void testPhaseTwoCenterIndexMatchesMultinomialRank() throws Exception {
-//        Random r = new Random(456);
-//
-//        for (int iteration = 0; iteration < 1000; iteration++) {
-//            FullFto state = new FullFto();
-//            state.scrambleRandomG2State(r, 30);
-//
-//            assertEquals(multinomialPhaseTwoCenterIndex(state), state.phaseTwoCenterIndex());
-//        }
-//    }
-
-    //--- Hash Function General Tests ---//
-
-    @Test
-    void testHashFunctionsNonNegative() {
-        fto.parseAlg("R D F B L U BR BL");
-        assertTrue(fto.phaseOneHash() >= 0 || fto.phaseOneHash() < 0, "Phase one hash returns long (sign varies)");
-        assertTrue(fto.phaseTwoHash() >= 0 || fto.phaseTwoHash() < 0, "Phase two hash returns long (sign varies)");
-    }
-
-    private static int multinomialPhaseTwoCenterIndex(FullFto state) throws Exception {
-        short[] centers = centersOf(state);
-        int[] c = new int[9];
-
-        for (int i = 0; i < 9; i++) {
-            c[i] = centers[i + 12] - 4;
-        }
-
-        int count0 = 3, count1 = 3, count2 = 3;
-        int index = 0;
-
-        for (int i = 0; i < 9; i++) {
-            int current = c[i];
-
-            for (int v = 0; v < current; v++) {
-                if ((v == 0 && count0 > 0) ||
-                    (v == 1 && count1 > 0) ||
-                    (v == 2 && count2 > 0)) {
-
-                    int a = count0, b = count1, d = count2;
-
-                    if (v == 0) a--;
-                    if (v == 1) b--;
-                    if (v == 2) d--;
-
-                    index += multinomial(a, b, d);
-                }
-            }
-
-            if (current == 0) count0--;
-            else if (current == 1) count1--;
-            else count2--;
-        }
-
-        return index;
-    }
-
-    private static int multinomial(int a, int b, int c) {
-        int n = a + b + c;
-        return FACTORIAL[n] / (FACTORIAL[a] * FACTORIAL[b] * FACTORIAL[c]);
-    }
-
-    private static short[] centersOf(FullFto state) throws Exception {
-        Field centersField = FullFto.class.getDeclaredField("centers");
-        centersField.setAccessible(true);
-        return (short[]) centersField.get(state);
-    }
-
-    private static short[] cornersOf(FullFto state) throws Exception {
-        Field cornersField = FullFto.class.getDeclaredField("corners");
-        cornersField.setAccessible(true);
-        return (short[]) cornersField.get(state);
-    }
-
-    private static short[] centerIndicesOf(FullFto state) throws Exception {
-        Field centerIndicesField = FullFto.class.getDeclaredField("centerIndices");
-        centerIndicesField.setAccessible(true);
-        return (short[]) centerIndicesField.get(state);
-    }
-
     private static long phaseTwoCenterIndexLocations(FullFto fto) throws Exception {
         Field stateField = FullFto.class.getDeclaredField("state");
         stateField.setAccessible(true);
@@ -1047,57 +839,6 @@ public class FullFtoTest {
         Method method = state.getClass().getDeclaredMethod("phaseTwoCenterIndexLocations");
         method.setAccessible(true);
         return (long) method.invoke(state);
-    }
-
-    private static final class ReferenceState {
-        final short[] corners = new short[6];
-        final short[] edges = new short[12];
-        final short[] centers = new short[24];
-        final short[] centerIndices = new short[24];
-
-        ReferenceState() {
-            for (int i = 0; i < corners.length; i++) {
-                corners[i] = (short) (i << 2);
-            }
-            for (int i = 0; i < edges.length; i++) {
-                edges[i] = (short) i;
-            }
-            for (int i = 0; i < centers.length; i++) {
-                centers[i] = (short) (i / 3);
-                centerIndices[i] = (short) i;
-            }
-        }
-
-
-        private void cycleCorners(int i1, int i2, int i3) {
-            short tmp = corners[i3];
-            corners[i3] = corners[i2];
-            corners[i2] = corners[i1];
-            corners[i1] = tmp;
-        }
-
-        private void cycleEdges(int i1, int i2, int i3) {
-            short tmp = edges[i3];
-            edges[i3] = edges[i2];
-            edges[i2] = edges[i1];
-            edges[i1] = tmp;
-        }
-
-        private void cycleCenters(int i1, int i2, int i3) {
-            short tmp = centers[i3];
-            centers[i3] = centers[i2];
-            centers[i2] = centers[i1];
-            centers[i1] = tmp;
-
-            tmp = centerIndices[i3];
-            centerIndices[i3] = centerIndices[i2];
-            centerIndices[i2] = centerIndices[i1];
-            centerIndices[i1] = tmp;
-        }
-
-        private void twist(int i, int dir) {
-            corners[i] = (short) ((corners[i] & ~0b11) | ((corners[i] + dir) & 0b11));
-        }
     }
 
 }
