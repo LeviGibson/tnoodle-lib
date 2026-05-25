@@ -321,6 +321,16 @@ public class FullFto {
     }
 
     /**
+     * Returns a 2-bit bitmask indicating which matching centers are correct for the given corner.
+     * Bit 0 = first matching center, Bit 1 = second matching center.
+     * @param cornerLocation the corner index (0-5)
+     * @return bitmask of correctly positioned matching centers (0-3)
+     */
+    public int tripleIndexHelper(int cornerLocation){
+        return triplePairsMask(cornerLocation);
+    }
+
+    /**
      * Returns a packed index representing the triple state of all 6 corners.
      * Each corner contributes 2 bits via {@link #triplePairsMask(int)}.
      * @return packed triple index

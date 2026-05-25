@@ -163,7 +163,9 @@ public class FtoSearch {
             }
         }
 
-        for (FullFto.Move move : FullFto.Move.values()){
+        Move[] moves = depth == 1 ? PHASE_ONE_BREAKING_MOVES : ALL_MOVES;
+
+        for (FullFto.Move move : moves){
             if (fto.isRepetition(move))
                 continue;
 
@@ -656,6 +658,17 @@ public class FtoSearch {
         0.000510047301430,
     };
 
+
+    /**
+     * All possible FTO Moves
+     */
+    public static final Move[] ALL_MOVES = FullFto.Move.values();
+
+    /**
+     * All possible moves that break Phase One
+     */
+    public static final Move[] PHASE_ONE_BREAKING_MOVES = {Move.F, Move.FP, Move.BR, Move.BRP, Move.BL, Move.BLP};
+
     /**
      * Moves available during the phase-two search (octaminx reduction).
      */
@@ -929,6 +942,6 @@ public class FtoSearch {
      * @param args ignored
      */
     public static void main(String[] args) {
-        performanceTest(500);
+        performanceTest(100);
     }
 }

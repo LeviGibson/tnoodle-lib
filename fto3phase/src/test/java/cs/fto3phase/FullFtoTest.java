@@ -249,6 +249,114 @@ public class FullFtoTest {
         assertEquals(6, fto.tripleCount());
     }
 
+    @Test
+    void testIsPhaseOneAfterRandomG2() {
+        fto.scrambleRandomG2State(random, 30);
+        assertTrue(fto.isPhaseOne());
+    }
+
+    @Test
+    void testIsPhaseOneFalseAfterBreakingMove() {
+        fto.parseAlg("F");
+        assertFalse(fto.isPhaseOne());
+    }
+
+    @Test
+    void testIsPhaseOneTrueAfterPhaseTwoMoves() {
+        fto.parseAlg("U R D B");
+        assertTrue(fto.isPhaseOne());
+    }
+
+    @Test
+    void testIsPhaseTwoFalseAfterBreakingMove() {
+        fto.parseAlg("F");
+        assertFalse(fto.isPhaseTwo());
+    }
+
+    //------------- Triple Methods -------------//
+
+    @Test
+    void testIsTripleAllSolved() {
+        for (int i = 0; i < 6; i++) {
+            assertTrue(fto.isTriple(i));
+        }
+    }
+
+    @Test
+    void testTriplePairsOnCornerAllSolved() {
+        for (int i = 0; i < 6; i++) {
+            assertEquals(2, fto.triplePairsOnCorner(i));
+        }
+    }
+
+    @Test
+    void testTripleIndexHelperAllSolved() {
+        for (int i = 0; i < 6; i++) {
+            assertEquals(3, fto.tripleIndexHelper(i));
+        }
+    }
+
+    @Test
+    void testTriplePairsOnCornerAfterBreakingMoveInvariants() {
+        fto.parseAlg("R D F");
+        for (int i = 0; i < 6; i++) {
+            int pairs = fto.triplePairsOnCorner(i);
+            assertTrue(pairs >= 0 && pairs <= 2);
+            assertEquals(pairs == 2, fto.isTriple(i));
+            assertEquals(pairs, Integer.bitCount(fto.tripleIndexHelper(i)));
+        }
+    }
+
+    @Test
+    void testTripleCountAfterBreakingMoves() {
+        fto.parseAlg("R D F");
+        assertTrue(fto.tripleCount() < 6);
+    }
+
+    @Test
+    void testTriplePairCountSolved() {
+        assertEquals(12, fto.triplePairCount());
+    }
+
+    @Test
+    void testTriplePairCountAfterBreakingMove() {
+        fto.parseAlg("F");
+        assertTrue(fto.triplePairCount() < 12);
+    }
+
+    @Test
+    void testPhaseTwoTripleIndexSolved() {
+        assertEquals(0b111111111111, fto.phaseTwoTripleIndex());
+    }
+
+    @Test
+    void testPhaseTwoTripleIndexBitWidth() {
+        int maxIndex = (1 << 12) - 1;
+        fto.parseAlg("R D F B L U BR BL");
+        int index = fto.phaseTwoTripleIndex();
+        assertTrue(index >= 0 && index <= maxIndex);
+    }
+
+    @Test
+    void testTripleMethodsConsistentInSolvedState() {
+        for (int i = 0; i < 6; i++) {
+            assertEquals(fto.isTriple(i), fto.triplePairsOnCorner(i) == 2);
+            assertEquals(fto.isTriple(i), fto.tripleIndexHelper(i) == 3);
+            assertEquals(fto.triplePairsOnCorner(i), Integer.bitCount(fto.tripleIndexHelper(i)));
+        }
+    }
+
+    @Test
+    void testTripleMethodsConsistentAfterScramble() {
+        FullFto s = new FullFto();
+        s.parseAlg("R D F B L U BR BL");
+        for (int i = 0; i < 6; i++) {
+            assertEquals(s.isTriple(i), s.triplePairsOnCorner(i) == 2);
+            assertEquals(s.isTriple(i), s.tripleIndexHelper(i) == 3);
+            assertEquals(s.triplePairsOnCorner(i), Integer.bitCount(s.tripleIndexHelper(i)));
+        }
+    }
+
     //------------- Scramble -------------//
 
     @Test
@@ -282,6 +390,81 @@ public class FullFtoTest {
         fto.scrambleRandomG2State(random, 20);
 
         assertTrue(fto.isPhaseOne());
+    }
+
+    @Test
+    void testScrambleRandomG2StateDeterministic() {
+        FullFto fto1 = new FullFto();
+        FullFto fto2 = new FullFto();
+        Random r1 = new Random(42);
+        Random r2 = new Random(42);
+        fto1.scrambleRandomG2State(r1, 30);
+        fto2.scrambleRandomG2State(r2, 30);
+        assertEquals(fto1.phaseOneHash(), fto2.phaseOneHash());
+        assertEquals(fto1.phaseTwoHash(), fto2.phaseTwoHash());
+    }
+
+    @Test
+    void testRandomCubeDeterministic() {
+        Random r1 = new Random(42);
+        Random r2 = new Random(42);
+        FullFto c1 = FullFto.randomCube(r1);
+        FullFto c2 = FullFto.randomCube(r2);
+        assertEquals(c1.phaseOneHash(), c2.phaseOneHash());
+    }
+
+    //------------- Rotate -------------//
+
+    @Test
+    void testRotateYDoesNotThrow() {
+        fto.rotate(1);
+        assertFalse(fto.isSolved());
+    }
+
+    @Test
+    void testRotateYPrimeDoesNotThrow() {
+        fto.rotate(2);
+        assertFalse(fto.isSolved());
+    }
+
+
+
+    @Test
+    void testRotateTwelveYReturnsToSolved() {
+        for (int i = 0; i < 12; i++) {
+            fto.rotate(1);
+        }
+        assertTrue(fto.isSolved());
+    }
+
+    @Test
+    void testRotateFourYDoesNotReturnToSolved() {
+        fto.rotate(1);
+        fto.rotate(1);
+        fto.rotate(1);
+        fto.rotate(1);
+        assertFalse(fto.isSolved());
+    }
+
+    @Test
+    void testRotateSixYReturnsToSolved() {
+        for (int i = 0; i < 6; i++) {
+            fto.rotate(1);
+        }
+        assertTrue(fto.isSolved());
+    }
+
+    //------------- Edge Index -------------//
+
+    @Test
+    void testPhaseTwoEdgeIndexSolved() {
+        assertEquals(0, fto.phaseTwoEdgeIndex());
+    }
+
+    @Test
+    void testPhaseTwoEdgeIndexNonNegative() {
+        fto.parseAlg("U R D B");
+        assertTrue(fto.phaseTwoEdgeIndex() >= 0);
     }
 
     //------------- Move Stack Operations -------------//
@@ -342,21 +525,193 @@ public class FullFtoTest {
         }
     }
 
-//    @Test
-//    void testIsValidPhaseOneFinishingSequenceRejectsNonBreakingMove() {
-//        assertFalse(fto.isValidPhaseOneFinishingSequence());
-//    }
-//
-//    @Test
-//    void testIsValidPhaseOneFinishingSequenceRejectsParallelPreviousMove() {
-//        assertFalse(fto.isValidPhaseOneFinishingSequence());
-//        assertFalse(fto.isValidPhaseOneFinishingSequence());
-//    }
-//
-//    @Test
-//    void testIsValidPhaseOneFinishingSequenceAcceptsBreakingNonParallelMove() {
-//        assertTrue(fto.isValidPhaseOneFinishingSequence());
-//    }
+    //------------- Move Validation -------------//
+
+    @Test
+    void testIsValidPhaseOneFinishingSequenceAcceptsShortHistory() {
+        assertTrue(fto.isValidPhaseOneFinishingSequence());
+        fto.turn(Move.R);
+        assertTrue(fto.isValidPhaseOneFinishingSequence());
+    }
+
+    @Test
+    void testIsValidPhaseOneFinishingSequenceRejectsNonBreakingMove() {
+        fto.parseAlg("R D");
+        assertFalse(fto.isValidPhaseOneFinishingSequence());
+    }
+
+    @Test
+    void testIsValidPhaseOneFinishingSequenceRejectsParallelPreviousMove() {
+        fto.parseAlg("BL R");
+        assertFalse(fto.isValidPhaseOneFinishingSequence());
+    }
+
+    @Test
+    void testIsValidPhaseOneFinishingSequenceAcceptsBreakingNonParallelMove() {
+        fto.parseAlg("R F");
+        assertTrue(fto.isValidPhaseOneFinishingSequence());
+    }
+
+    @Test
+    void testIsValidParallelSequenceTrueOnEmptyStack() {
+        assertTrue(fto.isValidParallelSequence(Move.R));
+    }
+
+    @Test
+    void testIsValidParallelSequenceRejectsLowerId() {
+        fto.turn(Move.BL);
+        assertFalse(fto.isValidParallelSequence(Move.R));
+    }
+
+    @Test
+    void testIsValidParallelSequenceAllowsHigherId() {
+        fto.turn(Move.R);
+        assertTrue(fto.isValidParallelSequence(Move.BL));
+    }
+
+    @Test
+    void testIsValidParallelSequenceAllowsNonParallel() {
+        fto.turn(Move.R);
+        assertTrue(fto.isValidParallelSequence(Move.U));
+    }
+
+    @Test
+    void testIsRepetitionDetectsLastMoveRepeated() {
+        fto.parseAlg("R L");
+        assertTrue(fto.isRepetition(Move.L));
+    }
+
+    @Test
+    void testIsRepetitionDetectsParallelInverseOfLastLastMove() {
+        fto.parseAlg("F R");
+        assertTrue(fto.isRepetition(Move.FP));
+    }
+
+    @Test
+    void testIsRepetitionDetectsParallelOfLastLastMove() {
+        fto.parseAlg("F R");
+        assertTrue(fto.isRepetition(Move.F));
+    }
+
+    @Test
+    void testIsRepetitionAllowsNonParallelSameAsLastLastMove() {
+        fto.parseAlg("R L");
+        assertFalse(fto.isRepetition(Move.R));
+    }
+
+    @Test
+    void testIsRepetitionWithEmptyHistory() {
+        assertFalse(fto.isRepetition(Move.R));
+    }
+
+    //------------- State Queries -------------//
+
+    @Test
+    void testEqualsSameState() {
+        FullFto fto2 = new FullFto();
+        assertTrue(fto.equals(fto2));
+    }
+
+    @Test
+    void testEqualsDifferentState() {
+        FullFto fto2 = new FullFto();
+        fto2.turn(Move.R);
+        assertFalse(fto.equals(fto2));
+    }
+
+    @Test
+    void testEqualsSameAfterSameMoves() {
+        FullFto fto2 = new FullFto();
+        fto.parseAlg("R D F B L");
+        fto2.parseAlg("R D F B L");
+        assertTrue(fto.equals(fto2));
+    }
+
+    @Test
+    void testEqualsAfterUndo() {
+        FullFto fto2 = new FullFto(fto);
+        fto.turn(Move.R);
+        fto.undo();
+        assertTrue(fto.equals(fto2));
+    }
+
+    @Test
+    void testLastMoveSimple() {
+        fto.turn(Move.R);
+        assertEquals(Move.R, fto.lastMove());
+    }
+
+    @Test
+    void testLastMoveWithOffset() {
+        fto.parseAlg("R D F");
+        assertEquals(Move.F, fto.lastMove(0));
+        assertEquals(Move.D, fto.lastMove(1));
+        assertEquals(Move.R, fto.lastMove(2));
+    }
+
+    @Test
+    void testLastMoveWithOffsetAfterUndo() {
+        fto.parseAlg("R D F B");
+        fto.undo();
+        assertEquals(Move.F, fto.lastMove(0));
+        assertEquals(Move.D, fto.lastMove(1));
+    }
+
+    @Test
+    void testIsNormalizedInitially() {
+        assertTrue(fto.isNormalized());
+    }
+
+    @Test
+    void testIsNormalizedAfterRMove() {
+        fto.turn(Move.R);
+        assertTrue(fto.isNormalized());
+    }
+
+    @Test
+    void testIsNormalizedAfterLMove() {
+        fto.turn(Move.L);
+        assertTrue(fto.isNormalized());
+    }
+
+    @Test
+    void testIsNotNormalizedAfterUMove() {
+        fto.turn(Move.U);
+        assertFalse(fto.isNormalized());
+    }
+
+    @Test
+    void testIsNormalizedAfterInverseMove() {
+        fto.parseAlg("R D F B L");
+        while (fto.historyLength() > 0) {
+            fto.undo();
+        }
+        assertTrue(fto.isNormalized());
+    }
+
+    @Test
+    void testIsPhaseOneBreakingMoveTrue() {
+        assertTrue(FullFto.isPhaseOneBreakingMove(Move.F));
+        assertTrue(FullFto.isPhaseOneBreakingMove(Move.FP));
+        assertTrue(FullFto.isPhaseOneBreakingMove(Move.BR));
+        assertTrue(FullFto.isPhaseOneBreakingMove(Move.BRP));
+        assertTrue(FullFto.isPhaseOneBreakingMove(Move.BL));
+        assertTrue(FullFto.isPhaseOneBreakingMove(Move.BLP));
+    }
+
+    @Test
+    void testIsPhaseOneBreakingMoveFalse() {
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.R));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.RP));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.L));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.LP));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.U));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.UP));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.D));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.DP));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.B));
+        assertFalse(FullFto.isPhaseOneBreakingMove(Move.BP));
+    }
 
     //------------- Reset -------------//
 
