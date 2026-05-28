@@ -808,6 +808,13 @@ public class FullFto {
             SOLVED_CENTERS = solvedCenters;
         }
 
+        private static final int[] CENTER_ORBIT_OFFSET = new int[24];
+        static {
+            for (int i = 0; i < 24; i++) {
+                CENTER_ORBIT_OFFSET[i] = i > 11 ? 4 : 0;
+            }
+        }
+
         private static final int CENTER_INDEX_BITS = 5;
         private static final long CENTER_INDEX_MASK = 0b11111;
         private static final long[] CENTER_INDEX_MASKS = new long[12];
@@ -1006,7 +1013,7 @@ public class FullFto {
         }
 
         int getCenterOrdinal(int index){
-            return (int)(centers >> (2 * index) & CENTER_MASK) + (index > 11 ? 4 : 0);
+            return ((int)(centers >> (index << 1)) & 3) + CENTER_ORBIT_OFFSET[index];
         }
 
         private static final int[] Y_ROTATION_CORNERS = {
