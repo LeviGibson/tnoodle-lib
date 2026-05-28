@@ -531,10 +531,10 @@ public class FtoSearch {
     private static void phaseTwoPruningSearch(int depth, FullFto fto){
         long centerHash = fto.phaseTwoHash();
         long triples = fto.packPhaseTwoTripleData();
-        LongSet lookup = phaseTwoPruningTable.get(centerHash);
+        ArrayList<Long> lookup = phaseTwoPruningTable.get(centerHash);
 
         if (lookup == null){
-            LongSet entry = new LongSet();
+            ArrayList<Long> entry = new ArrayList<>();
             entry.add(triples);
             phaseTwoPruningTable.put(centerHash, entry);
         } else {
@@ -651,7 +651,7 @@ public class FtoSearch {
 
     //Pruning tables
     private static final HashMap<Long, Integer> phaseOnePruningTable;
-    private static final HashMap<Long, LongSet> phaseTwoPruningTable;
+    private static final HashMap<Long, ArrayList<Long>> phaseTwoPruningTable;
     private static final HashMap<Long, Integer> phaseThreePruningTable;
 
     private static final byte[] phaseTwoEdgePruningTable;
@@ -770,86 +770,6 @@ public class FtoSearch {
 
     //--------------- Inner Classes ---------------//
 
-    /**
-     * Accumulates the concatenated solution strings from each of the three phases.
-     */
-    private static final class LongSet {
-        private static final float LOAD_FACTOR = 0.75f;
-
-        private long[] keys;
-        private boolean[] used;
-        private int size;
-        private int threshold;
-
-        private LongSet() {
-            this(4);
-        }
-
-        private LongSet(int capacity) {
-            int tableSize = 1;
-            while (tableSize < capacity) {
-                tableSize <<= 1;
-            }
-            keys = new long[tableSize];
-            used = new boolean[tableSize];
-            threshold = (int) (tableSize * LOAD_FACTOR);
-        }
-
-        private boolean add(long key) {
-            if (size >= threshold) {
-                resize();
-            }
-
-            int index = index(key, keys.length);
-            while (used[index]) {
-                if (keys[index] == key) {
-                    return false;
-                }
-                index = (index + 1) & (keys.length - 1);
-            }
-
-            used[index] = true;
-            keys[index] = key;
-            size++;
-            return true;
-        }
-
-        private boolean anyMatch(java.util.function.LongPredicate predicate) {
-            for (int i = 0; i < keys.length; i++) {
-                if (used[i] && predicate.test(keys[i])) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private void resize() {
-            long[] oldKeys = keys;
-            boolean[] oldUsed = used;
-
-            keys = new long[oldKeys.length << 1];
-            used = new boolean[keys.length];
-            threshold = (int) (keys.length * LOAD_FACTOR);
-            size = 0;
-
-            for (int i = 0; i < oldKeys.length; i++) {
-                if (oldUsed[i]) {
-                    add(oldKeys[i]);
-                }
-            }
-        }
-
-        private static int index(long key, int length) {
-            long hash = key;
-            hash ^= hash >>> 33;
-            hash *= 0xff51afd7ed558ccdL;
-            hash ^= hash >>> 33;
-            hash *= 0xc4ceb9fe1a85ec53L;
-            hash ^= hash >>> 33;
-            return (int) hash & (length - 1);
-        }
-    }
-
     private static class FtoSymmetry {
 
         public FullFto[] angles;
@@ -882,8 +802,12 @@ public class FtoSearch {
         }
 
         private boolean phaseTwoLookupHelper(int angle){
-            LongSet lookup = phaseTwoPruningTable.get(angles[angle].phaseTwoHash());
-            return lookup != null && lookup.anyMatch(triples -> angles[angle].checkPhaseTwoTripleData(triples));
+            ArrayList<Long> lookup = phaseTwoPruningTable.get(angles[angle].phaseTwoHash());
+            if (lookup == null) return false;
+            for (long triples : lookup) {
+                if (angles[angle].checkPhaseTwoTripleData(triples)) return true;
+            }
+            return false;
         }
 
         public boolean getPhaseTwoLookup(){
