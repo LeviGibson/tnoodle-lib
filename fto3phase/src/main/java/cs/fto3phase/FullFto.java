@@ -503,47 +503,48 @@ public class FullFto {
     }
 
 
-    private void scrambleRandomState(Random r){
+    private void scrambleRandomState(Random r) {
         int parity = 0;
 
-        for (int i = 0; i < 6; i++) {
-            int target = r.nextInt(6);
+        // Fisher-Yates: pick target from shrinking range [0, i]
+        for (int i = 5; i > 0; i--) {
+            int target = r.nextInt(i + 1);
             state.swapCorners(i, target);
             if (i != target)
                 parity++;
         }
-
         if (parity % 2 == 1)
             state.swapCorners(0, 1);
 
         parity = 0;
         for (int i = 0; i < 6; i++) {
             int corner = state.getCorner(i);
-            if ((i < 3) == (InnerState.getCornerIndex(corner) < 3)){
+            if ((i < 3) == (InnerState.getCornerIndex(corner) < 3)) {
                 state.twistCorner(i, r.nextInt(2) * 2);
             } else {
                 state.twistCorner(i, r.nextInt(2) * 2 + 1);
             }
             parity += InnerState.getCornerOrientation(state.getCorner(i));
         }
-
-        if (parity % 4 == 2){
+        if (parity % 4 == 2) {
             state.twistCorner(0, 2);
         }
 
         parity = 0;
-        for (int i = 0; i < 12; i++) {
-            int target = r.nextInt(12);
+        // Fisher-Yates: pick target from shrinking range [0, i]
+        for (int i = 11; i > 0; i--) {
+            int target = r.nextInt(i + 1);
             state.swapEdges(i, target);
-            if (target == i)
+            if (i != target)
                 parity++;
         }
         if (parity % 2 == 1)
             state.swapEdges(0, 1);
 
-        for (int i = 0; i < 12; i++) {
-            state.swapCenters(i, r.nextInt(12));
-            state.swapCenters(i + 12, r.nextInt(12) + 12);
+        // Fisher-Yates for both center rings
+        for (int i = 11; i > 0; i--) {
+            state.swapCenters(i, r.nextInt(i + 1));
+            state.swapCenters(i + 12, r.nextInt(i + 1) + 12);
         }
 
         clearMoveStack();
