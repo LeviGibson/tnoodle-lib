@@ -118,6 +118,36 @@ public class FtoSearch {
         System.out.println("Average Time: " + (double)(totalTime / 1_000_000) / (double)num);
     }
 
+    public static void simplePerformanceTest(int num){
+
+        long totalTime = 0;
+        long totalMoves = 0;
+        long totalNodes = 0;
+
+        FullFto fto;
+        Random r = new Random();
+        for (int i = 0; i < num; i++) {
+            long startTime = System.nanoTime();
+
+            fto = FullFto.randomCube(r);
+            FtoSearch search = new FtoSearch();
+            String s = search.solution(fto);
+            totalNodes += (long)search.nodes;
+
+            System.out.println(s);
+
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime); // total time in nanoseconds
+
+            System.out.println("NEW," + (duration / 1_000_000));
+            totalTime += duration;
+            totalMoves += s.split(" ").length;
+        }
+
+        System.out.println("Average Moves: " + (double)totalMoves / (double)num);
+        System.out.println("Average Time: " + (double)(totalTime / 1_000_000) / (double)num);
+    }
+
     //--------------- Search Methods ---------------//
 
     /**
@@ -885,6 +915,7 @@ public class FtoSearch {
      * @param args ignored
      */
     public static void main(String[] args) {
-        performanceTest("PRIMITIVE_OPTIMIZED_HASHSET", 10000);
+//        performanceTest("PRIMITIVE_OPTIMIZED_HASHSET", 10000);
+        simplePerformanceTest(100);
     }
 }
