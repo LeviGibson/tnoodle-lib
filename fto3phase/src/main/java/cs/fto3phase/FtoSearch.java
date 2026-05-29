@@ -540,12 +540,15 @@ public class FtoSearch {
             if (fto.isRepetition(move))
                 continue;
 
-            if (fto.historyLength() == 0 && move != Move.F && move != Move.FP &&
-                                            move != Move.BR && move != Move.BRP &&
-                                            move != Move.BL && move != Move.BLP)
-                continue;
-
             fto.turn(move);
+
+            //Don't search branches that don't impact the phase one pieces
+            long newHash = fto.phaseOneHash();
+            if (hash == newHash) {
+                fto.undo();
+                continue;
+            }
+
             phaseOnePruningSearch(depth-1, fto);
             fto.undo();
         }
