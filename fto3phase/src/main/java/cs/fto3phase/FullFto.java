@@ -427,10 +427,28 @@ public class FullFto {
 
     /**
      * Converts the phase 2 edge permutation into a compact index.
-     * @return a compact index representing the edge permutation
+     * @return a compact index representing the edge permutation of edges 0-8
      */
     public int phaseTwoEdgeIndex() {
         return state.phaseTwoEdgeIndex();
+    }
+
+    /**
+     * Sets the permutation of edges 0-8 from a compact phase-two edge index,
+     * and resets D-face edges (9-11) to their solved positions.
+     * @param index the compact edge index, as returned by {@link #phaseTwoEdgeIndex()}
+     */
+    public void setPhaseTwoEdgeIndex(int index) {
+        state.setPhaseTwoEdgeIndex(index);
+    }
+
+    /**
+     * Returns the edge piece ordinal at the given position.
+     * @param i the position index (0-11)
+     * @return the edge piece ordinal (0-11)
+     */
+    public int getEdge(int i) {
+        return state.getEdge(i);
     }
 
     /**
@@ -1085,9 +1103,14 @@ public class FullFto {
             }
         }
 
-        private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320};
+        private static final int[] FACTORIAL = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800};
 
         public int phaseTwoEdgeIndex() {
+            // Encode the permutation of edges 0-8 (the non-D-face edges) as a
+            // Lehmer code (factorial number system), scanning from position 8
+            // down to 0. Because FTO edges must have even permutation parity,
+            // we divide by 2 to halve the index space — resulting in a [0 .. 9!/2)
+            // range used for the phase-two edge pruning table.
             int index = 0;
             int seen = 0;
             for (int i = 8; i >= 0; i--) {
@@ -1097,6 +1120,74 @@ public class FullFto {
                 seen |= 1 << edge;
             }
             return index / 2;
+        }
+
+        /**
+         * Decodes the raw (pre-/2) Lehmer-code value for the 9-element edge
+         * permutation subset (edges 0-8). Returns edge piece IDs per position
+         * (positions 0..8).
+         */
+        private int[] decodeEdgePermutation9(long encoded) {
+            int[] perm = new int[9];
+            boolean[] used = new boolean[9];
+            long remaining = encoded;
+            for (int pos = 0; pos < 9; pos++) {
+                int factor = FACTORIAL[8 - pos];
+                int rank = (int) (remaining / factor);
+                remaining %= factor;
+                // Walk unused edge IDs to find the one with ordinal 'rank'
+                int count = 0;
+                for (int elem = 0; elem < 9; elem++) {
+                    if (!used[elem]) {
+                        if (count == rank) {
+                            perm[pos] = elem;
+                            used[elem] = true;
+                            break;
+                        }
+                        count++;
+                    }
+                }
+            }
+            return perm;
+        }
+
+        /**
+         * Sets the permutation of edges 0-8 from the compact phase-two edge
+         * index (as returned by {@link #phaseTwoEdgeIndex()}).
+         *
+         * <p>The stored index represents the 9!/2 subspace of even-permutation
+         * states. We decompress by trying base × 2, checking the resulting
+         * permutation parity, and falling through to base × 2 + 1 if the
+         * first candidate is odd. D-face edges (9,10,11) are reset to their
+         * solved positions since phase two never moves them.</p>
+         */
+        public void setPhaseTwoEdgeIndex(int index) {
+            // The two candidate raw Lehmer indices that share the same /2 slot
+            long base = ((long) index) * 2;
+
+            int[] perm = decodeEdgePermutation9(base);
+
+            // Count inversions among the 9 elements to determine parity
+            int parity = 0;
+            for (int k = 0; k < 9; k++) {
+                for (int j = k + 1; j < 9; j++) {
+                    if (perm[k] > perm[j]) parity ^= 1;
+                }
+            }
+
+            // If the first candidate has odd parity, its even partner is +1
+            if (parity != 0) {
+                perm = decodeEdgePermutation9(base + 1);
+            }
+
+            for (int pos = 0; pos < 9; pos++) {
+                setEdge(pos, perm[pos]);
+            }
+
+            // D-face edges are always solved in phase two
+            setEdge(9, 9);
+            setEdge(10, 10);
+            setEdge(11, 11);
         }
 
         private long centerHash(CenterOrd center){

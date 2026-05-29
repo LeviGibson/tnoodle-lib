@@ -463,6 +463,27 @@ public class FullFtoTest {
         assertTrue(fto.phaseTwoEdgeIndex() >= 0);
     }
 
+    @Test
+    void testPhaseTwoEdgeIndexRoundTrip() {
+        // We must stay in phase 2: D-face edges (positions 9,10,11) must remain
+        // solved so that the 9-element Lehmer-code universe {0..8} exactly
+        // matches the pieces at positions 0..8. Only U, R, L, B moves never
+        // touch the D-face edges.
+        Move[] phase2Moves = {Move.U, Move.R, Move.L, Move.B};
+        Random rng = new Random(42);
+        FullFto reference = new FullFto();
+        for (int i = 0; i < 1000; i++) {
+            reference.turn(phase2Moves[rng.nextInt(phase2Moves.length)]);
+            int edgeIdx = reference.phaseTwoEdgeIndex();
+            FullFto restored = new FullFto();
+            restored.setPhaseTwoEdgeIndex(edgeIdx);
+            for (int e = 0; e < 9; e++) {
+                assertEquals(reference.getEdge(e), restored.getEdge(e),
+                    "Edge " + e + " mismatch at iteration " + i);
+            }
+        }
+    }
+
     //------------- Move Stack Operations -------------//
 
     @Test
