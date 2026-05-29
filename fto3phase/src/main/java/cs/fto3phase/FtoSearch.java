@@ -518,6 +518,109 @@ public class FtoSearch {
     }
 
     /**
+     * Builds the phase-two edge pruning table on the fly by BFS, replacing
+     * the previously-bundled {@code edgeprun.dat} resource.
+     *
+     * <p>Phase-one guarantees that D-face edges (positions 9-11) are solved
+     * entering phase two, so the reachable subspace is the even permutations of
+     * the remaining 9 edges — exactly {@code 9! / 2 = 181 440} states.</p>
+     *
+     * <p>D moves (D/DP) never change edges 0-8 and are excluded from the
+     * search.  The 27 starting orientations R^{0..2} L^{0..2} B^{0..2} are
+     * all seeded at distance 0 with a first-move restriction (U/UP only at
+     * ply 0), matching the semantics of the original generator.</p>
+     *
+     * @return a {@code byte[181440]} pruning table
+     */
+    static byte[] generateEdgePruningTable() {
+        final int size = 181440;
+
+        // Moves relevant to edges 0-8 (D/DP excluded — they never change
+        // the phase-two edge index).  U and UP MUST be indices 0 and 1 so the
+        // depth-0 first-move restriction can reference them by position.
+        final FullFto.Move[] edgeMoves = {
+            Move.U, Move.UP, Move.R, Move.L, Move.B, Move.RP, Move.LP, Move.BP
+        };
+        final int moves = edgeMoves.length;  // 8
+
+        // ---- Step 1: 27 starting orientations (R^{0..2}×L^{0..2}×B^{0..2}) ----
+        // Each combination produces an edge permutation that is trivially
+        // "solved" from the perspective of some canonical orientation.
+        boolean[] startSeen = new boolean[size];
+        int[] startIndices = new int[27];
+        int startCount = 0;
+        for (int r = 0; r < 3; r++) {
+            for (int l = 0; l < 3; l++) {
+                for (int b = 0; b < 3; b++) {
+                    FullFto fto = new FullFto();
+                    for (int ri = 0; ri < r; ri++) fto.turn(Move.R);
+                    for (int li = 0; li < l; li++) fto.turn(Move.L);
+                    for (int bi = 0; bi < b; bi++) fto.turn(Move.B);
+
+                    int idx = fto.phaseTwoEdgeIndex();
+                    if (!startSeen[idx]) {
+                        startSeen[idx] = true;
+                        startIndices[startCount++] = idx;
+                    }
+                }
+            }
+        }
+        int uniqueStarts = startCount;
+
+        // ---- Step 2: build move transition table ----
+        // Edge transitions are independent of corner/center state, so the table
+        // can be built once from setPhaseTwoEdgeIndex(i) and reused for every BFS
+        // hop regardless of how a state was originally reached.
+        int[][] edgeMoveTable = new int[moves][size];
+        FullFto worker = new FullFto();
+        for (int i = 0; i < size; i++) {
+            worker.setPhaseTwoEdgeIndex(i);
+            for (int m = 0; m < moves; m++) {
+                worker.turn(edgeMoves[m]);
+                edgeMoveTable[m][i] = worker.phaseTwoEdgeIndex();
+                worker.undo();
+            }
+        }
+
+        // ---- Step 3: BFS ----
+        byte[] prun = new byte[size];
+        Arrays.fill(prun, (byte) -1);
+
+        // All starting orientations are at distance 0
+        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        for (int s = 0; s < uniqueStarts; s++) {
+            int idx = startIndices[s];
+            prun[idx] = 0;
+            frontier.add(idx);
+        }
+        int count = uniqueStarts;
+
+        int depth = 0;
+        while (!frontier.isEmpty()) {
+            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+
+            // Depth 0 → 1: first-move restriction — only U / UP (indices 0, 1).
+            // Depth 1+ : all edgeMoves.
+            int lastM = (depth == 0) ? 2 : moves;
+
+            for (int idx : frontier) {
+                for (int m = 0; m < lastM; m++) {
+                    int nextIdx = edgeMoveTable[m][idx];
+                    if (prun[nextIdx] == -1) {
+                        prun[nextIdx] = (byte) (depth + 1);
+                        next.add(nextIdx);
+                        count++;
+                    }
+                }
+            }
+            frontier = next;
+            depth++;
+        }
+
+        return prun;
+    }
+
+    /**
      * Generates the phase-one pruning table via BFS over solved states.
      * Called once during class initialization, not during search.
      * @param depth remaining search depth
@@ -740,20 +843,14 @@ public class FtoSearch {
     static{
         try {
             phaseTwoTriplePruningTable = loadTable("triple_d10.dat", 4096);
-            phaseTwoEdgePruningTable = loadTable("edgeprun.dat", 181440);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        phaseTwoEdgePruningTable = generateEdgePruningTable();
 
         for (int i = 0; i < 4096; i++) {
             if (phaseTwoTriplePruningTable[i] == 25){
                 phaseTwoTriplePruningTable[i] = 10;
-            }
-        }
-
-        for (int i = 0; i < 181440; i++) {
-            if (phaseTwoEdgePruningTable[i] == 24){
-                phaseTwoEdgePruningTable[i] = 11;
             }
         }
 

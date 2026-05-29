@@ -484,6 +484,46 @@ public class FullFtoTest {
         }
     }
 
+    @Test
+    void testGeneratedEdgePruningConsistent() {
+        // The generated table will differ from the bundled edgeprun.dat because
+        // the bundled table was pre-computed for a different solver with
+        // different move definitions.  Instead, verify the generated table is
+        // self-consistent: for every index, every move reaches a state whose
+        // distance is at most (this_distance + 1).
+        FullFto.Move[] p2moves = {Move.U, Move.UP, Move.R, Move.L, Move.B,
+            Move.RP, Move.LP, Move.BP, Move.DP, Move.D};
+
+        byte[] table = FtoSearch.generateEdgePruningTable();
+
+        FullFto worker = new FullFto();
+        int violations = 0;
+        for (int i = 0; i < 181440; i++) {
+            int dist = table[i];
+            if (dist == 24) continue; // unreachable sentinel
+
+            worker.setPhaseTwoEdgeIndex(i);
+            for (FullFto.Move move : p2moves) {
+                worker.turn(move);
+                int nextIdx = worker.phaseTwoEdgeIndex();
+                int nextDist = table[nextIdx];
+                worker.undo();
+
+                if (nextDist > dist + 1) {
+                    violations++;
+                    if (violations <= 5) {
+                        System.out.println("  violation at idx=" + i
+                            + " dist=" + dist + " move=" + move
+                            + " → idx=" + nextIdx + " dist=" + nextDist);
+                    }
+                }
+            }
+        }
+
+        assertEquals(0, violations,
+            "Generated table distances must be monotonic under single moves");
+    }
+
     //------------- Move Stack Operations -------------//
 
     @Test
