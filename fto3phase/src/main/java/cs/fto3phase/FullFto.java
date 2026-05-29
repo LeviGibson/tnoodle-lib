@@ -513,19 +513,27 @@ public class FullFto {
             if (i != target)
                 parity++;
         }
+        //Parity fix for Corner Permutation
         if (parity % 2 == 1)
             state.swapCorners(0, 1);
 
         parity = 0;
         for (int i = 0; i < 6; i++) {
             int corner = state.getCorner(i);
+            //FTO CO behaves weirdly
+            //U face corners can only have even orientations when on the U face and odd orientations on the D face
+            //And vise versa for the D face corners
             if ((i < 3) == (InnerState.getCornerIndex(corner) < 3)) {
+                //Twist by 0 or 2
                 state.twistCorner(i, r.nextInt(2) * 2);
             } else {
+                //Twist by 1 or 3
                 state.twistCorner(i, r.nextInt(2) * 2 + 1);
             }
             parity += InnerState.getCornerOrientation(state.getCorner(i));
         }
+
+        //Parity check for Corner Orientation
         if (parity % 4 == 2) {
             state.twistCorner(0, 2);
         }
@@ -538,6 +546,8 @@ public class FullFto {
             if (i != target)
                 parity++;
         }
+
+        //Parity fix for edges
         if (parity % 2 == 1)
             state.swapEdges(0, 1);
 
