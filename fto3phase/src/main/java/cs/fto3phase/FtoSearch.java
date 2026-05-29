@@ -915,6 +915,7 @@ public class FtoSearch {
      * @param args ignored
      */
     public static void main(String[] args) {
-        performanceTest("DEPTH_6_PHASE1", 2000);
+        performanceTest("OLD", 20000);
+        performanceTest("OLD", 20000);
     }
 }

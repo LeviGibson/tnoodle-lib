@@ -745,13 +745,6 @@ public class FullFto {
         }
     }
 
-    private static boolean contains(int[] arr, int target) {
-        for (int num : arr) {
-            if (num == target) return true;
-        }
-        return false;
-    }
-
     //--------------- Inner State ---------------//
 
     private static class InnerState{
@@ -1120,13 +1113,6 @@ public class FullFto {
             return hash;
         }
 
-        private int indexOfEdge(int target) {
-            for (int i = 0; i < 12; i++) {
-                if (target == getEdge(i)) return i;
-            }
-            return -1;
-        }
-
         /**
          * Indexed by CenterOrd. Each entry lists the 3 edge indices on that face.
          */
@@ -1143,41 +1129,36 @@ public class FullFto {
 
         private long edgeHash(CenterOrd center){
             int centerIndex = center.ordinal();
-            int[] e = Arrays.copyOf(EDGES_ON_FACE[centerIndex], 3);
+            int[] faceEdges = EDGES_ON_FACE[centerIndex];
+            int e0 = faceEdges[0];
+            int e1 = faceEdges[1];
+            int e2 = faceEdges[2];
 
+            int pos0 = -1, pos1 = -1, pos2 = -1;
             int firstMatchingEdge = -1;
+            int firstPos = 12;
+
             for (int i = 0; i < 12; i++){
                 int edge = getEdge(i);
-                if (contains(e, edge)){
-                    firstMatchingEdge = edge;
-                    break;
-                }
+                if (edge == e0) { pos0 = i; if (i < firstPos) { firstPos = i; firstMatchingEdge = e0; } }
+                if (edge == e1) { pos1 = i; if (i < firstPos) { firstPos = i; firstMatchingEdge = e1; } }
+                if (edge == e2) { pos2 = i; if (i < firstPos) { firstPos = i; firstMatchingEdge = e2; } }
             }
 
             if (firstMatchingEdge == -1){
                 throw new IllegalStateException("Cannot find matching edge in edgeHash()");
             }
 
-            while (e[0] != firstMatchingEdge){
-                int tmp = e[2];
-                e[2] = e[1];
-                e[1] = e[0];
-                e[0] = tmp;
-            }
-
-            e[0] = indexOfEdge(e[0]);
-            e[1] = indexOfEdge(e[1]);
-            e[2] = indexOfEdge(e[2]);
-
-            if (contains(e, -1)){
-                throw new IllegalStateException("Cannot find matching edge in edgeHash()");
+            while (e0 != firstMatchingEdge){
+                int tmp = e2; e2 = e1; e1 = e0; e0 = tmp;
+                int tmpP = pos2; pos2 = pos1; pos1 = pos0; pos0 = tmpP;
             }
 
             long hash = 0;
             long[][] edgeKeys = PHASE2_EDGE_KEYS[centerIndex];
-            for (int i = 0; i < 3; i++){
-                hash ^= edgeKeys[i][e[i]];
-            }
+            hash ^= edgeKeys[0][pos0];
+            hash ^= edgeKeys[1][pos1];
+            hash ^= edgeKeys[2][pos2];
 
             return hash;
         }
