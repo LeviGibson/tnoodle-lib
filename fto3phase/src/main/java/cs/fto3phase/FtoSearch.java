@@ -65,14 +65,14 @@ public class FtoSearch {
     }
 
     /**
-     * Benchmarks the solver over a number of random states using 8 threads.
+     * Benchmarks the solver over a number of random states using 4 threads.
      * Appends per-solve timing data to {@code R/benchmarks.csv}.
      *
      * @param benchName label written in place of "PRIMITIVE_OPTIMIZED_HASHSET"
      * @param num number of random states to solve
      */
     public static void performanceTest(String benchName, int num){
-        ExecutorService executor = Executors.newFixedThreadPool(8);
+        ExecutorService executor = Executors.newFixedThreadPool(4);
         CompletionService<long[]> completionService = new ExecutorCompletionService<>(executor);
 
         for (int i = 0; i < num; i++) {
@@ -911,11 +911,10 @@ public class FtoSearch {
     //--------------- Main ---------------//
 
     /**
-     * Runs a 500-scramble benchmark and prints average move count and solve time.
+     * Runs a `5`00-scramble benchmark and prints average move count and solve time.
      * @param args ignored
      */
     public static void main(String[] args) {
-//        performanceTest("PRIMITIVE_OPTIMIZED_HASHSET", 10000);
-        simplePerformanceTest(100);
+        performanceTest("DEPTH_6_PHASE1", 2000);
     }
 }
