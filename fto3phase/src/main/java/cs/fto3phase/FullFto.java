@@ -1261,7 +1261,7 @@ public class FullFto {
         public long phaseTwoHash(){
             long hash = 0;
 
-            hash ^= (centers & 0b111111111111111111000000000000000000000000L);
+            hash ^= (centers & 0x3FFFF000000L);
 
             hash ^= edgeHash(CenterOrd.R);
             hash ^= edgeHash(CenterOrd.L);
