@@ -617,8 +617,75 @@ public class FtoSearch {
             depth++;
         }
 
+        //Post-processing:
+        //Make the table symmetry-independent
+        FullFto helper = new FullFto();
+        for (int i = 0; i < size; i++) {
+            helper.setPhaseTwoEdgeIndex(i);
+
+            int minDistance = prun[i];
+
+            helper.rotate(1);
+            minDistance = Math.min(minDistance, prun[helper.phaseTwoEdgeIndex()]);
+            helper.rotate(1);
+            minDistance = Math.min(minDistance, prun[helper.phaseTwoEdgeIndex()]);
+
+            prun[i] = (byte)minDistance;
+        }
+
         return prun;
     }
+
+    /**
+    private static int found = 0;
+
+    private static void phaseTwoTriplePruningSearch(int depth, FullFto fto){
+        if (depth == 0)
+            return;
+
+        int ply = fto.historyLength();
+
+        int index = fto.phaseTwoTripleIndex();
+
+        if (phaseTwoTriplePruningTable[index] > ply){
+            found++;
+            phaseTwoTriplePruningTable[index] = (byte)ply;
+            System.out.println(found);
+        }
+
+        for (Move move : PHASE_TWO_MOVES){
+            if (fto.isRepetition(move))
+                continue;
+
+            if (ply == 0 && (move == Move.R || move == Move.RP || move == Move.L || move == Move.LP || move == Move.B || move == Move.BP))
+                continue;
+
+            fto.turn(move);
+            phaseTwoTriplePruningSearch(depth-1, fto);
+            fto.undo();
+        }
+    }
+
+    static{
+        for (int i = 0; i < 1000; i++) {
+            FullFto fto = FullFto.randomCube(new Random());
+            System.out.println(phaseTwoTriplePruningTable[fto.phaseTwoTripleIndex()]);
+        }
+
+        phaseTwoTriplePruningTable = new byte[2*2*2*2*2*2*2*2*2*2*2*2];
+        Arrays.fill(phaseTwoTriplePruningTable, (byte) 25);
+        for (int depth = 0; depth < 20; depth++) {
+            System.out.println("Searching depth " + depth);
+            phaseTwoTriplePruningSearch(depth, new FullFto());
+            try {
+                saveEdgeTable(phaseTwoTriplePruningTable, "depth " + depth + ".dat");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+     **/
+
 
     /**
      * Generates the phase-one pruning table via BFS over solved states.
@@ -790,7 +857,7 @@ public class FtoSearch {
     private static final HashMap<Long, ArrayList<Long>> phaseTwoPruningTable;
     private static final HashMap<Long, Integer> phaseThreePruningTable;
 
-    private static final byte[] phaseTwoEdgePruningTable;
+    private static byte[] phaseTwoEdgePruningTable;
     private static final byte[] phaseTwoTriplePruningTable;
 
     /**
@@ -953,7 +1020,7 @@ public class FtoSearch {
         }
 
         public int minEdgeLookup(){
-            return Math.min(Math.min(edgeLookup(angles[0]), edgeLookup(angles[1])),  edgeLookup(angles[2]));
+            return edgeLookup(angles[0]);
         }
 
         public int tripleLookup(){
@@ -1015,7 +1082,6 @@ public class FtoSearch {
      * @param args ignored
      */
     public static void main(String[] args) {
-//        performanceTest("OLD", 20000);
-        simplePerformanceTest(100);
+        performanceTest("OLD_LOOKUP", 2000);
     }
 }
