@@ -18,29 +18,8 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
     private enum Move {R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
     private static final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
 
-    private enum Corner {
-        U_L, U_R, U_F, D_L, D_R, D_B
-    }
-
-    private enum Edge {
-        U_B, U_R, U_L,
-        F_L, F_R, R_BR, B_BL, B_BR, L_BL,
-        D_F, D_BR, D_BL
-    }
-
     private enum CenterOrd {
         U, F, BR, BL, L, R, B, D
-    }
-
-    private enum CenterInd {
-        U_BL, U_BR, U_F,
-        F_U, F_BR, F_BL,
-        BR_U, BR_BL, BR_F,
-        BL_U, BL_F, BL_BR,
-        L_B, L_R, L_D,
-        R_L, R_B, R_D,
-        B_R, B_L, B_D,
-        D_L, D_R, D_B
     }
 
     private final ThreadLocal<FtoSearch> threePhaseSearcher;
@@ -125,41 +104,58 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
     public class FaceTurningOctahedronState extends PuzzleState {
 
-        private int[] corners = new int[6];
-        private int[] edges = new int[12];
-        private int[] centers = new int[24];
+        private int[][] image = new int[8][9];
 
-        private int encodeCorner(int perm, int orientation) {
-            return ((perm << 2) | orientation);
-        }
+        private final int[][][] C = {
+            {{0,0},{6,8},{2,0},{4,0}},
+            {{0,8},{5,8},{3,0},{6,0}},
+            {{0,4},{4,4},{1,4},{5,0}},
+            {{7,8},{1,0},{4,8},{2,8}},
+            {{7,0},{3,4},{5,4},{1,8}},
+            {{7,4},{2,4},{6,4},{3,8}}
+        };
 
-        private int getCornerIndex(int corner) {
-            return corner >> 2;
-        }
+        private final int[][][] E_CELLS = {
+            {{0,5},{6,5}},
+            {{0,7},{5,5}},
+            {{0,2},{4,2}},
+            {{1,2},{4,7}},
+            {{1,7},{5,2}},
+            {{3,2},{5,7}},
+            {{2,2},{6,7}},
+            {{3,5},{6,2}},
+            {{2,5},{4,5}},
+            {{1,5},{7,5}},
+            {{3,7},{7,2}},
+            {{2,7},{7,7}}
+        };
 
-        private int getCornerOrientation(int corner) {
-            return corner & 0b11;
-        }
+        private final int[][] CT = {
+            {0,1},{0,6},{0,3},
+            {1,3},{1,6},{1,1},
+            {3,1},{3,6},{3,3},
+            {2,1},{2,6},{2,3},
+            {4,1},{4,3},{4,6},
+            {5,1},{5,6},{5,3},
+            {6,1},{6,6},{6,3},
+            {7,6},{7,1},{7,3}
+        };
+
+        private final int[] SOLVED_FACE_COLOR = {0, 1, 3, 2, 4, 5, 6, 7};
 
         public FaceTurningOctahedronState() {
-            for (int i = 0; i < 6; i++) {
-                corners[i] = encodeCorner(i, 0);
-            }
-            for (int i = 0; i < 12; i++) {
-                edges[i] = i;
-            }
-
-            for (int i = 0; i < 24 / 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    centers[(i * 3) + j] = i;
+            for (int f = 0; f < 8; f++) {
+                int color = SOLVED_FACE_COLOR[f];
+                for (int s = 0; s < 9; s++) {
+                    image[f][s] = color;
                 }
             }
         }
 
         public FaceTurningOctahedronState(FaceTurningOctahedronState copyFrom) {
-            System.arraycopy(copyFrom.corners, 0, corners, 0, 6);
-            System.arraycopy(copyFrom.edges, 0, edges, 0, 12);
-            System.arraycopy(copyFrom.centers, 0, centers, 0, 24);
+            for (int f = 0; f < 8; f++) {
+                System.arraycopy(copyFrom.image[f], 0, image[f], 0, 9);
+            }
         }
 
         @Override
@@ -182,16 +178,13 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             if (!(other instanceof FaceTurningOctahedronState)) {
                 return false;
             }
-
             FaceTurningOctahedronState o = (FaceTurningOctahedronState) other;
-            return Arrays.equals(centers, o.centers) &&
-                Arrays.equals(corners, o.corners) &&
-                Arrays.equals(edges, o.edges);
+            return Arrays.deepEquals(image, o.image);
         }
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(corners) ^ Arrays.hashCode(edges) ^ Arrays.hashCode(centers);
+            return Arrays.deepHashCode(image);
         }
 
         @Override
@@ -200,8 +193,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             for (int i = 0; i < scheme.length; i++) {
                 scheme[i] = colorSchemeMap.get(CenterOrd.values()[i].toString());
             }
-
-            int[][] image = getImage();
 
             int unit = FACE_TURNING_OCTAHEDRON_UNIT_SIZE;
             int margin = FACE_TURNING_OCTAHEDRON_MARGIN;
@@ -222,7 +213,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             return svg;
         }
 
-        private void drawFace(Svg svg, int[] image, Color[] scheme, double ax, double ay, double bx, double by, double cx, double cy) {
+        private void drawFace(Svg svg, int[] img, Color[] scheme, double ax, double ay, double bx, double by, double cx, double cy) {
             double[] a = insetFacePoint(ax, ay, bx, by, cx, cy);
             double[] b = insetFacePoint(bx, by, ax, ay, cx, cy);
             double[] c = insetFacePoint(cx, cy, ax, ay, bx, by);
@@ -236,13 +227,13 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             int stickerIndex = 0;
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3 - i; j++) {
-                    drawSticker(svg, scheme[image[stickerIndex++]],
+                    drawSticker(svg, scheme[img[stickerIndex++]],
                         facePoint(ax, ay, bx, by, cx, cy, i, j),
                         facePoint(ax, ay, bx, by, cx, cy, i + 1, j),
                         facePoint(ax, ay, bx, by, cx, cy, i, j + 1));
 
                     if (i + j < 2) {
-                        drawSticker(svg, scheme[image[stickerIndex++]],
+                        drawSticker(svg, scheme[img[stickerIndex++]],
                             facePoint(ax, ay, bx, by, cx, cy, i + 1, j),
                             facePoint(ax, ay, bx, by, cx, cy, i + 1, j + 1),
                             facePoint(ax, ay, bx, by, cx, cy, i, j + 1));
@@ -289,308 +280,161 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             svg.appendChild(sticker);
         }
 
-        private int[][] CORNER_COLORS = {
-            {CenterOrd.U.ordinal(), CenterOrd.B.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.L.ordinal()},
-            {CenterOrd.U.ordinal(), CenterOrd.R.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.B.ordinal()},
-            {CenterOrd.U.ordinal(), CenterOrd.L.ordinal(), CenterOrd.F.ordinal(), CenterOrd.R.ordinal()},
-            {CenterOrd.D.ordinal(), CenterOrd.F.ordinal(), CenterOrd.L.ordinal(), CenterOrd.BL.ordinal()},
-            {CenterOrd.D.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.R.ordinal(), CenterOrd.F.ordinal()},
-            {CenterOrd.D.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.B.ordinal(), CenterOrd.BR.ordinal()}
-        };
-
-        private int[][] EDGE_COLORS = {
-            {CenterOrd.U.ordinal(), CenterOrd.B.ordinal()}, // U_B
-            {CenterOrd.U.ordinal(), CenterOrd.R.ordinal()}, // U_R
-            {CenterOrd.U.ordinal(), CenterOrd.L.ordinal()}, // U_L
-            {CenterOrd.F.ordinal(), CenterOrd.L.ordinal()}, // F_L
-            {CenterOrd.F.ordinal(), CenterOrd.R.ordinal()}, // F_R
-            {CenterOrd.BR.ordinal(), CenterOrd.R.ordinal()}, // R_BR
-            {CenterOrd.BL.ordinal(), CenterOrd.B.ordinal()}, // B_BL
-            {CenterOrd.BR.ordinal(), CenterOrd.B.ordinal()}, // B_BR
-            {CenterOrd.BL.ordinal(), CenterOrd.L.ordinal()}, // L_BL
-            {CenterOrd.F.ordinal(), CenterOrd.D.ordinal()}, // D_F
-            {CenterOrd.BR.ordinal(), CenterOrd.D.ordinal()}, // D_BR
-            {CenterOrd.BL.ordinal(), CenterOrd.D.ordinal()} // D_BL
-        };
-
-        private int cornerColor(Corner index, int orientation){
-            int corner = corners[index.ordinal()];
-            return             CORNER_COLORS[getCornerIndex(corner)][(getCornerOrientation(corner) + orientation)%4];
+        private void swap(int f0, int s0, int f1, int s1, int f2, int s2) {
+            int tmp = image[f0][s0];
+            image[f0][s0] = image[f2][s2];
+            image[f2][s2] = image[f1][s1];
+            image[f1][s1] = tmp;
         }
 
-        private int edgeColor(Edge index, int orientation){
-            int edge = edges[index.ordinal()];
-            return EDGE_COLORS[edge][orientation];
+        private void edgeCycle(int eA, int eB, int eC) {
+            swap(E_CELLS[eA][0][0], E_CELLS[eA][0][1],
+                 E_CELLS[eB][0][0], E_CELLS[eB][0][1],
+                 E_CELLS[eC][0][0], E_CELLS[eC][0][1]);
+            swap(E_CELLS[eA][1][0], E_CELLS[eA][1][1],
+                 E_CELLS[eB][1][0], E_CELLS[eB][1][1],
+                 E_CELLS[eC][1][0], E_CELLS[eC][1][1]);
         }
 
-        private int[][] getImage(){
-            int[][] image = new int[8][9];
-
-            //U face
-            image[0][0] = cornerColor(Corner.U_L, 0);
-            image[0][1] = centers[CenterInd.U_BL.ordinal()];
-            image[0][2] = edgeColor(Edge.U_L, 0);
-            image[0][3] = centers[CenterInd.U_F.ordinal()];
-            image[0][4] = cornerColor(Corner.U_F, 0);
-            image[0][5] = edgeColor(Edge.U_B, 0);
-            image[0][6] = centers[CenterInd.U_BR.ordinal()];
-            image[0][7] = edgeColor(Edge.U_R, 0);
-            image[0][8] = cornerColor(Corner.U_R, 0);
-
-            //F face
-            image[1][0] = cornerColor(Corner.D_L, 1);
-            image[1][1] = centers[CenterInd.F_BL.ordinal()];
-            image[1][2] = edgeColor(Edge.F_L, 0);
-            image[1][3] = centers[CenterInd.F_U.ordinal()];
-            image[1][4] = cornerColor(Corner.U_F, 2);
-            image[1][5] = edgeColor(Edge.D_F, 0);
-            image[1][6] = centers[CenterInd.F_BR.ordinal()];
-            image[1][7] = edgeColor(Edge.F_R, 0);
-            image[1][8] = cornerColor(Corner.D_R, 3);
-
-            //BL face
-            image[2][0] = cornerColor(Corner.U_L, 2);
-            image[2][1] = centers[CenterInd.BL_U.ordinal()];
-            image[2][2] = edgeColor(Edge.B_BL, 0);
-            image[2][3] = centers[CenterInd.BL_BR.ordinal()];
-            image[2][4] = cornerColor(Corner.D_B, 1);
-            image[2][5] = edgeColor(Edge.L_BL, 0);
-            image[2][6] = centers[CenterInd.BL_F.ordinal()];
-            image[2][7] = edgeColor(Edge.D_BL, 0);
-            image[2][8] = cornerColor(Corner.D_L, 3);
-
-            //BR face
-            image[3][0] = cornerColor(Corner.U_R, 2);
-            image[3][1] = centers[CenterInd.BR_U.ordinal()];
-            image[3][2] = edgeColor(Edge.R_BR, 0);
-            image[3][3] = centers[CenterInd.BR_F.ordinal()];
-            image[3][4] = cornerColor(Corner.D_R, 1);
-            image[3][5] = edgeColor(Edge.B_BR, 0);
-            image[3][6] = centers[CenterInd.BR_BL.ordinal()];
-            image[3][7] = edgeColor(Edge.D_BR, 0);
-            image[3][8] = cornerColor(Corner.D_B, 3);
-
-            //L face
-            image[4][0] = cornerColor(Corner.U_L, 3);
-            image[4][1] = centers[CenterInd.L_B.ordinal()];
-            image[4][2] = edgeColor(Edge.U_L, 1);
-            image[4][3] = centers[CenterInd.L_R.ordinal()];
-            image[4][4] = cornerColor(Corner.U_F, 1);
-            image[4][5] = edgeColor(Edge.L_BL, 1);
-            image[4][6] = centers[CenterInd.L_D.ordinal()];
-            image[4][7] = edgeColor(Edge.F_L, 1);
-            image[4][8] = cornerColor(Corner.D_L, 2);
-
-            //R face
-            image[5][0] = cornerColor(Corner.U_F, 3);
-            image[5][1] = centers[CenterInd.R_L.ordinal()];
-            image[5][2] = edgeColor(Edge.F_R, 1);
-            image[5][3] = centers[CenterInd.R_D.ordinal()];
-            image[5][4] = cornerColor(Corner.D_R, 2);
-            image[5][5] = edgeColor(Edge.U_R, 1);
-            image[5][6] = centers[CenterInd.R_B.ordinal()];
-            image[5][7] = edgeColor(Edge.R_BR, 1);
-            image[5][8] = cornerColor(Corner.U_R, 1);
-
-            //B face
-            image[6][0] = cornerColor(Corner.U_R, 3);
-            image[6][1] = centers[CenterInd.B_R.ordinal()];
-            image[6][2] = edgeColor(Edge.B_BR, 1);
-            image[6][3] = centers[CenterInd.B_D.ordinal()];
-            image[6][4] = cornerColor(Corner.D_B, 2);
-            image[6][5] = edgeColor(Edge.U_B, 1);
-            image[6][6] = centers[CenterInd.B_L.ordinal()];
-            image[6][7] = edgeColor(Edge.B_BL, 1);
-            image[6][8] = cornerColor(Corner.U_L, 1);
-
-            //D face
-            image[7][0] = cornerColor(Corner.D_R, 0);
-            image[7][1] = centers[CenterInd.D_R.ordinal()];
-            image[7][2] = edgeColor(Edge.D_BR, 1);
-            image[7][3] = centers[CenterInd.D_B.ordinal()];
-            image[7][4] = cornerColor(Corner.D_B, 0);
-            image[7][5] = edgeColor(Edge.D_F, 1);
-            image[7][6] = centers[CenterInd.D_L.ordinal()];
-            image[7][7] = edgeColor(Edge.D_BL, 1);
-            image[7][8] = cornerColor(Corner.D_L, 0);
-
-            return image;
+        private void centerCycle(int cA, int cB, int cC) {
+            swap(CT[cA][0], CT[cA][1],
+                 CT[cB][0], CT[cB][1],
+                 CT[cC][0], CT[cC][1]);
         }
 
-        private void cycleCorners(int i1, int i2, int i3) {
-            int tmp = corners[i3];
-            corners[i3] = corners[i2];
-            corners[i2] = corners[i1];
-            corners[i1] = tmp;
+        private void twistCornerCycle(int cA, int cB, int cC, int tA, int tB, int tC) {
+            int[] vA = new int[4];
+            int[] vB = new int[4];
+            int[] vC = new int[4];
+            for (int i = 0; i < 4; i++) {
+                vA[i] = image[C[cA][i][0]][C[cA][i][1]];
+                vB[i] = image[C[cB][i][0]][C[cB][i][1]];
+                vC[i] = image[C[cC][i][0]][C[cC][i][1]];
+            }
+            for (int i = 0; i < 4; i++) {
+                image[C[cB][i][0]][C[cB][i][1]] = vA[(i + tB) % 4];
+                image[C[cC][i][0]][C[cC][i][1]] = vB[(i + tC) % 4];
+                image[C[cA][i][0]][C[cA][i][1]] = vC[(i + tA) % 4];
+            }
         }
 
-        private void cycleEdges(int i1, int i2, int i3) {
-            int tmp = edges[i3];
-            edges[i3] = edges[i2];
-            edges[i2] = edges[i1];
-            edges[i1] = tmp;
-        }
-
-        private void cycleThreeCenters(int i1, int i2, int i3) {
-            int tmp = centers[i3];
-            centers[i3] = centers[i2];
-            centers[i2] = centers[i1];
-            centers[i1] = tmp;
-        }
-
-        private void twistCorner(int i, int dir) {
-            corners[i] = encodeCorner(getCornerIndex(corners[i]), (getCornerOrientation(corners[i]) + dir) % 4);
+        private void cornerCycle(int cA, int cB, int cC) {
+            twistCornerCycle(cA, cB, cC, 0, 0, 0);
         }
 
         public void turn(Move move) {
             switch (move) {
                 case R:
-                    cycleCorners(Corner.U_F.ordinal(), Corner.U_R.ordinal(), Corner.D_R.ordinal());
-                    twistCorner(Corner.U_F.ordinal(), 3);
-                    twistCorner(Corner.U_R.ordinal(), 2);
-                    twistCorner(Corner.D_R.ordinal(), 3);
-                    cycleEdges(Edge.U_R.ordinal(), Edge.R_BR.ordinal(), Edge.F_R.ordinal());
-                    cycleThreeCenters(CenterInd.R_L.ordinal(), CenterInd.R_B.ordinal(), CenterInd.R_D.ordinal());
-                    cycleThreeCenters(CenterInd.F_U.ordinal(), CenterInd.U_BR.ordinal(), CenterInd.BR_F.ordinal());
-                    cycleThreeCenters(CenterInd.F_BR.ordinal(), CenterInd.U_F.ordinal(), CenterInd.BR_U.ordinal());
+                    twistCornerCycle(2, 1, 4, 3, 2, 3);
+                    edgeCycle(4, 1, 5);
+                    centerCycle(15, 16, 17);
+                    centerCycle(3, 1, 8);
+                    centerCycle(4, 2, 6);
                     break;
                 case L:
-                    cycleCorners(Corner.U_L.ordinal(), Corner.U_F.ordinal(), Corner.D_L.ordinal());
-                    twistCorner(Corner.U_L.ordinal(), 3);
-                    twistCorner(Corner.U_F.ordinal(), 2);
-                    twistCorner(Corner.D_L.ordinal(), 3);
-                    cycleEdges(Edge.U_L.ordinal(), Edge.F_L.ordinal(), Edge.L_BL.ordinal());
-                    cycleThreeCenters(CenterInd.L_B.ordinal(), CenterInd.L_R.ordinal(), CenterInd.L_D.ordinal());
-                    cycleThreeCenters(CenterInd.U_BL.ordinal(), CenterInd.F_U.ordinal(), CenterInd.BL_F.ordinal());
-                    cycleThreeCenters(CenterInd.U_F.ordinal(), CenterInd.F_BL.ordinal(), CenterInd.BL_U.ordinal());
+                    twistCornerCycle(0, 2, 3, 3, 2, 3);
+                    edgeCycle(8, 2, 3);
+                    centerCycle(12, 13, 14);
+                    centerCycle(0, 3, 10);
+                    centerCycle(2, 5, 9);
                     break;
                 case U:
-                    cycleCorners(Corner.U_L.ordinal(), Corner.U_R.ordinal(), Corner.U_F.ordinal());
-                    cycleEdges(Edge.U_B.ordinal(), Edge.U_R.ordinal(), Edge.U_L.ordinal());
-                    cycleThreeCenters(CenterInd.U_BL.ordinal(), CenterInd.U_BR.ordinal(), CenterInd.U_F.ordinal());
-                    cycleThreeCenters(CenterInd.R_L.ordinal(), CenterInd.L_B.ordinal(), CenterInd.B_R.ordinal());
-                    cycleThreeCenters(CenterInd.R_B.ordinal(), CenterInd.L_R.ordinal(), CenterInd.B_L.ordinal());
+                    cornerCycle(0, 1, 2);
+                    edgeCycle(2, 0, 1);
+                    centerCycle(0, 1, 2);
+                    centerCycle(15, 12, 18);
+                    centerCycle(16, 13, 19);
                     break;
                 case D:
-                    cycleCorners(Corner.D_L.ordinal(), Corner.D_R.ordinal(), Corner.D_B.ordinal());
-                    cycleEdges(Edge.D_F.ordinal(), Edge.D_BR.ordinal(), Edge.D_BL.ordinal());
-                    cycleThreeCenters(CenterInd.D_L.ordinal(), CenterInd.D_R.ordinal(), CenterInd.D_B.ordinal());
-                    cycleThreeCenters(CenterInd.F_BL.ordinal(), CenterInd.BR_F.ordinal(), CenterInd.BL_BR.ordinal());
-                    cycleThreeCenters(CenterInd.F_BR.ordinal(), CenterInd.BR_BL.ordinal(), CenterInd.BL_F.ordinal());
+                    cornerCycle(3, 4, 5);
+                    edgeCycle(11, 9, 10);
+                    centerCycle(21, 22, 23);
+                    centerCycle(5, 8, 11);
+                    centerCycle(4, 7, 10);
                     break;
                 case F:
-                    cycleCorners(Corner.U_F.ordinal(), Corner.D_R.ordinal(), Corner.D_L.ordinal());
-                    twistCorner(Corner.U_F.ordinal(), 3);
-                    twistCorner(Corner.D_R.ordinal(), 3);
-                    twistCorner(Corner.D_L.ordinal(), 2);
-                    cycleEdges(Edge.F_R.ordinal(), Edge.D_F.ordinal(), Edge.F_L.ordinal());
-                    cycleThreeCenters(CenterInd.F_U.ordinal(), CenterInd.F_BR.ordinal(), CenterInd.F_BL.ordinal());
-                    cycleThreeCenters(CenterInd.L_R.ordinal(), CenterInd.R_D.ordinal(), CenterInd.D_L.ordinal());
-                    cycleThreeCenters(CenterInd.R_L.ordinal(), CenterInd.D_R.ordinal(), CenterInd.L_D.ordinal());
+                    twistCornerCycle(2, 4, 3, 3, 3, 2);
+                    edgeCycle(3, 4, 9);
+                    centerCycle(3, 4, 5);
+                    centerCycle(13, 17, 21);
+                    centerCycle(15, 22, 14);
                     break;
                 case B:
-                    cycleCorners(Corner.U_R.ordinal(), Corner.U_L.ordinal(), Corner.D_B.ordinal());
-                    twistCorner(Corner.U_R.ordinal(), 3);
-                    twistCorner(Corner.U_L.ordinal(), 2);
-                    twistCorner(Corner.D_B.ordinal(), 3);
-                    cycleEdges(Edge.U_B.ordinal(), Edge.B_BL.ordinal(), Edge.B_BR.ordinal());
-                    cycleThreeCenters(CenterInd.B_R.ordinal(), CenterInd.B_L.ordinal(), CenterInd.B_D.ordinal());
-                    cycleThreeCenters(CenterInd.U_BR.ordinal(), CenterInd.BL_U.ordinal(), CenterInd.BR_BL.ordinal());
-                    cycleThreeCenters(CenterInd.U_BL.ordinal(), CenterInd.BL_BR.ordinal(), CenterInd.BR_U.ordinal());
+                    twistCornerCycle(1, 0, 5, 3, 2, 3);
+                    edgeCycle(7, 0, 6);
+                    centerCycle(18, 19, 20);
+                    centerCycle(1, 9, 7);
+                    centerCycle(0, 11, 6);
                     break;
                 case BR:
-                    cycleCorners(Corner.U_R.ordinal(), Corner.D_B.ordinal(), Corner.D_R.ordinal());
-                    twistCorner(Corner.U_R.ordinal(), 3);
-                    twistCorner(Corner.D_B.ordinal(), 3);
-                    twistCorner(Corner.D_R.ordinal(), 2);
-                    cycleEdges(Edge.R_BR.ordinal(), Edge.B_BR.ordinal(), Edge.D_BR.ordinal());
-                    cycleThreeCenters(CenterInd.BR_U.ordinal(), CenterInd.BR_BL.ordinal(), CenterInd.BR_F.ordinal());
-                    cycleThreeCenters(CenterInd.R_B.ordinal(), CenterInd.B_D.ordinal(), CenterInd.D_R.ordinal());
-                    cycleThreeCenters(CenterInd.R_D.ordinal(), CenterInd.B_R.ordinal(), CenterInd.D_B.ordinal());
+                    twistCornerCycle(1, 5, 4, 3, 3, 2);
+                    edgeCycle(10, 5, 7);
+                    centerCycle(6, 7, 8);
+                    centerCycle(16, 20, 22);
+                    centerCycle(17, 18, 23);
                     break;
                 case BL:
-                    cycleCorners(Corner.U_L.ordinal(), Corner.D_L.ordinal(), Corner.D_B.ordinal());
-                    twistCorner(Corner.U_L.ordinal(), 3);
-                    twistCorner(Corner.D_L.ordinal(), 3);
-                    twistCorner(Corner.D_B.ordinal(), 2);
-                    cycleEdges(Edge.L_BL.ordinal(), Edge.D_BL.ordinal(), Edge.B_BL.ordinal());
-                    cycleThreeCenters(CenterInd.BL_U.ordinal(), CenterInd.BL_F.ordinal(), CenterInd.BL_BR.ordinal());
-                    cycleThreeCenters(CenterInd.B_L.ordinal(), CenterInd.L_D.ordinal(), CenterInd.D_B.ordinal());
-                    cycleThreeCenters(CenterInd.L_B.ordinal(), CenterInd.D_L.ordinal(), CenterInd.B_D.ordinal());
+                    twistCornerCycle(0, 3, 5, 3, 3, 2);
+                    edgeCycle(6, 8, 11);
+                    centerCycle(9, 10, 11);
+                    centerCycle(19, 14, 23);
+                    centerCycle(12, 21, 20);
                     break;
                 case RP:
-                    cycleCorners(Corner.U_F.ordinal(), Corner.D_R.ordinal(), Corner.U_R.ordinal());
-                    twistCorner(Corner.U_F.ordinal(), 2);
-                    twistCorner(Corner.U_R.ordinal(), 1);
-                    twistCorner(Corner.D_R.ordinal(), 1);
-                    cycleEdges(Edge.U_R.ordinal(), Edge.F_R.ordinal(), Edge.R_BR.ordinal());
-                    cycleThreeCenters(CenterInd.R_L.ordinal(), CenterInd.R_D.ordinal(), CenterInd.R_B.ordinal());
-                    cycleThreeCenters(CenterInd.F_U.ordinal(), CenterInd.BR_F.ordinal(), CenterInd.U_BR.ordinal());
-                    cycleThreeCenters(CenterInd.F_BR.ordinal(), CenterInd.BR_U.ordinal(), CenterInd.U_F.ordinal());
+                    twistCornerCycle(2, 4, 1, 2, 1, 1);
+                    edgeCycle(5, 1, 4);
+                    centerCycle(15, 17, 16);
+                    centerCycle(3, 8, 1);
+                    centerCycle(4, 6, 2);
                     break;
                 case LP:
-                    cycleCorners(Corner.U_L.ordinal(), Corner.D_L.ordinal(), Corner.U_F.ordinal());
-                    twistCorner(Corner.U_L.ordinal(), 2);
-                    twistCorner(Corner.U_F.ordinal(), 1);
-                    twistCorner(Corner.D_L.ordinal(), 1);
-                    cycleEdges(Edge.U_L.ordinal(), Edge.L_BL.ordinal(), Edge.F_L.ordinal());
-                    cycleThreeCenters(CenterInd.L_B.ordinal(), CenterInd.L_D.ordinal(), CenterInd.L_R.ordinal());
-                    cycleThreeCenters(CenterInd.U_BL.ordinal(), CenterInd.BL_F.ordinal(), CenterInd.F_U.ordinal());
-                    cycleThreeCenters(CenterInd.U_F.ordinal(), CenterInd.BL_U.ordinal(), CenterInd.F_BL.ordinal());
+                    twistCornerCycle(0, 3, 2, 2, 1, 1);
+                    edgeCycle(3, 2, 8);
+                    centerCycle(12, 14, 13);
+                    centerCycle(0, 10, 3);
+                    centerCycle(2, 9, 5);
                     break;
                 case UP:
-                    cycleCorners(Corner.U_L.ordinal(), Corner.U_F.ordinal(), Corner.U_R.ordinal());
-                    cycleEdges(Edge.U_B.ordinal(), Edge.U_L.ordinal(), Edge.U_R.ordinal());
-                    cycleThreeCenters(CenterInd.U_BL.ordinal(), CenterInd.U_F.ordinal(), CenterInd.U_BR.ordinal());
-                    cycleThreeCenters(CenterInd.R_L.ordinal(), CenterInd.B_R.ordinal(), CenterInd.L_B.ordinal());
-                    cycleThreeCenters(CenterInd.R_B.ordinal(), CenterInd.B_L.ordinal(), CenterInd.L_R.ordinal());
+                    cornerCycle(0, 2, 1);
+                    edgeCycle(1, 0, 2);
+                    centerCycle(0, 2, 1);
+                    centerCycle(15, 18, 12);
+                    centerCycle(16, 19, 13);
                     break;
                 case DP:
-                    cycleCorners(Corner.D_L.ordinal(), Corner.D_B.ordinal(), Corner.D_R.ordinal());
-                    cycleEdges(Edge.D_F.ordinal(), Edge.D_BL.ordinal(), Edge.D_BR.ordinal());
-                    cycleThreeCenters(CenterInd.D_L.ordinal(), CenterInd.D_B.ordinal(), CenterInd.D_R.ordinal());
-                    cycleThreeCenters(CenterInd.F_BL.ordinal(), CenterInd.BL_BR.ordinal(), CenterInd.BR_F.ordinal());
-                    cycleThreeCenters(CenterInd.F_BR.ordinal(), CenterInd.BL_F.ordinal(), CenterInd.BR_BL.ordinal());
+                    cornerCycle(3, 5, 4);
+                    edgeCycle(10, 9, 11);
+                    centerCycle(21, 23, 22);
+                    centerCycle(5, 11, 8);
+                    centerCycle(4, 10, 7);
                     break;
                 case FP:
-                    cycleCorners(Corner.U_F.ordinal(), Corner.D_L.ordinal(), Corner.D_R.ordinal());
-                    twistCorner(Corner.U_F.ordinal(), 1);
-                    twistCorner(Corner.D_R.ordinal(), 2);
-                    twistCorner(Corner.D_L.ordinal(), 1);
-                    cycleEdges(Edge.F_R.ordinal(), Edge.F_L.ordinal(), Edge.D_F.ordinal());
-                    cycleThreeCenters(CenterInd.F_U.ordinal(), CenterInd.F_BL.ordinal(), CenterInd.F_BR.ordinal());
-                    cycleThreeCenters(CenterInd.L_R.ordinal(), CenterInd.D_L.ordinal(), CenterInd.R_D.ordinal());
-                    cycleThreeCenters(CenterInd.R_L.ordinal(), CenterInd.L_D.ordinal(), CenterInd.D_R.ordinal());
+                    twistCornerCycle(2, 3, 4, 1, 1, 2);
+                    edgeCycle(9, 4, 3);
+                    centerCycle(3, 5, 4);
+                    centerCycle(13, 21, 17);
+                    centerCycle(15, 14, 22);
                     break;
                 case BP:
-                    cycleCorners(Corner.U_R.ordinal(), Corner.D_B.ordinal(), Corner.U_L.ordinal());
-                    twistCorner(Corner.U_R.ordinal(), 2);
-                    twistCorner(Corner.U_L.ordinal(), 1);
-                    twistCorner(Corner.D_B.ordinal(), 1);
-                    cycleEdges(Edge.U_B.ordinal(), Edge.B_BR.ordinal(), Edge.B_BL.ordinal());
-                    cycleThreeCenters(CenterInd.B_R.ordinal(), CenterInd.B_D.ordinal(), CenterInd.B_L.ordinal());
-                    cycleThreeCenters(CenterInd.U_BR.ordinal(), CenterInd.BR_BL.ordinal(), CenterInd.BL_U.ordinal());
-                    cycleThreeCenters(CenterInd.U_BL.ordinal(), CenterInd.BR_U.ordinal(), CenterInd.BL_BR.ordinal());
+                    twistCornerCycle(1, 5, 0, 2, 1, 1);
+                    edgeCycle(6, 0, 7);
+                    centerCycle(18, 20, 19);
+                    centerCycle(1, 7, 9);
+                    centerCycle(0, 6, 11);
                     break;
                 case BRP:
-                    cycleCorners(Corner.U_R.ordinal(), Corner.D_R.ordinal(), Corner.D_B.ordinal());
-                    twistCorner(Corner.U_R.ordinal(), 1);
-                    twistCorner(Corner.D_B.ordinal(), 2);
-                    twistCorner(Corner.D_R.ordinal(), 1);
-                    cycleEdges(Edge.R_BR.ordinal(), Edge.D_BR.ordinal(), Edge.B_BR.ordinal());
-                    cycleThreeCenters(CenterInd.BR_U.ordinal(), CenterInd.BR_F.ordinal(), CenterInd.BR_BL.ordinal());
-                    cycleThreeCenters(CenterInd.R_B.ordinal(), CenterInd.D_R.ordinal(), CenterInd.B_D.ordinal());
-                    cycleThreeCenters(CenterInd.R_D.ordinal(), CenterInd.D_B.ordinal(), CenterInd.B_R.ordinal());
+                    twistCornerCycle(1, 4, 5, 1, 1, 2);
+                    edgeCycle(7, 5, 10);
+                    centerCycle(6, 8, 7);
+                    centerCycle(16, 22, 20);
+                    centerCycle(17, 23, 18);
                     break;
                 case BLP:
-                    cycleCorners(Corner.U_L.ordinal(), Corner.D_B.ordinal(), Corner.D_L.ordinal());
-                    twistCorner(Corner.U_L.ordinal(), 1);
-                    twistCorner(Corner.D_L.ordinal(), 2);
-                    twistCorner(Corner.D_B.ordinal(), 1);
-                    cycleEdges(Edge.L_BL.ordinal(), Edge.B_BL.ordinal(), Edge.D_BL.ordinal());
-                    cycleThreeCenters(CenterInd.BL_U.ordinal(), CenterInd.BL_BR.ordinal(), CenterInd.BL_F.ordinal());
-                    cycleThreeCenters(CenterInd.B_L.ordinal(), CenterInd.D_B.ordinal(), CenterInd.L_D.ordinal());
-                    cycleThreeCenters(CenterInd.L_B.ordinal(), CenterInd.B_D.ordinal(), CenterInd.D_L.ordinal());
+                    twistCornerCycle(0, 5, 3, 1, 1, 2);
+                    edgeCycle(11, 8, 6);
+                    centerCycle(9, 11, 10);
+                    centerCycle(19, 23, 14);
+                    centerCycle(12, 20, 21);
                     break;
                 default:
                     throw new RuntimeException("Move not recognized");
