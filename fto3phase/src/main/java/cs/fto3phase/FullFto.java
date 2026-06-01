@@ -1,7 +1,6 @@
 package cs.fto3phase;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 public class FullFto {
@@ -698,7 +697,39 @@ public class FullFto {
         }
     }
 
-    //--------------- Inner State ---------------//
+    private static final int[][] MOVE_CORNERS = {
+        {2, 1, 4}, {0, 2, 3}, {0, 1, 2}, {3, 4, 5},
+        {2, 4, 3}, {1, 0, 5}, {1, 5, 4}, {0, 3, 5},
+        {2, 4, 1}, {0, 3, 2}, {0, 2, 1}, {3, 5, 4},
+        {2, 3, 4}, {1, 5, 0}, {1, 4, 5}, {0, 5, 3}
+    };
+
+    private static final int[][][] MOVE_TWISTS = {
+        {{2,3}, {1,2}, {4,3}}, {{0,3}, {2,2}, {3,3}}, {{-1,0}, {-1,0}, {-1,0}}, {{-1,0}, {-1,0}, {-1,0}},
+        {{2,3}, {4,3}, {3,2}}, {{1,3}, {0,2}, {5,3}}, {{1,3}, {5,3}, {4,2}}, {{0,3}, {3,3}, {5,2}},
+        {{2,2}, {1,1}, {4,1}}, {{0,2}, {2,1}, {3,1}}, {{-1,0}, {-1,0}, {-1,0}}, {{-1,0}, {-1,0}, {-1,0}},
+        {{2,1}, {4,2}, {3,1}}, {{1,2}, {0,1}, {5,1}}, {{1,1}, {5,2}, {4,1}}, {{0,1}, {3,2}, {5,1}}
+    };
+
+    private static final int[][] MOVE_EDGES = {
+        {1, 5, 4}, {2, 3, 8}, {0, 1, 2}, {9, 10, 11},
+        {4, 9, 3}, {0, 6, 7}, {5, 7, 10}, {8, 11, 6},
+        {1, 4, 5}, {2, 8, 3}, {0, 2, 1}, {9, 11, 10},
+        {4, 3, 9}, {0, 7, 6}, {5, 10, 7}, {8, 6, 11}
+    };
+
+    private static final int[][][] MOVE_CENTERS = {
+        {{15,16,17}, {3,1,8}, {4,2,6}},  {{12,13,14}, {0,3,10}, {2,5,9}},
+        {{0,1,2}, {15,12,18}, {16,13,19}}, {{21,22,23}, {5,8,11}, {4,7,10}},
+        {{3,4,5}, {13,17,21}, {15,22,14}}, {{18,19,20}, {1,9,7}, {0,11,6}},
+        {{6,7,8}, {16,20,22}, {17,18,23}}, {{9,10,11}, {19,14,23}, {12,21,20}},
+        {{15,17,16}, {3,8,1}, {4,6,2}},  {{12,14,13}, {0,10,3}, {2,9,5}},
+        {{0,2,1}, {15,18,12}, {16,19,13}}, {{21,23,22}, {5,11,8}, {4,10,7}},
+        {{3,5,4}, {13,21,17}, {15,14,22}}, {{18,20,19}, {1,7,9}, {0,6,11}},
+        {{6,8,7}, {16,22,20}, {17,23,18}}, {{9,11,10}, {19,23,14}, {12,20,21}}
+    };
+
+    //--------------- Inner State --------------//
 
     private static class InnerState{
         int corners = SOLVED_CORNERS;
@@ -1269,155 +1300,22 @@ public class FullFto {
 
 
         public void turn(FullFto.Move move){
-            switch (move){
-                case R:
-                    cycleCorners(2, 1, 4);
-                    twistCorner(2, 3);
-                    twistCorner(1, 2);
-                    twistCorner(4, 3);
-                    cycleEdges(1, 5, 4);
-                    cycleThreeCenters(15, 16, 17);
-                    cycleThreeCenters(3, 1, 8);
-                    cycleThreeCenters(4, 2, 6);
-                    break;
-                case L:
-                    cycleCorners(0, 2, 3);
-                    twistCorner(0, 3);
-                    twistCorner(2, 2);
-                    twistCorner(3, 3);
-                    cycleEdges(2, 3, 8);
-                    cycleThreeCenters(12, 13, 14);
-                    cycleThreeCenters(0, 3, 10);
-                    cycleThreeCenters(2, 5, 9);
-                    break;
-                case U:
-                    cycleCorners(0, 1, 2);
-                    cycleEdges(0, 1, 2);
-                    cycleThreeCenters(0, 1, 2);
-                    cycleThreeCenters(15, 12, 18);
-                    cycleThreeCenters(16, 13, 19);
-                    break;
-                case D:
-                    cycleCorners(3, 4, 5);
-                    cycleEdges(9, 10, 11);
-                    cycleThreeCenters(21, 22, 23);
-                    cycleThreeCenters(5, 8, 11);
-                    cycleThreeCenters(4, 7, 10);
-                    break;
-                case F:
-                    cycleCorners(2, 4, 3);
-                    twistCorner(2, 3);
-                    twistCorner(4, 3);
-                    twistCorner(3, 2);
-                    cycleEdges(4, 9, 3);
-                    cycleThreeCenters(3, 4, 5);
-                    cycleThreeCenters(13, 17, 21);
-                    cycleThreeCenters(15, 22, 14);
-                    break;
-                case B:
-                    cycleCorners(1, 0, 5);
-                    twistCorner(1, 3);
-                    twistCorner(0, 2);
-                    twistCorner(5, 3);
-                    cycleEdges(0, 6, 7);
-                    cycleThreeCenters(18, 19, 20);
-                    cycleThreeCenters(1, 9, 7);
-                    cycleThreeCenters(0, 11, 6);
-                    break;
-                case BR:
-                    cycleCorners(1, 5, 4);
-                    twistCorner(1, 3);
-                    twistCorner(5, 3);
-                    twistCorner(4, 2);
-                    cycleEdges(5, 7, 10);
-                    cycleThreeCenters(6, 7, 8);
-                    cycleThreeCenters(16, 20, 22);
-                    cycleThreeCenters(17, 18, 23);
-                    break;
-                case BL:
-                    cycleCorners(0, 3, 5);
-                    twistCorner(0, 3);
-                    twistCorner(3, 3);
-                    twistCorner(5, 2);
-                    cycleEdges(8, 11, 6);
-                    cycleThreeCenters(9, 10, 11);
-                    cycleThreeCenters(19, 14, 23);
-                    cycleThreeCenters(12, 21, 20);
-                    break;
-                case RP:
-                    cycleCorners(2, 4, 1);
-                    twistCorner(2, 2);
-                    twistCorner(1, 1);
-                    twistCorner(4, 1);
-                    cycleEdges(1, 4, 5);
-                    cycleThreeCenters(15, 17, 16);
-                    cycleThreeCenters(3, 8, 1);
-                    cycleThreeCenters(4, 6, 2);
-                    break;
-                case LP:
-                    cycleCorners(0, 3, 2);
-                    twistCorner(0, 2);
-                    twistCorner(2, 1);
-                    twistCorner(3, 1);
-                    cycleEdges(2, 8, 3);
-                    cycleThreeCenters(12, 14, 13);
-                    cycleThreeCenters(0, 10, 3);
-                    cycleThreeCenters(2, 9, 5);
-                    break;
-                case UP:
-                    cycleCorners(0, 2, 1);
-                    cycleEdges(0, 2, 1);
-                    cycleThreeCenters(0, 2, 1);
-                    cycleThreeCenters(15, 18, 12);
-                    cycleThreeCenters(16, 19, 13);
-                    break;
-                case DP:
-                    cycleCorners(3, 5, 4);
-                    cycleEdges(9, 11, 10);
-                    cycleThreeCenters(21, 23, 22);
-                    cycleThreeCenters(5, 11, 8);
-                    cycleThreeCenters(4, 10, 7);
-                    break;
-                case FP:
-                    cycleCorners(2, 3, 4);
-                    twistCorner(2, 1);
-                    twistCorner(4, 2);
-                    twistCorner(3, 1);
-                    cycleEdges(4, 3, 9);
-                    cycleThreeCenters(3, 5, 4);
-                    cycleThreeCenters(13, 21, 17);
-                    cycleThreeCenters(15, 14, 22);
-                    break;
-                case BP:
-                    cycleCorners(1, 5, 0);
-                    twistCorner(1, 2);
-                    twistCorner(0, 1);
-                    twistCorner(5, 1);
-                    cycleEdges(0, 7, 6);
-                    cycleThreeCenters(18, 20, 19);
-                    cycleThreeCenters(1, 7, 9);
-                    cycleThreeCenters(0, 6, 11);
-                    break;
-                case BRP:
-                    cycleCorners(1, 4, 5);
-                    twistCorner(1, 1);
-                    twistCorner(5, 2);
-                    twistCorner(4, 1);
-                    cycleEdges(5, 10, 7);
-                    cycleThreeCenters(6, 8, 7);
-                    cycleThreeCenters(16, 22, 20);
-                    cycleThreeCenters(17, 23, 18);
-                    break;
-                case BLP:
-                    cycleCorners(0, 5, 3);
-                    twistCorner(0, 1);
-                    twistCorner(3, 2);
-                    twistCorner(5, 1);
-                    cycleEdges(8, 6, 11);
-                    cycleThreeCenters(9, 11, 10);
-                    cycleThreeCenters(19, 23, 14);
-                    cycleThreeCenters(12, 20, 21);
-                    break;
+            int id = move.id;
+
+            int[] corners = MOVE_CORNERS[id];
+            cycleCorners(corners[0], corners[1], corners[2]);
+
+            for (int[] twist : MOVE_TWISTS[id]) {
+                if (twist[0] >= 0) {
+                    twistCorner(twist[0], twist[1]);
+                }
+            }
+
+            int[] edges = MOVE_EDGES[id];
+            cycleEdges(edges[0], edges[1], edges[2]);
+
+            for (int[] centers : MOVE_CENTERS[id]) {
+                cycleThreeCenters(centers[0], centers[1], centers[2]);
             }
         }
 

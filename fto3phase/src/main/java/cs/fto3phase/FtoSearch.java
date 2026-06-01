@@ -2,7 +2,6 @@ package cs.fto3phase;
 
 import  java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static cs.fto3phase.FullFto.Move;
 
@@ -57,89 +56,6 @@ public class FtoSearch {
         String solvedSolution = iteratePhaseThree(phaseTwoSym);
 
         return postProcess(solvedSolution, fto);
-    }
-
-    /**
-     * Benchmarks the solver over a number of random states using 4 threads.
-     * Appends per-solve timing data to {@code R/benchmarks.csv}.
-     *
-     * @param benchName label written in place of "PRIMITIVE_OPTIMIZED_HASHSET"
-     * @param num number of random states to solve
-     */
-    public static void performanceTest(String benchName, int num){
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-        CompletionService<long[]> completionService = new ExecutorCompletionService<>(executor);
-
-        for (int i = 0; i < num; i++) {
-            completionService.submit(() -> {
-                long startTime = System.nanoTime();
-                FullFto fto = FullFto.randomCube(new Random());
-                FtoSearch search = new FtoSearch();
-                String s = search.solution(fto);
-                long endTime = System.nanoTime();
-                long duration = (endTime - startTime);
-                int moveCount = s.split(" ").length;
-                return new long[]{duration, moveCount};
-            });
-        }
-
-        executor.shutdown();
-
-        long totalTime = 0;
-        long totalMoves = 0;
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < num; i++) {
-            try {
-                long[] result = completionService.take().get();
-                sb.append(benchName).append(",").append(result[0] / 1_000_000).append("\n");
-                totalTime += result[0];
-                totalMoves += result[1];
-                if ((i + 1) % 1000 == 0) {
-                    System.out.println("Progress: " + (i + 1) + "/" + num + " solves completed");
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter("R/benchmarks.csv", true))) {
-            bw.write(sb.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("Average Moves: " + (double)totalMoves / (double)num);
-        System.out.println("Average Time: " + (double)(totalTime / 1_000_000) / (double)num);
-    }
-
-    public static void simplePerformanceTest(int num){
-
-        long totalTime = 0;
-        long totalMoves = 0;
-        long totalNodes = 0;
-
-        FullFto fto;
-        Random r = new Random();
-        for (int i = 0; i < num; i++) {
-            long startTime = System.nanoTime();
-
-            fto = FullFto.randomCube(r);
-            FtoSearch search = new FtoSearch();
-            String s = search.solution(fto);
-
-            System.out.println(s);
-
-            long endTime = System.nanoTime();
-            long duration = (endTime - startTime); // total time in nanoseconds
-
-            System.out.println("NEW," + (duration / 1_000_000));
-            totalTime += duration;
-            totalMoves += s.split(" ").length;
-        }
-
-        System.out.println("Average Moves: " + (double)totalMoves / (double)num);
-        System.out.println("Average Time: " + (double)(totalTime / 1_000_000) / (double)num);
     }
 
     //--------------- Search Methods ---------------//
@@ -835,19 +751,12 @@ public class FtoSearch {
         phaseThreePruningTable = new HashMap<>();
         phaseTwoPruningTable = new HashMap<>(71741);
 
-        long startTime = System.currentTimeMillis();
-
-
         FullFto phaseTwoPruningFto = new FullFto();
         phaseTwoPruningFto.enableCenterIndexTracking();
 
         phaseOnePruningSearch(PHASE_ONE_PRUNING_DEPTH, new FullFto());
         phaseTwoPruningSearch(PHASE_TWO_PRUNING_DEPTH, phaseTwoPruningFto);
         phaseThreePruningSearch(PHASE_THREE_PRUNING_DEPTH, new FullFto());
-
-        long endTime = System.currentTimeMillis();
-        long totalTime = endTime - startTime;
-        System.out.println("Total time (ms): " + totalTime);
     }
 
     //--------------- Inner Classes ---------------//
@@ -958,16 +867,5 @@ public class FtoSearch {
         public boolean isValidParallelSequence(Move move) {
             return angles[0].isValidParallelSequence(move);
         }
-    }
-
-    //--------------- Main ---------------//
-
-    /**
-     * Runs a `5`00-scramble benchmark and prints average move count and solve time.
-     * @param args ignored
-     */
-    public static void main(String[] args) {
-//        performanceTest("OLD_LOOKUP", 2000);
-        simplePerformanceTest(100);
     }
 }

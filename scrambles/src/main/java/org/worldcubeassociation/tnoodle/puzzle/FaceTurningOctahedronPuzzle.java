@@ -102,6 +102,38 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         return new PuzzleStateAndGenerator(state, scramble);
     }
 
+    private static final int[][] MOVE_CORNERS = {
+        {2, 1, 4}, {0, 2, 3}, {0, 1, 2}, {3, 4, 5},
+        {2, 4, 3}, {1, 0, 5}, {1, 5, 4}, {0, 3, 5},
+        {2, 4, 1}, {0, 3, 2}, {0, 2, 1}, {3, 5, 4},
+        {2, 3, 4}, {1, 5, 0}, {1, 4, 5}, {0, 5, 3}
+    };
+
+    private static final int[][] MOVE_TWISTS = {
+        {2, 1, 4, 3, 2, 3}, {0, 2, 3, 3, 2, 3}, {0, 1, 2, 0, 0, 0}, {3, 4, 5, 0, 0, 0},
+        {2, 4, 3, 3, 3, 2}, {1, 0, 5, 3, 2, 3}, {1, 5, 4, 3, 3, 2}, {0, 3, 5, 3, 3, 2},
+        {2, 4, 1, 2, 1, 1}, {0, 3, 2, 2, 1, 1}, {0, 2, 1, 0, 0, 0}, {3, 5, 4, 0, 0, 0},
+        {2, 3, 4, 1, 1, 2}, {1, 5, 0, 2, 1, 1}, {1, 4, 5, 1, 1, 2}, {0, 5, 3, 1, 1, 2}
+    };
+
+    private static final int[][] MOVE_EDGES = {
+        {4, 1, 5}, {8, 2, 3}, {2, 0, 1}, {11, 9, 10},
+        {3, 4, 9}, {7, 0, 6}, {10, 5, 7}, {6, 8, 11},
+        {5, 1, 4}, {3, 2, 8}, {1, 0, 2}, {10, 9, 11},
+        {9, 4, 3}, {6, 0, 7}, {7, 5, 10}, {11, 8, 6}
+    };
+
+    private static final int[][][] MOVE_CENTERS = {
+        {{15,16,17}, {3,1,8}, {4,2,6}},  {{12,13,14}, {0,3,10}, {2,5,9}},
+        {{0,1,2}, {15,12,18}, {16,13,19}}, {{21,22,23}, {5,8,11}, {4,7,10}},
+        {{3,4,5}, {13,17,21}, {15,22,14}}, {{18,19,20}, {1,9,7}, {0,11,6}},
+        {{6,7,8}, {16,20,22}, {17,18,23}}, {{9,10,11}, {19,14,23}, {12,21,20}},
+        {{15,17,16}, {3,8,1}, {4,6,2}},  {{12,14,13}, {0,10,3}, {2,9,5}},
+        {{0,2,1}, {15,18,12}, {16,19,13}}, {{21,23,22}, {5,11,8}, {4,10,7}},
+        {{3,5,4}, {13,21,17}, {15,14,22}}, {{18,20,19}, {1,7,9}, {0,6,11}},
+        {{6,8,7}, {16,22,20}, {17,23,18}}, {{9,11,10}, {19,23,14}, {12,20,21}}
+    };
+
     public class FaceTurningOctahedronState extends PuzzleState {
 
         private int[][] image = new int[8][9];
@@ -323,121 +355,21 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         }
 
         public void turn(Move move) {
-            switch (move) {
-                case R:
-                    twistCornerCycle(2, 1, 4, 3, 2, 3);
-                    edgeCycle(4, 1, 5);
-                    centerCycle(15, 16, 17);
-                    centerCycle(3, 1, 8);
-                    centerCycle(4, 2, 6);
-                    break;
-                case L:
-                    twistCornerCycle(0, 2, 3, 3, 2, 3);
-                    edgeCycle(8, 2, 3);
-                    centerCycle(12, 13, 14);
-                    centerCycle(0, 3, 10);
-                    centerCycle(2, 5, 9);
-                    break;
-                case U:
-                    cornerCycle(0, 1, 2);
-                    edgeCycle(2, 0, 1);
-                    centerCycle(0, 1, 2);
-                    centerCycle(15, 12, 18);
-                    centerCycle(16, 13, 19);
-                    break;
-                case D:
-                    cornerCycle(3, 4, 5);
-                    edgeCycle(11, 9, 10);
-                    centerCycle(21, 22, 23);
-                    centerCycle(5, 8, 11);
-                    centerCycle(4, 7, 10);
-                    break;
-                case F:
-                    twistCornerCycle(2, 4, 3, 3, 3, 2);
-                    edgeCycle(3, 4, 9);
-                    centerCycle(3, 4, 5);
-                    centerCycle(13, 17, 21);
-                    centerCycle(15, 22, 14);
-                    break;
-                case B:
-                    twistCornerCycle(1, 0, 5, 3, 2, 3);
-                    edgeCycle(7, 0, 6);
-                    centerCycle(18, 19, 20);
-                    centerCycle(1, 9, 7);
-                    centerCycle(0, 11, 6);
-                    break;
-                case BR:
-                    twistCornerCycle(1, 5, 4, 3, 3, 2);
-                    edgeCycle(10, 5, 7);
-                    centerCycle(6, 7, 8);
-                    centerCycle(16, 20, 22);
-                    centerCycle(17, 18, 23);
-                    break;
-                case BL:
-                    twistCornerCycle(0, 3, 5, 3, 3, 2);
-                    edgeCycle(6, 8, 11);
-                    centerCycle(9, 10, 11);
-                    centerCycle(19, 14, 23);
-                    centerCycle(12, 21, 20);
-                    break;
-                case RP:
-                    twistCornerCycle(2, 4, 1, 2, 1, 1);
-                    edgeCycle(5, 1, 4);
-                    centerCycle(15, 17, 16);
-                    centerCycle(3, 8, 1);
-                    centerCycle(4, 6, 2);
-                    break;
-                case LP:
-                    twistCornerCycle(0, 3, 2, 2, 1, 1);
-                    edgeCycle(3, 2, 8);
-                    centerCycle(12, 14, 13);
-                    centerCycle(0, 10, 3);
-                    centerCycle(2, 9, 5);
-                    break;
-                case UP:
-                    cornerCycle(0, 2, 1);
-                    edgeCycle(1, 0, 2);
-                    centerCycle(0, 2, 1);
-                    centerCycle(15, 18, 12);
-                    centerCycle(16, 19, 13);
-                    break;
-                case DP:
-                    cornerCycle(3, 5, 4);
-                    edgeCycle(10, 9, 11);
-                    centerCycle(21, 23, 22);
-                    centerCycle(5, 11, 8);
-                    centerCycle(4, 10, 7);
-                    break;
-                case FP:
-                    twistCornerCycle(2, 3, 4, 1, 1, 2);
-                    edgeCycle(9, 4, 3);
-                    centerCycle(3, 5, 4);
-                    centerCycle(13, 21, 17);
-                    centerCycle(15, 14, 22);
-                    break;
-                case BP:
-                    twistCornerCycle(1, 5, 0, 2, 1, 1);
-                    edgeCycle(6, 0, 7);
-                    centerCycle(18, 20, 19);
-                    centerCycle(1, 7, 9);
-                    centerCycle(0, 6, 11);
-                    break;
-                case BRP:
-                    twistCornerCycle(1, 4, 5, 1, 1, 2);
-                    edgeCycle(7, 5, 10);
-                    centerCycle(6, 8, 7);
-                    centerCycle(16, 22, 20);
-                    centerCycle(17, 23, 18);
-                    break;
-                case BLP:
-                    twistCornerCycle(0, 5, 3, 1, 1, 2);
-                    edgeCycle(11, 8, 6);
-                    centerCycle(9, 11, 10);
-                    centerCycle(19, 23, 14);
-                    centerCycle(12, 20, 21);
-                    break;
-                default:
-                    throw new RuntimeException("Move not recognized");
+            int id = move.ordinal();
+
+            int[] corners = MOVE_CORNERS[id];
+            int[] twist = MOVE_TWISTS[id];
+            if (twist[3] == 0 && twist[4] == 0 && twist[5] == 0) {
+                cornerCycle(corners[0], corners[1], corners[2]);
+            } else {
+                twistCornerCycle(twist[0], twist[1], twist[2], twist[3], twist[4], twist[5]);
+            }
+
+            int[] edges = MOVE_EDGES[id];
+            edgeCycle(edges[0], edges[1], edges[2]);
+
+            for (int[] centers : MOVE_CENTERS[id]) {
+                centerCycle(centers[0], centers[1], centers[2]);
             }
         }
 
