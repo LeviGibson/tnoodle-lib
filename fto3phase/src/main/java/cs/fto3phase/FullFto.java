@@ -3,6 +3,115 @@ package cs.fto3phase;
 import java.util.ArrayList;
 import java.util.Random;
 
+/**
+ * <h1>FullFto</h1>
+ * This class is a mutable representation of a Face Turning Octahedron Twisty Puzzle
+ *
+ * <pre>{@code
+ * FullFto fto = new FullFto(); //Initialize solved FTO
+ * fto.isSolved() → true
+ *
+ * fto.turn(FullFto.Move.U) // Make a move
+ *
+ * fto.isSolved() → false
+ * fto.isPhaseOne() → true
+ * fto.isPhaseTwo → false
+ *
+ * fto.undo() // Undo that move (works even if you do a bunch of moves)
+ *
+ * fto.isSolved() → true
+ *
+ * //Now let's write a simple DFS with the FTO!
+ * private static boolean exampleSearch(int depth, FullFto fto){
+ *
+ *         //Check if solved
+ *         if (fto.isSolved())
+ *             return true;
+ *
+ *         //Check if reached depth limit
+ *         if (depth == 0)
+ *             return false;
+ *
+ *         //Loop over all possible moves
+ *         for (Move move : Move.values()){
+ *             //Turn the FTO
+ *             fto.turn(move);
+ *             //Search subtree
+ *             boolean result = exampleSearch(depth-1, fto);
+ *             //Undo the turn
+ *             fto.undo();
+ *
+ *             //If the subtree has a solution, return
+ *             if (result)
+ *                 return true;
+ *         }
+ *
+ *         return false;
+ *     }
+ * }</pre>
+ *
+ * <h1>FTO Theory</h1>
+ * There are two special things about FTO when compared to a normal Rubik's Cube.
+ * <h3>Orbits</h3>
+ * On the FTO, the pieces are restricted to certain locations. The set of these locations is known as its "orbit".
+ * For example, a U center can never end up on the R face, no matter how you turn the puzzle.
+ *
+ * <h3>Centers</h3>
+ * The centers are split into two orbits. The first is the [R L B D] orbit, and the other is the [U F BR BL] orbit.
+ * A center from one orbit can never end up in the other orbit. This makes it possible to use 2 to store each center
+ * instead of 3! Isn't that cool.
+ *
+ * Centers have no parity. You can swap two centers on an FTO.
+ * Centers are also interchangeable. Each center has two other equivalent centers on the puzzle
+ *
+ * Centers are packed into a single long, with each center taking up 2 bits. (You can pack this tight because
+ * of orbits). However, the public "API" of InnerState gives each center a different ordinal value, (see CenterOrd).
+ * You don't have to worry about it unless you're messing around with bitwise stuff.
+ *
+ * tldr;
+ *
+ * Internal Representation: 2 bits per center
+ * Public "getter" method, getCenterOrdinal(), returns 0-7 ordinal
+ *
+ * <h3>Edges</h3>
+ * Any permutation of the edges is possible as long as it has even parity.
+ *
+ * Edges do not have an orientation because of orbits.
+ *
+ * Edges are packed into a single long, and the pieces can be accessed with public InnerState methods.
+ *
+ * <h3>Corners</h3>
+ * Similar to edges, any even-permutation of corners is possible.
+ *
+ * While it might seem that each corner has four different orientations, this is not the case.
+ * Each corner's orientation is limited to two states because of orbits
+ * This implementation does treat the corners as if they have 4 possible
+ * orientations, but it all fits in a long so it doesn't really matter performance-wise.
+ *
+ * Corners are packed into a single long. This long contains both the orientation and permutation of the corners.
+ * Corners can be encoded/decoded with these three methods
+ *
+ * <pre>{@code
+ * private static int encodeCorner(int perm, int orientation)
+ * private static int getCornerIndex(int corner)
+ * private static int getCornerOrientation(int corner)
+ *
+ * }</pre>
+ *
+ * <h1>InnerState</h1>
+ * <p>
+ *     The lower-level stuff like setting pieces, getting pieces, and hashes are abstracted away
+ *     into a private class called InnerState. InnerState will only have one instance per FullFto.
+ *     This class is not strictly necessary, but it gives a bit of a wall between the low-level code
+ *     and the high-level code.
+ *
+ *     InnerState packs
+ * </p>
+ *
+ * <h1>High Level Stuff</h1>
+ *TODO
+ */
+
 public class FullFto {
     /** The internal representation of the FTO puzzle state. */
     private InnerState state = new InnerState();
@@ -818,11 +927,11 @@ public class FullFto {
 
         }
 
-        public static int getCornerIndex(int corner){
+        private static int getCornerIndex(int corner){
             return corner >> 2;
         }
 
-        public static int getCornerOrientation(int corner){
+        private static int getCornerOrientation(int corner){
             return corner & 0b11;
         }
 

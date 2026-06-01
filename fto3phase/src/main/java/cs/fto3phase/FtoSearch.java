@@ -8,16 +8,32 @@ import static cs.fto3phase.FullFto.Move;
 /**
  * Three-phase IDA* solver for Face Turning Octahedron random-state scrambles.
  *
- * <p>The search first solves the D-face center and edge orbit, then reduces the
- * state to the Octaminx subgroup, and finally solves the reduced state.
- * Small phase-two pruning tables are loaded from bundled resources; larger pruning
- * tables are generated in memory during class initialization.</p>
+ * <p>The search first solves the D-face centers and edges, then reduces the
+ * state to an Octaminx, and finally solves cube with {R L B D}.
+ *
+ * Scrambled Cube: {R L U D F B BR BL}
+ * Phase 1 Solved: {R L U D B}
+ * Phase 2 Solved: {R L D B}
+ * Solved Cube : { ¯\_(ツ)_/¯ }
+ *
+
+ *
+ * <h2> Phase 1 </h2>
+ *<p>
+ * Phase 1: Solve the centers and edges on the D face. The D
+ *
+ * Phase 1 is rather trivial to create an IDA* Search. The hash function, {@link FullFto#phaseOneHash()},
+ * creates a unique hash from the permutation of the D-face centers and edges. The hash is normalized
+ *
+ *
+ * </p>
+ *
  */
 public class FtoSearch {
 
     //--------------- Constants ---------------//
 
-    /** Depth bound for the phase-one pruning table. */
+    /** Depth bound for the pruning tables. */
     private static final int PHASE_ONE_PRUNING_DEPTH = 5;
     private static final int PHASE_TWO_PRUNING_DEPTH = 8;
     private static final int PHASE_THREE_PRUNING_DEPTH = 4;
@@ -93,7 +109,7 @@ public class FtoSearch {
     }
 
     /**
-     * IDA* search for phase one: solve the D-face center and edge orbit.
+     * IDA* search for phase one: solve the D-face center and edges.
      * @param depth remaining search depth
      * @param candidates collects promising phase-one completions
      * @param fto current puzzle state
