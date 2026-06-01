@@ -163,7 +163,7 @@ public class FtoSearch {
     }
 
     /**
-     * Main recursive search function for phase 2 (Bottom Center solved -> Octaminx Reduction)
+     * Main recursive search function for phase 2 (Bottom Center solved to Octaminx Reduction)
      * Very very important function! Very performance critical
      * @param depth depth to search
      * @param ply distance from root

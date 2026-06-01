@@ -170,8 +170,8 @@ public class FullFto {
 
     /**
      * Validates whether the given move can be applied without creating a redundant parallel sequence in search.
-     * Example: R L -> Good
-     *          L R -> Bad
+     * Example: R L = Good
+     *          L R = Bad
      * This makes sure we don't search any redundant sequences in the search.
      * @param move the move to validate
      * @return true if the move is valid in the current sequence
