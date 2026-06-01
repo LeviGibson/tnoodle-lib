@@ -30,10 +30,6 @@ public class FtoSearch {
     private static final int PHASE_ONE_CANDIDATE_LIMIT = 1000;
     private static final double PHASE_ONE_CANDIDATE_THRESHOLD = 0.3;
 
-    //--------------- Instance Fields ---------------//
-
-    int nodes;
-
     //--------------- Public API ---------------//
 
     /**
@@ -54,7 +50,6 @@ public class FtoSearch {
      */
     public String solution(FullFto fto){
         fto = new FullFto(fto);
-        nodes = 0;
         fto.clearMoveStack();
 
         ArrayList<FullFto> candidates = iteratePhaseOneCandidates(fto);
@@ -132,7 +127,6 @@ public class FtoSearch {
             fto = FullFto.randomCube(r);
             FtoSearch search = new FtoSearch();
             String s = search.solution(fto);
-            totalNodes += (long)search.nodes;
 
             System.out.println(s);
 
@@ -190,8 +184,6 @@ public class FtoSearch {
      * @return {@code true} if enough candidates have been collected
      */
     private boolean searchPhaseOne(int depth, ArrayList<FullFto> candidates, FullFto fto){
-        nodes++;
-
         if (depth == 0 && fto.isPhaseOne()){
             double p = logisticRegression(new FtoSymmetry(fto), 19-fto.historyLength());
 
@@ -254,17 +246,30 @@ public class FtoSearch {
         throw new RuntimeException("Could not find FTO Phase 3 solution");
     }
 
+    /**
+     * Main recursive search function for phase 2 (Bottom Center solved -> Octaminx Reduction)
+     * Very very important function! Very performance critical
+     * @param depth depth to search
+     * @param ply distance from root
+     * @param fto state of FTO
+     * @return found solution?
+     */
     private boolean searchPhaseTwo(int depth, int ply, FtoSymmetry fto){
-        nodes++;
 
+        //Check for phase two!
         if (fto.isPhaseTwo()){
             return true;
         }
 
+        //Escape condition
         if (depth == 0){
             return false;
         }
 
+        //Edge pruning is very effective.
+        //The number of edge permutations for phase 2 is rather small
+        //So we have a lovely little precomputed byte array that contains
+        //the optimal solution length for each edge permutation (for phase 2)
         int edgeLookup = fto.minEdgeLookup();
         if (edgeLookup > depth) {
             return false;
@@ -276,9 +281,6 @@ public class FtoSearch {
 
             int tripleLookup = fto.tripleLookup();
 
-            if (tripleLookup == 25)
-                tripleLookup = 10;
-
             double p = logisticRegression(depth, fto, edgeLookup, tripleLookup);
 
             if (p < THRESHOLDS[depth-8])
@@ -286,10 +288,13 @@ public class FtoSearch {
         }
 
         //IDA* lookup
+        //We've got all positions 8 moves away from solved in a big ol' hash table
+        //How convenient
         if (depth <= PHASE_TWO_PRUNING_DEPTH && !fto.getPhaseTwoLookup()) {
             return false;
         }
 
+        //Loop and recurse
         for (Move move : PHASE_TWO_MOVES){
             if (fto.isRepetition(move))
                 continue;
@@ -308,13 +313,12 @@ public class FtoSearch {
 
     /**
      * IDA* search for phase three: solve the reduced octaminx state.
+     * This search takes a negligible amount of time compared to Phase 1 / Phase 2
      * @param depth remaining search depth
      * @param fto current symmetry state
      * @return {@code true} if a solution was found
      */
     private boolean searchPhaseThree(int depth, FtoSymmetry fto){
-        nodes++;
-
         if (fto.isSolved()){
             return true;
         }
@@ -352,7 +356,6 @@ public class FtoSearch {
      */
     private static int edgeLookup(FullFto fto){
         int index = fto.phaseTwoEdgeIndex();
-
         return phaseTwoEdgePruningTable[index];
     }
 
@@ -395,10 +398,7 @@ public class FtoSearch {
      * @return probability in [0, 1]
      */
     private static double logisticRegression(FtoSymmetry fto, int depth) {
-        int tripleLookup = fto.tripleLookup();
-        if (tripleLookup == 25)
-            tripleLookup = 10;
-        return logisticRegression(depth, fto, fto.minEdgeLookup(), tripleLookup);
+        return logisticRegression(depth, fto, fto.minEdgeLookup(), fto.tripleLookup());
     }
 
     /**
@@ -423,18 +423,6 @@ public class FtoSearch {
         }
 
         return String.join(" ", inverted);
-    }
-
-    /**
-     * Returns the number of moves in an algorithm string.
-     * @param alg the algorithm string
-     * @return move count (0 for null or empty input)
-     */
-    private static int algLen(String alg){
-        if (alg == null || alg.trim().isEmpty()) {
-            return 0;
-        }
-        return alg.trim().split("\\s+").length;
     }
 
     /**
@@ -593,7 +581,6 @@ public class FtoSearch {
             prun[idx] = 0;
             frontier.add(idx);
         }
-        int count = uniqueStarts;
 
         int depth = 0;
         while (!frontier.isEmpty()) {
@@ -609,7 +596,6 @@ public class FtoSearch {
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
                         next.add(nextIdx);
-                        count++;
                     }
                 }
             }
@@ -635,7 +621,6 @@ public class FtoSearch {
 
         return prun;
     }
-
 
     /**
      * Generates the phase-one pruning table via BFS over solved states.
@@ -748,56 +733,6 @@ public class FtoSearch {
             phaseThreePruningSearch(depth-1, fto);
             fto.undo();
         }
-    }
-
-    //--------------- Development Utilities ---------------//
-
-    /**
-     * Generates training data for the logistic regression pruning model.
-     * Only called during development to re-fit the model coefficients.
-     */
-    private static void genData(){
-
-        Random r = new Random();
-
-        for (int depth = 8; depth < 20; depth++) {
-            for (int iter = 0; iter < 2000; iter++) {
-                FullFto randomFto = new FullFto();
-                FullFto closeFto = new FullFto();
-
-                randomFto.scrambleRandomG2State(r);
-                closeFto.scrambleRandomG2State(r, depth);
-
-                write(randomFto, depth, false);
-                write(closeFto, depth, true);
-            }
-        }
-
-    }
-
-    /**
-     * Writes one line of comma-separated feature data for the logistic regression model.
-     * Only called during development by {@link #genData()}.
-     * @param fto the puzzle state to evaluate
-     * @param depth the search depth used as a label
-     * @param label whether this state is solvable within {@code depth} moves
-     */
-    private static void write(FullFto fto, int depth, boolean label){
-
-        FtoSymmetry sym = new FtoSymmetry(fto);
-
-        System.out.print(fto.tripleCount());
-        System.out.print(",");
-        System.out.print(fto.triplePairCount());
-        System.out.print(",");
-        System.out.print(sym.minEdgeLookup());
-        System.out.print(",");
-        System.out.print(sym.tripleLookup());
-        System.out.print(",");
-        System.out.print(depth);
-        System.out.print(",");
-        System.out.print(label);
-        System.out.println();
     }
 
     //--------------- Static Data Tables ---------------//

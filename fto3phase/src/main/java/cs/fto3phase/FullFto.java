@@ -170,7 +170,10 @@ public class FullFto {
     }
 
     /**
-     * Validates whether the given move can be applied without creating a redundant parallel sequence.
+     * Validates whether the given move can be applied without creating a redundant parallel sequence in search.
+     * Example: R L -> Good
+     *          L R -> Bad
+     * This makes sure we don't search any redundant sequences in the search.
      * @param move the move to validate
      * @return true if the move is valid in the current sequence
      */
@@ -318,16 +321,6 @@ public class FullFto {
      */
     public int triplePairsOnCorner(int cornerLocation){
         return Integer.bitCount(triplePairsMask(cornerLocation));
-    }
-
-    /**
-     * Returns a 2-bit bitmask indicating which matching centers are correct for the given corner.
-     * Bit 0 = first matching center, Bit 1 = second matching center.
-     * @param cornerLocation the corner index (0-5)
-     * @return bitmask of correctly positioned matching centers (0-3)
-     */
-    public int tripleIndexHelper(int cornerLocation){
-        return triplePairsMask(cornerLocation);
     }
 
     /**
@@ -480,47 +473,6 @@ public class FullFto {
 
     //--------------- Scramble Methods ---------------//
 
-    /**
-     * Scrambles the puzzle into a random G2 state with a default of 500 moves.
-     * @param r random number source
-     */
-    public void scrambleRandomG2State(Random r){
-        scrambleRandomG2State(r, 500);
-    }
-
-    /**
-     * Scrambles the puzzle into a random G2 state using the given number of moves.
-     * @param r random number source
-     * @param numMoves number of phase-2 moves to apply
-     */
-    public void scrambleRandomG2State(Random r, int numMoves){
-        Move[] phaseTwoMoves = {Move.U, Move.R, Move.L, Move.D, Move.B, Move.UP, Move.RP, Move.LP, Move.DP, Move.BP};
-        Move[] phaseThreeMoves = {Move.R, Move.L, Move.D, Move.B, Move.RP, Move.LP, Move.DP, Move.BP};
-
-        for (int i = 0; i < 500; i++) {
-            Move move;
-
-            do {
-                move = phaseThreeMoves[r.nextInt(phaseThreeMoves.length)];
-            } while (isRepetition(move));
-
-            turn(move);
-        }
-
-        for (int i = 0; i < numMoves; i++) {
-            Move move;
-
-            do {
-                move = phaseTwoMoves[r.nextInt(phaseTwoMoves.length)];
-            } while (isRepetition(move) && (i != 0 || move == Move.U || move == Move.UP));
-
-            turn(move);
-        }
-
-        clearMoveStack();
-    }
-
-
     private void scrambleRandomState(Random r) {
         int parity = 0;
 
@@ -620,23 +572,6 @@ public class FullFto {
         }
 
         return builder.toString();
-    }
-
-    /**
-     * Prints the current corner, edge, and center state to stdout.
-     */
-    public void print(){
-        for (int i = 0; i < 6; i++) {
-            System.out.println("Corner " + i + ":" + Corner.values()[InnerState.getCornerIndex(state.getCorner(i))]);
-        }
-
-        for (int i = 0; i < 12; i++) {
-            System.out.println("Edge " + i + ":" + Edge.values()[state.getEdge(i)]);
-        }
-
-        for (int i = 0; i < 24; i++) {
-            System.out.println("Center " + i + ":" + CenterOrd.values()[state.getCenterOrdinal(i)]);
-        }
     }
 
     //--------------- Other Methods ---------------//
@@ -962,28 +897,28 @@ public class FullFto {
             return (int) ((packed >> (CENTER_INDEX_BITS * packedIndex)) & CENTER_INDEX_MASK);
         }
 
-        long phaseTwoCenterIndexLocations(){
+        private long phaseTwoCenterIndexLocations(){
             long locations = 0;
+            //Only loop over low center indices because orbits are so epic
             for (int i = 0; i < 12; i++) {
                 long centerIndex = (packedCenterIndicesLow >> (CENTER_INDEX_BITS * i)) & CENTER_INDEX_MASK;
                 if (centerIndex < 12) {
                     locations |= (long) i << (CENTER_INDEX_BITS * centerIndex);
                 }
             }
-            for (int i = 0; i < 12; i++) {
-                long centerIndex = (packedCenterIndicesHigh >> (CENTER_INDEX_BITS * i)) & CENTER_INDEX_MASK;
-                if (centerIndex < 12) {
-                    locations |= (long) (i + 12) << (CENTER_INDEX_BITS * centerIndex);
-                }
-            }
             return locations;
         }
 
-        boolean isTrackingCenterIndices(){
+        public boolean isTrackingCenterIndices(){
             return trackCenterIndices;
         }
 
-        void enableCenterIndexTracking(){
+        /**
+         * This switches on tracking specific center indices rather than just their colors
+         * Used for generating the triple tables and nothing else
+         * Must be enabled on a solved cube before applying moves if you want to pack triple data
+         */
+        public void enableCenterIndexTracking(){
             assert isSolved();
             trackCenterIndices = true;
             packedCenterIndicesLow = SOLVED_CENTER_INDICES_LOW;
@@ -1218,6 +1153,18 @@ public class FullFto {
             {11, 10, 9},
         };
 
+        /**
+         * Takes the locations of the edges on a face and turns them into a hash
+         * !!! This normalizes the edges, so it's assuming you don't care about
+         * what symmetry you're solving to
+         *
+         * Example: [U], [R U], [R' U]
+         * Each of these three states will produce the same hash for:
+         * fto.edgeHash(R);
+         *
+         * @param center
+         * @return
+         */
         private long edgeHash(CenterOrd center){
             int centerIndex = center.ordinal();
             int[] faceEdges = EDGES_ON_FACE[centerIndex];
@@ -1285,7 +1232,7 @@ public class FullFto {
             return hash;
         }
 
-        public boolean areEdgesSolvedOnFace(CenterOrd face, int angle){
+        private boolean areEdgesSolvedOnFace(CenterOrd face, int angle){
             int faceIndex = face.ordinal();
             int[] faceEdges = EDGES_ON_FACE[faceIndex];
             for (int i = 0; i < 3; i++) {
@@ -1295,20 +1242,6 @@ public class FullFto {
             }
             return true;
         }
-
-        /**
-         * Indexed by CenterOrd. Each entry lists the 3 center indices on that face.
-         */
-        private static final int[][] CENTERS_ON_FACE = {
-            {0, 1, 2},
-            {5, 4, 3},
-            {7, 8, 6},
-            {9, 10, 11},
-            {12, 14, 13},
-            {16, 17, 15},
-            {19, 20, 18},
-            {23, 21, 22},
-        };
 
         /**
          * Returns whether all three centers on the given face match the face color.
@@ -1492,14 +1425,4 @@ public class FullFto {
             return corners == SOLVED_CORNERS && edges == SOLVED_EDGES && centers == SOLVED_CENTERS;
         }
     }
-
-    //--------------- Main ---------------//
-
-    public static void main(String[] args) {
-        FullFto fto = new  FullFto();
-        System.out.println(fto.isSolved());
-        fto.parseAlg("R D L' B' L R B' L' F' R' L B' L' F L' D' F D R F L' BR' U B' R' U F U' BL U D' BL' F L' BR' F L' R L U' R' L B U D B U R' D' B L R' D' R' L ");
-        System.out.println(fto.isSolved());
-    }
-
 }
