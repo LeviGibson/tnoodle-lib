@@ -271,7 +271,7 @@ public class FtoSearch {
      * @return estimated distance to solved edges
      */
     private static int edgeLookup(FullFto fto){
-        int index = fto.phaseTwoEdgeIndex();
+        int index = fto.phaseTwoEdgeLehmerIndex();
         return phaseTwoEdgePruningTable[index];
     }
 
@@ -461,7 +461,7 @@ public class FtoSearch {
                     for (int li = 0; li < l; li++) fto.turn(Move.L);
                     for (int bi = 0; bi < b; bi++) fto.turn(Move.B);
 
-                    int idx = fto.phaseTwoEdgeIndex();
+                    int idx = fto.phaseTwoEdgeLehmerIndex();
                     if (!startSeen[idx]) {
                         startSeen[idx] = true;
                         startIndices[startCount++] = idx;
@@ -478,10 +478,10 @@ public class FtoSearch {
         int[][] edgeMoveTable = new int[moves][size];
         FullFto worker = new FullFto();
         for (int i = 0; i < size; i++) {
-            worker.setPhaseTwoEdgeIndex(i);
+            worker.setPhaseTwoEdgeLehmerIndex(i);
             for (int m = 0; m < moves; m++) {
                 worker.turn(edgeMoves[m]);
-                edgeMoveTable[m][i] = worker.phaseTwoEdgeIndex();
+                edgeMoveTable[m][i] = worker.phaseTwoEdgeLehmerIndex();
                 worker.undo();
             }
         }
@@ -523,14 +523,14 @@ public class FtoSearch {
         //Make the table symmetry-independent
         FullFto helper = new FullFto();
         for (int i = 0; i < size; i++) {
-            helper.setPhaseTwoEdgeIndex(i);
+            helper.setPhaseTwoEdgeLehmerIndex(i);
 
             int minDistance = prun[i];
 
             helper.rotate(1);
-            minDistance = Math.min(minDistance, prun[helper.phaseTwoEdgeIndex()]);
+            minDistance = Math.min(minDistance, prun[helper.phaseTwoEdgeLehmerIndex()]);
             helper.rotate(1);
-            minDistance = Math.min(minDistance, prun[helper.phaseTwoEdgeIndex()]);
+            minDistance = Math.min(minDistance, prun[helper.phaseTwoEdgeLehmerIndex()]);
 
             prun[i] = (byte)minDistance;
         }

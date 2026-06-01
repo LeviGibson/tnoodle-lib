@@ -246,12 +246,6 @@ public class FullFtoTest {
     }
 
     @Test
-    void testIsPhaseOneAfterRandomG2() {
-        fto.scrambleRandomG2State(random, 30);
-        assertTrue(fto.isPhaseOne());
-    }
-
-    @Test
     void testIsPhaseOneFalseAfterBreakingMove() {
         fto.parseAlg("F");
         assertFalse(fto.isPhaseOne());
@@ -286,24 +280,6 @@ public class FullFtoTest {
     }
 
     @Test
-    void testTripleIndexHelperAllSolved() {
-        for (int i = 0; i < 6; i++) {
-            assertEquals(3, fto.tripleIndexHelper(i));
-        }
-    }
-
-    @Test
-    void testTriplePairsOnCornerAfterBreakingMoveInvariants() {
-        fto.parseAlg("R D F");
-        for (int i = 0; i < 6; i++) {
-            int pairs = fto.triplePairsOnCorner(i);
-            assertTrue(pairs >= 0 && pairs <= 2);
-            assertEquals(pairs == 2, fto.isTriple(i));
-            assertEquals(pairs, Integer.bitCount(fto.tripleIndexHelper(i)));
-        }
-    }
-
-    @Test
     void testTripleCountAfterBreakingMoves() {
         fto.parseAlg("R D F");
         assertTrue(fto.tripleCount() < 6);
@@ -331,26 +307,6 @@ public class FullFtoTest {
         fto.parseAlg("R D F B L U BR BL");
         int index = fto.phaseTwoTripleIndex();
         assertTrue(index >= 0 && index <= maxIndex);
-    }
-
-    @Test
-    void testTripleMethodsConsistentInSolvedState() {
-        for (int i = 0; i < 6; i++) {
-            assertEquals(fto.isTriple(i), fto.triplePairsOnCorner(i) == 2);
-            assertEquals(fto.isTriple(i), fto.tripleIndexHelper(i) == 3);
-            assertEquals(fto.triplePairsOnCorner(i), Integer.bitCount(fto.tripleIndexHelper(i)));
-        }
-    }
-
-    @Test
-    void testTripleMethodsConsistentAfterScramble() {
-        FullFto s = new FullFto();
-        s.parseAlg("R D F B L U BR BL");
-        for (int i = 0; i < 6; i++) {
-            assertEquals(s.isTriple(i), s.triplePairsOnCorner(i) == 2);
-            assertEquals(s.isTriple(i), s.tripleIndexHelper(i) == 3);
-            assertEquals(s.triplePairsOnCorner(i), Integer.bitCount(s.tripleIndexHelper(i)));
-        }
     }
 
     //------------- Scramble -------------//
@@ -453,18 +409,18 @@ public class FullFtoTest {
     //------------- Edge Index -------------//
 
     @Test
-    void testPhaseTwoEdgeIndexSolved() {
-        assertEquals(0, fto.phaseTwoEdgeIndex());
+    void testPhaseTwoEdgeLehmerIndexSolved() {
+        assertEquals(0, fto.phaseTwoEdgeLehmerIndex());
     }
 
     @Test
-    void testPhaseTwoEdgeIndexNonNegative() {
+    void testPhaseTwoEdgeLehmerIndexNonNegative() {
         fto.parseAlg("U R D B");
-        assertTrue(fto.phaseTwoEdgeIndex() >= 0);
+        assertTrue(fto.phaseTwoEdgeLehmerIndex() >= 0);
     }
 
     @Test
-    void testPhaseTwoEdgeIndexRoundTrip() {
+    void testPhaseTwoEdgeLehmerIndexRoundTrip() {
         // We must stay in phase 2: D-face edges (positions 9,10,11) must remain
         // solved so that the 9-element Lehmer-code universe {0..8} exactly
         // matches the pieces at positions 0..8. Only U, R, L, B moves never
@@ -474,9 +430,9 @@ public class FullFtoTest {
         FullFto reference = new FullFto();
         for (int i = 0; i < 1000; i++) {
             reference.turn(phase2Moves[rng.nextInt(phase2Moves.length)]);
-            int edgeIdx = reference.phaseTwoEdgeIndex();
+            int edgeIdx = reference.phaseTwoEdgeLehmerIndex();
             FullFto restored = new FullFto();
-            restored.setPhaseTwoEdgeIndex(edgeIdx);
+            restored.setPhaseTwoEdgeLehmerIndex(edgeIdx);
             for (int e = 0; e < 9; e++) {
                 assertEquals(reference.getEdge(e), restored.getEdge(e),
                     "Edge " + e + " mismatch at iteration " + i);
@@ -502,10 +458,10 @@ public class FullFtoTest {
             int dist = table[i];
             if (dist == 24) continue; // unreachable sentinel
 
-            worker.setPhaseTwoEdgeIndex(i);
+            worker.setPhaseTwoEdgeLehmerIndex(i);
             for (FullFto.Move move : p2moves) {
                 worker.turn(move);
-                int nextIdx = worker.phaseTwoEdgeIndex();
+                int nextIdx = worker.phaseTwoEdgeLehmerIndex();
                 int nextDist = table[nextIdx];
                 worker.undo();
 

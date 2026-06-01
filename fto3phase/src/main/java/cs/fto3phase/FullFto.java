@@ -28,29 +28,24 @@ public class FullFto {
         this.moveHistory.addAll(fto.moveHistory);
     }
 
+    public void scrambleRandomG2State(Random random, int i) {
+        for (int j = 0; j < i; j++) {
+            turn(FtoSearch.PHASE_TWO_MOVES[random.nextInt(FtoSearch.PHASE_TWO_MOVES.length)]);
+        }
+        clearMoveStack();
+    }
+
     //--------------- Enums ---------------//
 
     /**
      * Ordinal values of the centers.
      * The internal representation of packedCenters is {U, U, U, F, F, F ...}
      */
-    private enum CenterOrd {
-        U(0), F(1), BR(2), BL(3), L(4), R(5), B(6), D(7);
+    private enum CenterOrd { U, F, BR, BL, L, R, B, D }
 
-        final int id;
+    enum Corner { U_L, U_R, U_F, D_L, D_R, D_B }
 
-        CenterOrd(int id) {
-            this.id = id;
-        }
-    }
-
-    enum Corner {
-        U_L, U_R, U_F, D_L, D_R, D_B
-    }
-
-    enum Edge {
-        U_B, U_R, U_L, F_L, F_R, R_BR, B_BL, B_BR, L_BL, D_F, D_BR, D_BL
-    }
+    enum Edge { U_B, U_R, U_L, F_L, F_R, R_BR, B_BL, B_BR, L_BL, D_F, D_BR, D_BL }
 
     /**
      * Indices values of the centers
@@ -235,7 +230,7 @@ public class FullFto {
      * @return true if normalized
      */
     public boolean isNormalized(){
-        return state.getCenterOrdinal(CenterInd.R_L.ordinal()) == CenterOrd.R.id;
+        return state.getCenterOrdinal(CenterInd.R_L.ordinal()) == CenterOrd.R.ordinal();
     }
 
     /**
@@ -366,7 +361,7 @@ public class FullFto {
     }
 
     /**
-     * Packs the phase 2 triple data into a compact hash.
+     * Packs the phase 2 triple data into a compact long.
      * @return packed triple data
      */
     public long packPhaseTwoTripleData(){
@@ -391,18 +386,18 @@ public class FullFto {
 
     /**
      * Verifies that the given packed triple data matches the current puzzle state.
-     * @param hash packed triple data to verify
+     * @param tripleData packed triple data to verify
      * @return true if the data is consistent with the current state
      */
-    public boolean checkPhaseTwoTripleData(long hash){
+    public boolean checkPhaseTwoTripleData(long tripleData){
         for (int cid = 0; cid < 6; cid++) {
             for (int cside = 0; cside < 2; cside++){
                 int corner = state.getCorner(cid);
                 int ci = InnerState.getCornerIndex(corner);
                 int co = InnerState.getCornerOrientation(corner);
 
-                long targetIndex = hash & 0b11111;
-                hash >>= 5;
+                long targetIndex = tripleData & 0b11111;
+                tripleData >>= 5;
 
                 int matchingCenter = MATCHING_CENTERS[ci][(co + (2 * cside)) % 4];
 
@@ -421,16 +416,16 @@ public class FullFto {
      * Converts the phase 2 edge permutation into a compact index.
      * @return a compact index representing the edge permutation of edges 0-8
      */
-    public int phaseTwoEdgeIndex() {
+    public int phaseTwoEdgeLehmerIndex() {
         return state.phaseTwoEdgeIndex();
     }
 
     /**
      * Sets the permutation of edges 0-8 from a compact phase-two edge index,
      * and resets D-face edges (9-11) to their solved positions.
-     * @param index the compact edge index, as returned by {@link #phaseTwoEdgeIndex()}
+     * @param index the compact edge index, as returned by {@link #phaseTwoEdgeLehmerIndex()}
      */
-    public void setPhaseTwoEdgeIndex(int index) {
+    public void setPhaseTwoEdgeLehmerIndex(int index) {
         state.setPhaseTwoEdgeIndex(index);
     }
 
@@ -444,7 +439,7 @@ public class FullFto {
     }
 
     /**
-     * Returns the Zobrist hash for phase 1.
+     * Returns the hash for phase 1.
      * Incorporates D-face edges and centers.
      * @return the phase 1 hash
      */
@@ -453,7 +448,7 @@ public class FullFto {
     }
 
     /**
-     * Returns the Zobrist hash for phase 2.
+     * Returns the hash for phase 2.
      * Incorporates R, L, B face edges and centers.
      * @return the phase 2 hash
      */
@@ -462,7 +457,7 @@ public class FullFto {
     }
 
     /**
-     * Returns the Zobrist hash for phase 3.
+     * Returns the hash for phase 3.
      * Incorporates all remaining corners and edges.
      * @return the phase 3 hash
      */
@@ -472,6 +467,7 @@ public class FullFto {
 
     //--------------- Scramble Methods ---------------//
 
+    //Public API is the randomCube() method
     private void scrambleRandomState(Random r) {
         int parity = 0;
 
@@ -588,7 +584,7 @@ public class FullFto {
     }
 
     /**
-     * Rotates the entire puzzle. Only valid on a solved cube.
+     * Rotates the entire puzzle
      * @param n 1 = y rotation, 2 = y' rotation
      */
     public void rotate(int n){
@@ -608,7 +604,6 @@ public class FullFto {
         {CenterOrd.F.ordinal(), CenterOrd.F.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal()}, // D_L
         {CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.F.ordinal(), CenterOrd.F.ordinal()}, // D_R
         {CenterOrd.BL.ordinal(), CenterOrd.BL.ordinal(), CenterOrd.BR.ordinal(), CenterOrd.BR.ordinal()} // D_B
-
     };
 
     /**
@@ -665,36 +660,23 @@ public class FullFto {
     private static final long[][][] PHASE3_CORNER_KEYS = new long[6][6][4];
     private static final long[][] PHASE3_EDGE_KEYS = new long[9][9];
 
+    private static void fillRandom(Random r, long[] arr) {
+        for (int i = 0; i < arr.length; i++) arr[i] = r.nextLong();
+    }
+    private static void fillRandom(Random r, long[][] arr) {
+        for (long[] row : arr) fillRandom(r, row);
+    }
+    private static void fillRandom(Random r, long[][][] arr) {
+        for (long[][] plane : arr) fillRandom(r, plane);
+    }
+
     static {
         Random r =  new Random();
 
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 24; j++) {
-                PHASE2_CENTER_KEYS[i][j] = r.nextLong();
-            }
-        }
-
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 3; j++) {
-                for (int k = 0; k < 12; k++) {
-                    PHASE2_EDGE_KEYS[i][j][k] = r.nextLong();
-                }
-            }
-        }
-
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                for (int k = 0; k < 4; k++) {
-                    PHASE3_CORNER_KEYS[i][j][k] = r.nextLong();
-                }
-            }
-        }
-
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                PHASE3_EDGE_KEYS[i][j] = r.nextLong();
-            }
-        }
+        fillRandom(r, PHASE2_CENTER_KEYS);
+        fillRandom(r, PHASE2_EDGE_KEYS);
+        fillRandom(r, PHASE3_CORNER_KEYS);
+        fillRandom(r, PHASE3_EDGE_KEYS);
     }
 
     private static final int[][] MOVE_CORNERS = {
