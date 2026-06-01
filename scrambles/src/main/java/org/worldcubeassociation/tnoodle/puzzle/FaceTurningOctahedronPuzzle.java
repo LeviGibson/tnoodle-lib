@@ -47,25 +47,25 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         return new HashMap<>(defaultColorScheme);
     }
 
-    private static final int FACE_TURNING_OCTAHEDRON_UNIT_SIZE = 36;
-    private static final int FACE_TURNING_OCTAHEDRON_MARGIN = 4;
+    private static final int FACE_TURNING_OCTAHEDRON_PIECE_SIZE = 30;
+    private static final int FACE_TURNING_OCTAHEDRON_GAP = 3;
     private static final double FACE_TURNING_OCTAHEDRON_FACE_GAP = 6.0;
 
     @Override
     public Dimension getPreferredSize() {
-        return getImageSize(FACE_TURNING_OCTAHEDRON_UNIT_SIZE);
+        return getImageSize(FACE_TURNING_OCTAHEDRON_GAP, FACE_TURNING_OCTAHEDRON_PIECE_SIZE);
     }
 
-    private static Dimension getImageSize(int radius) {
-        return new Dimension(getWidth(radius), getHeight(radius));
+    private static Dimension getImageSize(int gap, int pieceSize) {
+        return new Dimension(getFTOViewWidth(gap, pieceSize), getFTOViewHeight(gap, pieceSize));
     }
 
-    private static int getWidth(int radius) {
-        return 12 * radius + 2 * FACE_TURNING_OCTAHEDRON_MARGIN;
+    private static int getFTOViewWidth(int gap, int pieceSize) {
+        return 12 * pieceSize + 4 * gap;
     }
 
-    private static int getHeight(int radius) {
-        return 6 * radius + 2 * FACE_TURNING_OCTAHEDRON_MARGIN;
+    private static int getFTOViewHeight(int gap, int pieceSize) {
+        return 6 * pieceSize + 4 * gap;
     }
 
     @Override
@@ -226,10 +226,10 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
                 scheme[i] = colorSchemeMap.get(CenterOrd.values()[i].toString());
             }
 
-            int unit = FACE_TURNING_OCTAHEDRON_UNIT_SIZE;
-            int margin = FACE_TURNING_OCTAHEDRON_MARGIN;
+            int unit = FACE_TURNING_OCTAHEDRON_PIECE_SIZE;
+            int margin = FACE_TURNING_OCTAHEDRON_GAP;
             int m = margin;
-            Svg svg = new Svg(getImageSize(unit));
+            Svg svg = new Svg(getPreferredSize());
 
             //@formatter:off
             drawFace(svg, image[4], scheme, m,        m,        m,        m + 6*unit, m + 3*unit, m + 3*unit);
