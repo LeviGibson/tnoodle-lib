@@ -109,7 +109,11 @@ import java.util.Random;
  * </p>
  *
  * <h1>High Level Stuff</h1>
- *TODO
+ * <h3>History</h3>
+ * FullFto keeps track of every move you do internally with a stack!
+ * <h3>Hashing and Triple Data</h3>
+ * This guy has got 3 hash functions, one for each phase.
+ * The idea is that the function will produce the same hash for the same
  */
 
 public class FullFto {
