@@ -316,7 +316,7 @@ public class FtoSearch {
             ( 0.039372 * edgeLookup * depth) +
             ( 0.044133 * tripleLookup * depth);
 
-        double odds = Math.pow(2.71828182846, logOdds);
+        double odds = Math.exp(logOdds);
 
         return odds / (1 + odds);
     }
@@ -416,7 +416,7 @@ public class FtoSearch {
 
         assert (test.equals(randomState));
 
-        return rotateSolution(rotateSolution(solution));
+        return rotateSolution(rotateSolution(solution)).trim();
     }
 
     //--------------- Pruning Table Generation ---------------//
@@ -834,7 +834,7 @@ public class FtoSearch {
         }
 
         public int tripleLookup(){
-            int minEval = 1000;
+            int minEval = Integer.MAX_VALUE;
 
             for (FullFto angle : angles) {
                 minEval = Math.min(minEval, phaseTwoTriplePruningTable[angle.phaseTwoTripleIndex()]);

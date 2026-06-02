@@ -396,6 +396,12 @@ public class FullFto {
                 fto.state.centers == this.state.centers;
     }
 
+    @Override public int hashCode(){
+        return Long.hashCode(state.centers) ^
+            Long.hashCode(state.edges) ^
+            Long.hashCode(state.corners);
+    }
+
     //--------------- Triple Methods ---------------//
 
     /**
@@ -787,7 +793,7 @@ public class FullFto {
     }
 
     static {
-        Random r =  new Random();
+        Random r =  new Random(42);
 
         fillRandom(r, PHASE2_CENTER_KEYS);
         fillRandom(r, PHASE2_EDGE_KEYS);
