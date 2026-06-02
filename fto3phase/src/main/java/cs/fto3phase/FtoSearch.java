@@ -398,25 +398,21 @@ public class FtoSearch {
      */
     private static String postProcess(String solution, FullFto randomState){
         solution = invertSolution(solution);
-
         FullFto test = new FullFto();
         test.parseAlg(solution);
 
-        if (test.equals(randomState)){
-            return solution;
+        for (int i = 0; i < 3; i++) {
+            if (test.equals(randomState)) {
+                String result = solution;
+                for (int r = 0; r < i; r++) {
+                    result = rotateSolution(result);
+                }
+                return result.trim();
+            }
+            test.rotate(1);
         }
 
-        test.rotate(1);
-
-        if (test.equals(randomState)){
-            return rotateSolution(solution);
-        }
-
-        test.rotate(1);
-
-        assert (test.equals(randomState));
-
-        return rotateSolution(rotateSolution(solution)).trim();
+        throw new IllegalStateException("The found solution does match the randomly generated state");
     }
 
     //--------------- Pruning Table Generation ---------------//
