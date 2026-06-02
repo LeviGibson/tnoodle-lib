@@ -211,9 +211,7 @@ public class FtoSearch {
         //Subtrees that are unlikely to have a solution are cut
         if (depth > PHASE_TWO_PRUNING_DEPTH && depth < 20 && ply > 0){
 
-            int tripleLookup = fto.tripleLookup();
-
-            double p = logisticRegression(depth, fto, edgeLookup, tripleLookup);
+            double p = logisticRegression(depth, fto, edgeLookup);
 
             if (p < THRESHOLDS[depth-8])
                 return false;
@@ -298,39 +296,33 @@ public class FtoSearch {
      * @param depth remaining search depth
      * @param fto current symmetry state
      * @param edgeLookup edge pruning distance
-     * @param tripleLookup triple pruning distance
      * @return probability in [0, 1]
      */
-    private static double logisticRegression(int depth, FtoSymmetry fto, int edgeLookup, int tripleLookup) {
+    private static double logisticRegression(int depth, FtoSymmetry fto, int edgeLookup) {
         double triples = fto.angles[0].tripleCount();
         double triplePairs = fto.triplePairCount();
-
-        double logOdds = -2.873964 +
-            (-0.219440 * triples) +
-            ( 1.861916 * triplePairs) +
-            ( 0.402323 * depth) +
-            (-0.868738 * edgeLookup) +
-            (-1.085977 * tripleLookup) +
-            (-0.017704 * depth * depth) +
-            (-0.049115 * triplePairs * depth) +
-            ( 0.039372 * edgeLookup * depth) +
-            ( 0.044133 * tripleLookup * depth);
-
+        double logOdds = -1.254e+01 +
+            (-5.378e-01 * triples) +
+            ( 2.552e+00 * triplePairs) +
+            ( 7.813e-01 * depth) +
+            (-9.378e-01 * edgeLookup) +
+            (-1.756e-02 * depth * depth) +
+            ( 2.098e-02 * triples * depth) +
+            (-8.045e-02 * triplePairs * depth) +
+            ( 4.546e-02 * edgeLookup * depth);
         double odds = Math.exp(logOdds);
-
         return odds / (1 + odds);
     }
 
     /**
      * Convenience overload that computes {@code edgeLookup} and
-     * {@code tripleLookup} internally before delegating to the
      * full logistic regression method.
      * @param fto current symmetry state
      * @param depth remaining search depth
      * @return probability in [0, 1]
      */
     private static double logisticRegression(FtoSymmetry fto, int depth) {
-        return logisticRegression(depth, fto, fto.minEdgeLookup(), fto.tripleLookup());
+        return logisticRegression(depth, fto, fto.minEdgeLookup());
     }
 
     /**
@@ -416,22 +408,6 @@ public class FtoSearch {
     }
 
     //--------------- Pruning Table Generation ---------------//
-
-    /**
-     * Loads a pruning table from a bundled resource file.
-     * @param filename name of the resource file
-     * @param size exact expected size of the table in bytes
-     * @return the loaded byte array
-     * @throws IOException if the resource cannot be read
-     */
-    private static byte[] loadTable(String filename, int size) throws IOException {
-        try (InputStream is = FtoSearch.class.getResourceAsStream("/" + filename);
-             BufferedInputStream bis = new BufferedInputStream(is)) {
-            byte[] table = new byte[size];
-            bis.read(table);
-            return table;
-        }
-    }
 
     /**
      * Builds the phase-two edge pruning table on the fly by BFS, replacing
@@ -671,7 +647,6 @@ public class FtoSearch {
     private static final HashMap<Long, Integer> phaseThreePruningTable;
 
     private static final byte[] phaseTwoEdgePruningTable;
-    private static final byte[] phaseTwoTriplePruningTable;
 
     /**
      * Logistic regression thresholds indexed by search depth.
@@ -721,18 +696,7 @@ public class FtoSearch {
     //--------------- Static Initializers ---------------//
 
     static{
-        try {
-            phaseTwoTriplePruningTable = loadTable("triple_d10.dat", 4096);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
         phaseTwoEdgePruningTable = generateEdgePruningTable();
-
-        for (int i = 0; i < 4096; i++) {
-            if (phaseTwoTriplePruningTable[i] == 25){
-                phaseTwoTriplePruningTable[i] = 10;
-            }
-        }
 
         rotatedMoves.put("R", "B");
         rotatedMoves.put("B", "L");
@@ -827,16 +791,6 @@ public class FtoSearch {
 
         public int minEdgeLookup(){
             return edgeLookup(angles[0]);
-        }
-
-        public int tripleLookup(){
-            int minEval = Integer.MAX_VALUE;
-
-            for (FullFto angle : angles) {
-                minEval = Math.min(minEval, phaseTwoTriplePruningTable[angle.phaseTwoTripleIndex()]);
-            }
-
-            return minEval;
         }
 
         public boolean isRepetition(Move move) {
