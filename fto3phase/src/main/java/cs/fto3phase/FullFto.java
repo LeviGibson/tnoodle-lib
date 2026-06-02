@@ -2,6 +2,7 @@ package cs.fto3phase;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Objects;
 
 /**
  * <h1>FullFto</h1>
@@ -384,10 +385,12 @@ public class FullFto {
 
     /**
      * Compares this FullFto with another for structural equality.
-     * @param fto the FullFto to compare with
+     * @param obj the FullFto to compare with
      * @return true if the internal corner, edge, and center state match
      */
-    public boolean equals(FullFto fto){
+    @Override
+    public boolean equals(Object obj){
+        FullFto fto = (FullFto) obj;
         return fto.state.corners == this.state.corners &&
                 fto.state.edges == this.state.edges &&
                 fto.state.centers == this.state.centers;
