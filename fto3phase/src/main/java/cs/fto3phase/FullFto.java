@@ -408,6 +408,10 @@ public class FullFto {
                 fto.state.centers == this.state.centers;
     }
 
+    /**
+     * Hashes the FTO State
+     * @return Fto Hash
+     */
     @Override public int hashCode(){
         return Long.hashCode(state.centers) ^
             Long.hashCode(state.edges) ^
