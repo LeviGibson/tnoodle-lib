@@ -17,10 +17,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
     private enum Move {R, L, U, D, F, B, BR, BL, RP, LP, UP, DP, FP, BP, BRP, BLP}
     private static final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
-
-    private enum CenterOrd {
-        U, F, BR, BL, L, R, B, D
-    }
+    private static final String[] FACE_NAMES = {"U", "F", "BR", "BL", "L", "R", "B", "D"};
 
     private final ThreadLocal<FtoSearch> threePhaseSearcher;
 
@@ -35,10 +32,10 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         defaultColorScheme.put("B", Color.BLUE);
         defaultColorScheme.put("D", Color.YELLOW);
         defaultColorScheme.put("F", Color.GREEN);
-        defaultColorScheme.put("L", new Color(124, 2, 158));
+        defaultColorScheme.put("L", new Color(124, 2, 158)); // Purple
         defaultColorScheme.put("R", Color.RED);
         defaultColorScheme.put("U", Color.WHITE);
-        defaultColorScheme.put("BL", new Color(255, 128, 0));
+        defaultColorScheme.put("BL", new Color(255, 128, 0)); // Orange
         defaultColorScheme.put("BR", Color.GRAY);
     }
 
@@ -136,8 +133,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
     public class FaceTurningOctahedronState extends PuzzleState {
 
-        private int[][] image = new int[8][9];
+        private final int[][] image = new int[8][9];
 
+        //Tables for how the stickers move with each turn
         private final int[][][] C = {
             {{0,0},{6,8},{2,0},{4,0}},
             {{0,8},{5,8},{3,0},{6,0}},
@@ -173,13 +171,10 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             {7,6},{7,1},{7,3}
         };
 
-        private final int[] SOLVED_FACE_COLOR = {0, 1, 3, 2, 4, 5, 6, 7};
-
         public FaceTurningOctahedronState() {
             for (int f = 0; f < 8; f++) {
-                int color = SOLVED_FACE_COLOR[f];
                 for (int s = 0; s < 9; s++) {
-                    image[f][s] = color;
+                    image[f][s] = f;
                 }
             }
         }
@@ -223,7 +218,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         protected Svg drawScramble(Map<String, Color> colorSchemeMap) {
             Color[] scheme = new Color[8];
             for (int i = 0; i < scheme.length; i++) {
-                scheme[i] = colorSchemeMap.get(CenterOrd.values()[i].toString());
+                scheme[i] = colorSchemeMap.get(FACE_NAMES[i]);
             }
 
             int unit = FACE_TURNING_OCTAHEDRON_PIECE_SIZE;
@@ -318,6 +313,8 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             image[f2][s2] = image[f1][s1];
             image[f1][s1] = tmp;
         }
+
+        //High level functions so we can port over turn() from fto3phase while keeping the internal representation of stickers
 
         private void edgeCycle(int eA, int eB, int eC) {
             swap(E_CELLS[eA][0][0], E_CELLS[eA][0][1],
