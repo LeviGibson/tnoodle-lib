@@ -6,6 +6,7 @@ import java.util.*;
 import static cs.fto3phase.FullFto.Move;
 
 /**
+ * <h2>FtoSearch</h2>
  * Three-phase IDA* solver for Face Turning Octahedron random-state scrambles.
  *
  * <p>The search first solves the D-face centers and edges, then reduces the
@@ -19,14 +20,36 @@ import static cs.fto3phase.FullFto.Move;
 
  *
  * <h2> Phase 1 </h2>
- *<p>
  * Phase 1: Solve the centers and edges on the D face. The D
  *
  * Phase 1 is rather trivial to create an IDA* Search. The hash function, {@link FullFto#phaseOneHash()},
- * creates a unique hash from the permutation of the D-face centers and edges. The hash is normalized
+ * creates a unique hash from the permutation of the D-face centers and edges. The hash is normalized so
+ * it will produce the same hash for all three symmetrical ways you can solve phase 1 ([], D, D').
  *
+ * The solver finds 1000 different ways to solve phase 1, which are filtered with a logistic regression model
+ * to find only the ones that are likely to have a short phase-2 solution. This is a really effective way of
+ * reducing the move count of the solver, although it is technically slower than just finding a single phase-1
+ * solution. However, it does make the solution time a lot more consistent. Fewer outliers.
  *
- * </p>
+ * <h2>Phase 2</h2>
+ * Big big pruning tables. We high-roll for a short Phase 1 to Phase 2 solution with the Phase One Candidates
+ * System. This is a very computationally expensive search. The hash function for phase 2 produces a hash for
+ * just the edges and centers on the R, L, and B faces. If the hash hits, we know that the edges and centers are
+ * close to being solved. Once we get a hit, we loop through all the triple patters that give a short solution,
+ * and if one of them matches, we know we have a hash hit!
+ *
+ * <h2>FtoSymmetry</h2>
+ * Phase 2 searches three different FTOs at once with 3 different symmetries. It stores 3 copies of the FTO from
+ * different rotations. You might be thinking this is a terrible, unoptimized, and convoluted system.
+ * If you are thinking this, Congratulations! You're right! This system sucks and needs to be replaced.
+ * I (Levi) have plans to completely redo the FtoSymmetry class, as right now it's sort of a dumpster fire.
+ *
+ * <h2>Phase 3</h2>
+ * Phase 3 is trivial. It is a simple IDA* search with a pruning depth of 4. It honestly runs pretty fast
+ * even without pruning. Very trivial step.
+ *
+ * <h2>Contact</h2>
+ * This solver was written by Levi Gibson. Contact me at lgibson@worldcubeassociation.org if you have any questions.
  *
  */
 public class FtoSearch {

@@ -114,7 +114,17 @@ import java.util.Objects;
  * FullFto keeps track of every move you do internally with a stack!
  * <h3>Hashing and Triple Data</h3>
  * This guy has got 3 hash functions, one for each phase.
- * The idea is that the function will produce the same hash for the same
+ * The idea is that the function will produce the same hash for any state where the solution to the phase is the same
+ *
+ * Example: These two states will have the same Phase 2 hash, because each can be solved to phase 2 with U.
+ * R L B U
+ * D R B U
+ *
+ * Unfortunately, because of the strangeness of FTO, making a hash like this for the phase 2 triples is impossible.
+ * A normal hash function and IDA* lookup is used for the centers+edges, but the triple data is packed into a single
+ * long and stored alongside the hash. The triple data is not a hash, it's a packed integer that stores what pieces
+ * need to match in order for the hash to hit.
+ *
  */
 
 public class FullFto {
