@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.Objects;
 
 /**
- * <h1>FullFto</h1>
+ * <h3>FullFto</h3>
  * This class is a mutable representation of a Face Turning Octahedron Twisty Puzzle
  *
  * <pre>{@code
@@ -51,7 +51,7 @@ import java.util.Objects;
  *     }
  * }</pre>
  *
- * <h1>FTO Theory</h1>
+ * <h3>FTO Theory</h3>
  * There are two special things about FTO when compared to a normal Rubik's Cube.
  * <h3>Orbits</h3>
  * On the FTO, the pieces are restricted to certain locations. The set of these locations is known as its "orbit".
@@ -99,7 +99,7 @@ import java.util.Objects;
  *
  * }</pre>
  *
- * <h1>InnerState</h1>
+ * <h3>InnerState</h3>
  * <p>
  *     The lower-level stuff like setting pieces, getting pieces, and hashes are abstracted away
  *     into a private class called InnerState. InnerState will only have one instance per FullFto.
@@ -109,7 +109,7 @@ import java.util.Objects;
  *     InnerState packs
  * </p>
  *
- * <h1>High Level Stuff</h1>
+ * <h3>High Level Stuff</h3>
  * <h3>History</h3>
  * FullFto keeps track of every move you do internally with a stack!
  * <h3>Hashing and Triple Data</h3>
