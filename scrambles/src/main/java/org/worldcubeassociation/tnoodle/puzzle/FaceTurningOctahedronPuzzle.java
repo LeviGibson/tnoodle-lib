@@ -103,10 +103,12 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
         private final int[][] image = new int[8][9];
 
+        private final int[] SOLVED_FACE_COLOR = {0, 1, 3, 2, 4, 5, 6, 7};
+
         public FaceTurningOctahedronState() {
             for (int f = 0; f < 8; f++) {
                 for (int s = 0; s < 9; s++) {
-                    image[f][s] = f;
+                    image[f][s] = SOLVED_FACE_COLOR[f];
                 }
             }
         }
