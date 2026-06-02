@@ -674,7 +674,7 @@ public class FtoSearch {
     private static final HashMap<Long, ArrayList<Long>> phaseTwoPruningTable;
     private static final HashMap<Long, Integer> phaseThreePruningTable;
 
-    private static byte[] phaseTwoEdgePruningTable;
+    private static final byte[] phaseTwoEdgePruningTable;
     private static final byte[] phaseTwoTriplePruningTable;
 
     /**
@@ -682,7 +682,7 @@ public class FtoSearch {
      * Subtrees whose predicted probability falls below the threshold
      * for the current depth are pruned.
      */
-    public static double[] THRESHOLDS = {
+    private static final double[] THRESHOLDS = {
         0.986641027960064,
         0.961649420842541,
         0.894885223305345,
