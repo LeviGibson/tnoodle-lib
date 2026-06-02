@@ -430,7 +430,7 @@ public class FtoSearch {
             test.rotate(1);
         }
 
-        throw new IllegalStateException("The found solution does match the randomly generated state");
+        throw new IllegalStateException("The found solution does not match the randomly generated state");
     }
 
     //--------------- Pruning Table Generation ---------------//

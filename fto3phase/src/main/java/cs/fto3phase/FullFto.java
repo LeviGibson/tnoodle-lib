@@ -400,6 +400,8 @@ public class FullFto {
      */
     @Override
     public boolean equals(Object obj){
+        if (this == obj) return true;
+        if (!(obj instanceof FullFto)) return false;
         FullFto fto = (FullFto) obj;
         return fto.state.corners == this.state.corners &&
                 fto.state.edges == this.state.edges &&
@@ -409,7 +411,7 @@ public class FullFto {
     @Override public int hashCode(){
         return Long.hashCode(state.centers) ^
             Long.hashCode(state.edges) ^
-            Long.hashCode(state.corners);
+            Integer.hashCode(state.corners);
     }
 
     //--------------- Triple Methods ---------------//
