@@ -99,82 +99,17 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         return new PuzzleStateAndGenerator(state, scramble);
     }
 
-    private static final int[][] MOVE_CORNERS = {
-        {2, 1, 4}, {0, 2, 3}, {0, 1, 2}, {3, 4, 5},
-        {2, 4, 3}, {1, 0, 5}, {1, 5, 4}, {0, 3, 5},
-        {2, 4, 1}, {0, 3, 2}, {0, 2, 1}, {3, 5, 4},
-        {2, 3, 4}, {1, 5, 0}, {1, 4, 5}, {0, 5, 3}
-    };
-
-    private static final int[][] MOVE_TWISTS = {
-        {2, 1, 4, 3, 2, 3}, {0, 2, 3, 3, 2, 3}, {0, 1, 2, 0, 0, 0}, {3, 4, 5, 0, 0, 0},
-        {2, 4, 3, 3, 3, 2}, {1, 0, 5, 3, 2, 3}, {1, 5, 4, 3, 3, 2}, {0, 3, 5, 3, 3, 2},
-        {2, 4, 1, 2, 1, 1}, {0, 3, 2, 2, 1, 1}, {0, 2, 1, 0, 0, 0}, {3, 5, 4, 0, 0, 0},
-        {2, 3, 4, 1, 1, 2}, {1, 5, 0, 2, 1, 1}, {1, 4, 5, 1, 1, 2}, {0, 5, 3, 1, 1, 2}
-    };
-
-    private static final int[][] MOVE_EDGES = {
-        {4, 1, 5}, {8, 2, 3}, {2, 0, 1}, {11, 9, 10},
-        {3, 4, 9}, {7, 0, 6}, {10, 5, 7}, {6, 8, 11},
-        {5, 1, 4}, {3, 2, 8}, {1, 0, 2}, {10, 9, 11},
-        {9, 4, 3}, {6, 0, 7}, {7, 5, 10}, {11, 8, 6}
-    };
-
-    private static final int[][][] MOVE_CENTERS = {
-        {{15,16,17}, {3,1,8}, {4,2,6}},  {{12,13,14}, {0,3,10}, {2,5,9}},
-        {{0,1,2}, {15,12,18}, {16,13,19}}, {{21,22,23}, {5,8,11}, {4,7,10}},
-        {{3,4,5}, {13,17,21}, {15,22,14}}, {{18,19,20}, {1,9,7}, {0,11,6}},
-        {{6,7,8}, {16,20,22}, {17,18,23}}, {{9,10,11}, {19,14,23}, {12,21,20}},
-        {{15,17,16}, {3,8,1}, {4,6,2}},  {{12,14,13}, {0,10,3}, {2,9,5}},
-        {{0,2,1}, {15,18,12}, {16,19,13}}, {{21,23,22}, {5,11,8}, {4,10,7}},
-        {{3,5,4}, {13,21,17}, {15,14,22}}, {{18,20,19}, {1,7,9}, {0,6,11}},
-        {{6,8,7}, {16,22,20}, {17,23,18}}, {{9,11,10}, {19,23,14}, {12,20,21}}
-    };
-
     public class FaceTurningOctahedronState extends PuzzleState {
 
         private final int[][] image = new int[8][9];
 
-        //Tables for how the stickers move with each turn
-        private final int[][][] C = {
-            {{0,0},{6,8},{2,0},{4,0}},
-            {{0,8},{5,8},{3,0},{6,0}},
-            {{0,4},{4,4},{1,4},{5,0}},
-            {{7,8},{1,0},{4,8},{2,8}},
-            {{7,0},{3,4},{5,4},{1,8}},
-            {{7,4},{2,4},{6,4},{3,8}}
-        };
-
-        private final int[][][] E_CELLS = {
-            {{0,5},{6,5}},
-            {{0,7},{5,5}},
-            {{0,2},{4,2}},
-            {{1,2},{4,7}},
-            {{1,7},{5,2}},
-            {{3,2},{5,7}},
-            {{2,2},{6,7}},
-            {{3,5},{6,2}},
-            {{2,5},{4,5}},
-            {{1,5},{7,5}},
-            {{3,7},{7,2}},
-            {{2,7},{7,7}}
-        };
-
-        private final int[][] CT = {
-            {0,1},{0,6},{0,3},
-            {1,3},{1,6},{1,1},
-            {3,1},{3,6},{3,3},
-            {2,1},{2,6},{2,3},
-            {4,1},{4,3},{4,6},
-            {5,1},{5,6},{5,3},
-            {6,1},{6,6},{6,3},
-            {7,6},{7,1},{7,3}
-        };
+        private final int[] SOLVED_FACE_COLOR = {0, 1, 3, 2, 4, 5, 6, 7};
 
         public FaceTurningOctahedronState() {
             for (int f = 0; f < 8; f++) {
+                int color = SOLVED_FACE_COLOR[f];
                 for (int s = 0; s < 9; s++) {
-                    image[f][s] = f;
+                    image[f][s] = color;
                 }
             }
         }
@@ -307,66 +242,44 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             svg.appendChild(sticker);
         }
 
-        private void swap(int f0, int s0, int f1, int s1, int f2, int s2) {
+        private void applyCycle(int[] cycles, int offset) {
+            int f0 = cycles[offset],     s0 = cycles[offset + 1];
+            int f1 = cycles[offset + 2], s1 = cycles[offset + 3];
+            int f2 = cycles[offset + 4], s2 = cycles[offset + 5];
             int tmp = image[f0][s0];
             image[f0][s0] = image[f2][s2];
             image[f2][s2] = image[f1][s1];
             image[f1][s1] = tmp;
         }
 
-        //High level functions so we can port over turn() from fto3phase while keeping the internal representation of stickers
-
-        private void edgeCycle(int eA, int eB, int eC) {
-            swap(E_CELLS[eA][0][0], E_CELLS[eA][0][1],
-                 E_CELLS[eB][0][0], E_CELLS[eB][0][1],
-                 E_CELLS[eC][0][0], E_CELLS[eC][0][1]);
-            swap(E_CELLS[eA][1][0], E_CELLS[eA][1][1],
-                 E_CELLS[eB][1][0], E_CELLS[eB][1][1],
-                 E_CELLS[eC][1][0], E_CELLS[eC][1][1]);
-        }
-
-        private void centerCycle(int cA, int cB, int cC) {
-            swap(CT[cA][0], CT[cA][1],
-                 CT[cB][0], CT[cB][1],
-                 CT[cC][0], CT[cC][1]);
-        }
-
-        private void twistCornerCycle(int cA, int cB, int cC, int tA, int tB, int tC) {
-            int[] vA = new int[4];
-            int[] vB = new int[4];
-            int[] vC = new int[4];
-            for (int i = 0; i < 4; i++) {
-                vA[i] = image[C[cA][i][0]][C[cA][i][1]];
-                vB[i] = image[C[cB][i][0]][C[cB][i][1]];
-                vC[i] = image[C[cC][i][0]][C[cC][i][1]];
-            }
-            for (int i = 0; i < 4; i++) {
-                image[C[cB][i][0]][C[cB][i][1]] = vA[(i + tB) % 4];
-                image[C[cC][i][0]][C[cC][i][1]] = vB[(i + tC) % 4];
-                image[C[cA][i][0]][C[cA][i][1]] = vC[(i + tA) % 4];
-            }
-        }
-
-        private void cornerCycle(int cA, int cB, int cC) {
-            twistCornerCycle(cA, cB, cC, 0, 0, 0);
-        }
+        //What cycles does each move make on the individual stickers?
+        //Each 3-cycle is encoded in 6 ints, 3 for the faces, 3 for the stickers
+        private final int[][] MOVE_CYCLES = {
+            {0,3,3,1,1,6, 0,4,3,0,1,8, 0,6,3,3,1,3, 0,7,3,2,1,7, 0,8,3,4,1,4, 4,4,6,0,7,0, 5,0,5,8,5,4, 5,1,5,6,5,3, 5,2,5,5,5,7},
+            {0,0,1,4,2,8, 0,1,1,3,2,6, 0,2,1,2,2,5, 0,3,1,1,2,1, 0,4,1,0,2,0, 4,0,4,4,4,8, 4,1,4,3,4,6, 4,2,4,7,4,5, 5,0,7,8,6,8},
+            {0,0,0,8,0,4, 0,1,0,6,0,3, 0,2,0,5,0,7, 1,4,2,0,3,0, 4,0,6,0,5,0, 4,1,6,1,5,1, 4,2,6,5,5,5, 4,3,6,6,5,6, 4,4,6,8,5,8},
+            {1,0,3,4,2,4, 1,1,3,3,2,3, 1,5,3,7,2,7, 1,6,3,6,2,6, 1,8,3,8,2,8, 4,8,5,4,6,4, 7,0,7,4,7,8, 7,1,7,3,7,6, 7,2,7,7,7,5},
+            {0,4,3,4,2,8, 1,0,1,4,1,8, 1,1,1,3,1,6, 1,2,1,7,1,5, 4,3,5,3,7,6, 4,4,5,4,7,8, 4,6,5,1,7,1, 4,7,5,2,7,5, 4,8,5,0,7,0},
+            {0,0,2,4,3,0, 0,1,2,3,3,1, 0,5,2,2,3,5, 0,6,2,1,3,6, 0,8,2,0,3,8, 4,0,7,4,5,8, 6,0,6,8,6,4, 6,1,6,6,6,3, 6,2,6,5,6,7},
+            {0,8,2,4,1,8, 3,0,3,8,3,4, 3,1,3,6,3,3, 3,2,3,5,3,7, 5,3,6,1,7,3, 5,4,6,0,7,4, 5,6,6,3,7,1, 5,7,6,2,7,2, 5,8,6,4,7,0},
+            {0,0,1,0,3,8, 2,0,2,8,2,4, 2,1,2,6,2,3, 2,2,2,5,2,7, 4,0,7,8,6,4, 4,1,7,6,6,3, 4,5,7,7,6,7, 4,6,7,3,6,6, 4,8,7,4,6,8},
+            {0,3,1,6,3,1, 0,4,1,8,3,0, 0,6,1,3,3,3, 0,7,1,7,3,2, 0,8,1,4,3,4, 4,4,7,0,6,0, 5,0,5,4,5,8, 5,1,5,3,5,6, 5,2,5,7,5,5},
+            {0,0,2,8,1,4, 0,1,2,6,1,3, 0,2,2,5,1,2, 0,3,2,1,1,1, 0,4,2,0,1,0, 4,0,4,8,4,4, 4,1,4,6,4,3, 4,2,4,5,4,7, 5,0,6,8,7,8},
+            {0,0,0,4,0,8, 0,1,0,3,0,6, 0,2,0,7,0,5, 1,4,3,0,2,0, 4,0,5,0,6,0, 4,1,5,1,6,1, 4,2,5,5,6,5, 4,3,5,6,6,6, 4,4,5,8,6,8},
+            {1,0,2,4,3,4, 1,1,2,3,3,3, 1,5,2,7,3,7, 1,6,2,6,3,6, 1,8,2,8,3,8, 4,8,6,4,5,4, 7,0,7,8,7,4, 7,1,7,6,7,3, 7,2,7,5,7,7},
+            {0,4,2,8,3,4, 1,0,1,8,1,4, 1,1,1,6,1,3, 1,2,1,5,1,7, 4,3,7,6,5,3, 4,4,7,8,5,4, 4,6,7,1,5,1, 4,7,7,5,5,2, 4,8,7,0,5,0},
+            {0,0,3,0,2,4, 0,1,3,1,2,3, 0,5,3,5,2,2, 0,6,3,6,2,1, 0,8,3,8,2,0, 4,0,5,8,7,4, 6,0,6,4,6,8, 6,1,6,3,6,6, 6,2,6,7,6,5},
+            {0,8,1,8,2,4, 3,0,3,4,3,8, 3,1,3,3,3,6, 3,2,3,7,3,5, 5,3,7,3,6,1, 5,4,7,4,6,0, 5,6,7,1,6,3, 5,7,7,2,6,2, 5,8,7,0,6,4},
+            {0,0,3,8,1,0, 2,0,2,4,2,8, 2,1,2,3,2,6, 2,2,2,7,2,5, 4,0,6,4,7,8, 4,1,6,3,7,6, 4,5,6,7,7,7, 4,6,6,6,7,3, 4,8,6,8,7,4}
+        };
 
         public void turn(Move move) {
-            int id = move.ordinal();
+            //Get all the sticker 3-cycles for this move
+            int[] cycles = MOVE_CYCLES[move.ordinal()];
 
-            int[] corners = MOVE_CORNERS[id];
-            int[] twist = MOVE_TWISTS[id];
-            if (twist[3] == 0 && twist[4] == 0 && twist[5] == 0) {
-                cornerCycle(corners[0], corners[1], corners[2]);
-            } else {
-                twistCornerCycle(twist[0], twist[1], twist[2], twist[3], twist[4], twist[5]);
-            }
-
-            int[] edges = MOVE_EDGES[id];
-            edgeCycle(edges[0], edges[1], edges[2]);
-
-            for (int[] centers : MOVE_CENTERS[id]) {
-                centerCycle(centers[0], centers[1], centers[2]);
+            //Loop over the 3-cycles one at a time and apply them
+            for (int i = 0; i < 54; i += 6) {
+                applyCycle(cycles, i);
             }
         }
 
