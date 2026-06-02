@@ -60,18 +60,18 @@ public class FtoSearch {
      * The resulting solution is inverted and post-processed so that
      * applying it to a solved puzzle produces the given random state.
      *
-     * @param fto the random puzzle state to solve
+     * @param randomState the random puzzle state to solve
      * @return the scramble string using TNoodle-compatible move names
      */
-    public String solution(FullFto fto){
-        fto = new FullFto(fto);
+    public String solution(FullFto randomState){
+        FullFto fto = new FullFto(randomState);
         fto.clearMoveStack();
 
         ArrayList<FullFto> candidates = iteratePhaseOneCandidates(fto);
         FtoSymmetry phaseTwoSym = iteratePhaseTwo(candidates);
         String solvedSolution = iteratePhaseThree(phaseTwoSym);
 
-        return postProcess(solvedSolution, fto);
+        return postProcess(solvedSolution, randomState);
     }
 
     //--------------- Search Methods ---------------//
