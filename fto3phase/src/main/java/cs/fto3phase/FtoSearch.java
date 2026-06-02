@@ -316,6 +316,9 @@ public class FtoSearch {
      * Returns the predicted probability that the given state can be solved
      * within the remaining depth, based on a logistic regression model
      * trained on phase-two search data.
+     *
+     * <a href="https://drive.google.com/drive/folders/1MRQj52C3CbPK4a2kkABj68KFooAZHYLH?usp=sharing">here</a> is the training data and R script
+     *
      * @param depth remaining search depth
      * @param fto current symmetry state
      * @param edgeLookup edge pruning distance
