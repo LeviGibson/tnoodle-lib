@@ -41,5 +41,54 @@ public class Util {
         }
         return swaps % 2 == 1;
     }
-    
+
+    //https://medium.com/@benjamin.botto/sequentially-indexing-permutations-a-linear-algorithm-for-computing-lexicographic-rank-a22220ffd6e3
+    public static int packIndex(int[] arr, boolean parity){
+        int size = arr.length;
+
+        int index = 0;
+        int seen = 0;
+
+        for (int i = 0; i < size; i++) {
+            int e = arr[i];
+            seen |= (1 << ((size-1) - e));
+
+            int lehmerDigit = e - Integer.bitCount(seen >> (size - e));
+            index += Util.FACTORIAL[(size-1)-i] * lehmerDigit;
+        }
+
+        return parity ? index / 2 : index;
+    }
+
+    public static void unpackIndex(int[] arr, int idx, boolean parity){
+        if (parity)
+            idx *= 2;
+
+        int size = arr.length;
+
+        boolean[] used = new boolean[size];
+        for (int i = 0; i < size; i++) {
+            int lehmerDigit = idx / Util.FACTORIAL[(size-1) - i];
+            idx %= Util.FACTORIAL[(size-1) - i];
+
+            int count = 0;
+            int e = -1;
+            for (int v = 0; v < size; v++) {
+                if (!used[v]) {
+                    if (count == lehmerDigit) {
+                        e = v;
+                        break;
+                    }
+                    count++;
+                }
+            }
+
+            arr[i] = e;
+            used[e] = true;
+        }
+
+        if (parity && Util.parity(arr)){
+            Util.swap(arr, size-2, size-1);
+        }
+    }
 }

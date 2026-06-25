@@ -31,93 +31,20 @@ public class FtoCubie {
 
 
     //[0, 12!/2 - 1]
-    //https://medium.com/@benjamin.botto/sequentially-indexing-permutations-a-linear-algorithm-for-computing-lexicographic-rank-a22220ffd6e3
     public int idxEdges(){
-        int index = 0;
-        int seen = 0;
-
-        for (int i = 0; i < 12; i++) {
-            int e = edges[i];
-            seen |= (1 << (11 - e));
-
-            int lehmerDigit = e - Integer.bitCount(seen >> (12 - e));
-            index += Util.FACTORIAL[11-i] * lehmerDigit;
-        }
-
-        return index / 2;
+        return Util.packIndex(edges, true);
     }
 
     public void setEdges(int idx){
-        idx *= 2;
-
-        boolean[] used = new boolean[12];
-        for (int i = 0; i < 12; i++) {
-            int lehmerDigit = idx / Util.FACTORIAL[11 - i];
-            idx %= Util.FACTORIAL[11 - i];
-
-            int count = 0;
-            int e = -1;
-            for (int v = 0; v < 12; v++) {
-                if (!used[v]) {
-                    if (count == lehmerDigit) {
-                        e = v;
-                        break;
-                    }
-                    count++;
-                }
-            }
-
-            edges[i] = e;
-            used[e] = true;
-        }
-
-        if (Util.parity(edges)){
-            Util.swap(edges, 10, 11);
-        }
+        Util.unpackIndex(edges, idx, true);
     }
 
     public int idxCornerPermutation(){
-        int index = 0;
-        int seen = 0;
-
-        for (int i = 0; i < 6; i++) {
-            int c = cp[i];
-            seen |= (1 << (5 - c));
-
-            int lehmerDigit = c - Integer.bitCount(seen >> (6 - c));
-            index += Util.FACTORIAL[5-i] * lehmerDigit;
-        }
-
-        return index / 2;
+        return Util.packIndex(cp, true);
     }
 
     public void setCornerPermutation(int idx){
-        idx *= 2;
-
-        boolean[] used = new boolean[6];
-        for (int i = 0; i < 6; i++) {
-            int lehmerDigit = idx / Util.FACTORIAL[5 - i];
-            idx %= Util.FACTORIAL[5 - i];
-
-            int count = 0;
-            int c = -1;
-            for (int v = 0; v < 6; v++) {
-                if (!used[v]) {
-                    if (count == lehmerDigit) {
-                        c = v;
-                        break;
-                    }
-                    count++;
-                }
-            }
-
-            cp[i] = c;
-            used[c] = true;
-        }
-
-        if (Util.parity(cp)){
-            Util.swap(cp, 4, 5);
-        }
+        Util.unpackIndex(cp, idx, true);
     }
 
     public int idxCornerOrientation(){
@@ -155,23 +82,18 @@ public class FtoCubie {
     }
 
     public int idxPhaseOneEdgePermutation(){
-        int index = 0;
-        int seen = 0;
         int numSeen = 0;
+
+        int[] perm = {-1, -1, -1};
 
         for (int i = 0; i < 12; i++) {
             int e = edges[i] - 9;
             if (e >= 0){
-                seen |= (1 << (2 - e));
-
-                int lehmerDigit = e - Integer.bitCount(seen >> (3 - e));
-                index += Util.FACTORIAL[2-numSeen] * lehmerDigit;
-
-                numSeen++;
+                perm[numSeen++] = e;
             }
         }
 
-        return index;
+        return Util.packIndex(perm, false);
     }
 
     public void setG1Edges(int locIdx, int permIdx) {
