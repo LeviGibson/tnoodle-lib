@@ -129,6 +129,25 @@ class FtoCubieTest {
     }
 
     @Test
+    void testPhaseOneTriangleIndex(){
+        Random r = new Random(42);
+        for (int i = 0; i < 10000; i++) {
+            FtoCubie ftoCubie = new FtoCubie();
+            for (int j = 0; j < 100; j++) {
+                FtoCubie out = new FtoCubie();
+                ftoCubie.turn(r.nextInt(16), out);
+                ftoCubie = out;
+            }
+
+            int idx = ftoCubie.packPhaseOneTriangles();
+            FtoCubie testCube = new FtoCubie();
+
+            testCube.setPhaseOneTriangles(idx);
+            assertEquals(idx, testCube.packPhaseOneTriangles());
+        }
+    }
+
+    @Test
     void testEveryMoveHasCorrectInverse() {
         for (int trial = 0; trial < 50; trial++) {
             // Generate a random non-solved state by applying 50 random moves

@@ -130,6 +130,40 @@ public class FtoCubie {
         }
     }
 
+    public int packPhaseOneTriangles(){
+        int[] idx = new int[3];
+        int count = 0;
+
+        for (int i = 0; i < 12; i++) {
+            if (centers2[i] == XD) idx[count++] = i;
+        }
+
+        return Util.packSubset(idx);
+    }
+
+    public void setPhaseOneTriangles(int idx){
+        //Unpack index
+        int[] loc = new int[3];
+        Util.unpackSubset(loc, idx);
+
+        //Set the relevant centers
+        for (int i = 0; i < 12; i++) {
+            centers2[i] = -1;
+        }
+        for (int i = 0; i < 3; i++) {
+            centers2[loc[i]] = XD;
+        }
+
+        //Fill in the rest with garbage
+        //(But it has to not crash the other functions)
+        int count = 0;
+        for (int i = 0; i < 12; i++) {
+            if (centers2[i] == -1){
+                centers2[i] = count/3;
+                count++;
+            }
+        }
+    }
 
     public boolean isSolved(){
         for (int i = 0; i < 6; i++) {
@@ -217,7 +251,7 @@ public class FtoCubie {
         CUF = 0, CUBR = 1, CUBL = 2,
         CDL = 3, CDR = 4, CDB = 5;
 
-    private static MoveEffect[] moveEffects;
+    private static final MoveEffect[] moveEffects;
 
     //Hard-coded data about what cycles the different moves make
     static {
