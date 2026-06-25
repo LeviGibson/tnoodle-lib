@@ -75,11 +75,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.idxCornerPermutation();
+            int idx = ftoCubie.packCornerPermutation();
             FtoCubie testCube = new FtoCubie();
 
             testCube.setCornerPermutation(idx);
-            assertEquals(idx, testCube.idxCornerPermutation());
+            assertEquals(idx, testCube.packCornerPermutation());
             assertArrayEquals(ftoCubie.cp, testCube.cp);
         }
     }
@@ -95,11 +95,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.idxCornerOrientation();
+            int idx = ftoCubie.packCornerOrientation();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setCornerOrientation(idx);
-            assertEquals(idx, testCube.idxCornerOrientation());
+            testCube.packCornerOrientation(idx);
+            assertEquals(idx, testCube.packCornerOrientation());
             assertArrayEquals(ftoCubie.co, testCube.co);
         }
     }
@@ -115,16 +115,16 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int loc = ftoCubie.idxPhaseOneEdgeLocations();
-            int perm = ftoCubie.idxPhaseOneEdgePermutation();
+            int loc = ftoCubie.packPhaseOneEdgeLocations();
+            int perm = ftoCubie.packPhaseOneEdgePermutation();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setG1Edges(loc, perm);
+            testCube.setPhaseOneEdges(loc, perm);
             System.out.println();
             System.out.println();
 
-            assertEquals(loc, testCube.idxPhaseOneEdgeLocations());
-            assertEquals(perm, testCube.idxPhaseOneEdgePermutation());
+            assertEquals(loc, testCube.packPhaseOneEdgeLocations());
+            assertEquals(perm, testCube.packPhaseOneEdgePermutation());
         }
     }
 

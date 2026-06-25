@@ -40,7 +40,7 @@ public class FtoCubie {
         Util.unpackPerm(edges, idx, true);
     }
 
-    public int idxCornerPermutation(){
+    public int packCornerPermutation(){
         return Util.packPerm(cp, true);
     }
 
@@ -48,7 +48,7 @@ public class FtoCubie {
         Util.unpackPerm(cp, idx, true);
     }
 
-    public int idxCornerOrientation(){
+    public int packCornerOrientation(){
         int index = 0;
         for (int i = 0; i < 5; i++) {
             index |= co[i] << i;
@@ -56,7 +56,7 @@ public class FtoCubie {
         return index;
     }
 
-    public void setCornerOrientation(int idx){
+    public void packCornerOrientation(int idx){
         for (int i = 0; i < 5; i++) {
             co[i] = (idx >> i) & 1;
         }
@@ -64,7 +64,7 @@ public class FtoCubie {
     }
 
     //[0,219]
-    public int idxPhaseOneEdgeLocations(){
+    public int packPhaseOneEdgeLocations(){
         int[] idx = new int[3];
         int count = 0;
 
@@ -82,7 +82,7 @@ public class FtoCubie {
         return Util.packSubset(idx);
     }
 
-    public int idxPhaseOneEdgePermutation(){
+    public int packPhaseOneEdgePermutation(){
         int numSeen = 0;
 
         int[] perm = {-1, -1, -1};
@@ -97,23 +97,12 @@ public class FtoCubie {
         return Util.packPerm(perm, false);
     }
 
-    public void setG1Edges(int locIdx, int permIdx) {
+    public void setPhaseOneEdges(int locIdx, int permIdx) {
         int[] loc = new int[3];
         int[] perm = new int[3];
 
         //Unpack loc
-        int k = 3;
-        int remaining = locIdx;
-
-        for (int pos = 0; pos < 3; pos++) {
-            int c = k - 1;
-            while (Util.choose(c + 1, k) <= remaining) {
-                c++;
-            }
-            loc[pos] = c;
-            remaining -= Util.choose(c, k);
-            k--;
-        }
+        Util.unpackSubset(loc, locIdx);
 
         //Unpack perm
         Util.unpackPerm(perm, permIdx, false);
@@ -122,7 +111,7 @@ public class FtoCubie {
         //set the edges
         Arrays.fill(edges, -1);
         for (int i = 0; i < 3; i++) {
-            edges[loc[i]] = perm[2-i];
+            edges[loc[i]] = perm[i];
         }
         int nonD = 0;
         for (int i = 0; i < 12; i++) {

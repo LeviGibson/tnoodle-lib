@@ -41,21 +41,6 @@ public class Util {
         return swaps % 2 == 1;
     }
 
-    public static int packSubset(int[] idx){
-
-        for (int i = 0; i < idx.length-1; i++) {
-            if (idx[i] >= idx[i+1]){
-                throw new IllegalArgumentException("idx must be in ascending order");
-            }
-        }
-
-        int index = 0;
-        for (int i = idx.length-1; i >= 0; i--) {
-            index += choose(idx[i], i+1);
-        }
-        return index;
-    }
-
     //https://medium.com/@benjamin.botto/sequentially-indexing-permutations-a-linear-algorithm-for-computing-lexicographic-rank-a22220ffd6e3
     public static int packPerm(int[] arr, boolean parity){
         int size = arr.length;
@@ -103,6 +88,38 @@ public class Util {
 
         if (parity && Util.parity(arr)){
             Util.swap(arr, size-2, size-1);
+        }
+    }
+
+    public static int packSubset(int[] idx){
+
+        for (int i = 0; i < idx.length-1; i++) {
+            if (idx[i] >= idx[i+1]){
+                throw new IllegalArgumentException("idx must be in ascending order");
+            }
+        }
+
+        int index = 0;
+        for (int i = idx.length-1; i >= 0; i--) {
+            index += choose(idx[i], i+1);
+        }
+        return index;
+    }
+
+    public static void unpackSubset(int[] arr, int idx){
+        int subsetSize = arr.length;
+
+        int k = subsetSize;
+        int remaining = idx;
+
+        for (int pos = 0; pos < subsetSize; pos++) {
+            int c = k - 1;
+            while (Util.choose(c + 1, k) <= remaining) {
+                c++;
+            }
+            arr[subsetSize - 1 - pos] = c;
+            remaining -= Util.choose(c, k);
+            k--;
         }
     }
 }
