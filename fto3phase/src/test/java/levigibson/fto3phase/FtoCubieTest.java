@@ -120,6 +120,9 @@ class FtoCubieTest {
             FtoCubie testCube = new FtoCubie();
 
             testCube.setG1Edges(loc, perm);
+            System.out.println();
+            System.out.println();
+
             assertEquals(loc, testCube.idxPhaseOneEdgeLocations());
             assertEquals(perm, testCube.idxPhaseOneEdgePermutation());
         }

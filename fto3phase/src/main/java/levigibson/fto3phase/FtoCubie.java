@@ -1,6 +1,8 @@
 package levigibson.fto3phase;
 
 
+import java.util.Arrays;
+
 public class FtoCubie {
 
     public int[] cp;
@@ -137,13 +139,25 @@ public class FtoCubie {
         }
 
         //set the edges
-        for (int i = 0; i < 12; i++) {
-            edges[i] = i;
-        }
+        Arrays.fill(edges, -1);
         for (int i = 0; i < 3; i++) {
-            Util.swap(edges, perm[i], loc[i]);
+            edges[loc[i]] = perm[2-i];
+        }
+        int nonD = 0;
+        for (int i = 0; i < 12; i++) {
+            if (edges[i] == -1) {
+                edges[i] = nonD++;
+            }
         }
 
+        //Parity fix
+        if (Util.parity(edges)) {
+            int i = 0;
+            while (edges[i] >= 9) i++;
+            int j = i + 1;
+            while (edges[j] >= 9) j++;
+            Util.swap(edges, i, j);
+        }
     }
 
 
