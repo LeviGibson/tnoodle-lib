@@ -3,7 +3,7 @@ import configurations.Languages.configureJava
 import configurations.Publications.configureMavenPublication
 import configurations.Publications.configureSignatures
 
-description = "A three-phase solver for the FTO puzzle."
+description = "A three-phase solver for the Face Turning Octahedron."
 
 plugins {
     `java-library`
