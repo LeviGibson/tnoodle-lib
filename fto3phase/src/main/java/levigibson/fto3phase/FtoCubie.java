@@ -117,26 +117,8 @@ public class FtoCubie {
         }
 
         //Unpack perm
-        boolean[] used = new boolean[3];
-        for (int i = 0; i < 3; i++) {
-            int lehmerDigit = permIdx / Util.FACTORIAL[2 - i];
-            permIdx %= Util.FACTORIAL[2 - i];
-
-            int count = 0;
-            int e = -1;
-            for (int v = 0; v < 3; v++) {
-                if (!used[v]) {
-                    if (count == lehmerDigit) {
-                        e = v;
-                        break;
-                    }
-                    count++;
-                }
-            }
-
-            perm[i] = e + 9;
-            used[e] = true;
-        }
+        Util.unpackIndex(perm, permIdx, false);
+        for (int i = 0; i < 3; i++) { perm[i] += 9; }
 
         //set the edges
         Arrays.fill(edges, -1);
