@@ -42,8 +42,23 @@ public class Util {
         return swaps % 2 == 1;
     }
 
+    public static int packSubset(int[] idx){
+
+        for (int i = 0; i < idx.length-1; i++) {
+            if (idx[i] >= idx[i+1]){
+                throw new IllegalArgumentException("idx must be in ascending order");
+            }
+        }
+
+        int index = 0;
+        for (int i = idx.length-1; i >= 0; i--) {
+            index += choose(idx[i], i+1);
+        }
+        return index;
+    }
+
     //https://medium.com/@benjamin.botto/sequentially-indexing-permutations-a-linear-algorithm-for-computing-lexicographic-rank-a22220ffd6e3
-    public static int packIndex(int[] arr, boolean parity){
+    public static int packPerm(int[] arr, boolean parity){
         int size = arr.length;
 
         int index = 0;
@@ -60,7 +75,7 @@ public class Util {
         return parity ? index / 2 : index;
     }
 
-    public static void unpackIndex(int[] arr, int idx, boolean parity){
+    public static void unpackPerm(int[] arr, int idx, boolean parity){
         if (parity)
             idx *= 2;
 

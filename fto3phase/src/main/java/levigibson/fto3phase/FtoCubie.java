@@ -34,19 +34,19 @@ public class FtoCubie {
 
     //[0, 12!/2 - 1]
     public int idxEdges(){
-        return Util.packIndex(edges, true);
+        return Util.packPerm(edges, true);
     }
 
     public void setEdges(int idx){
-        Util.unpackIndex(edges, idx, true);
+        Util.unpackPerm(edges, idx, true);
     }
 
     public int idxCornerPermutation(){
-        return Util.packIndex(cp, true);
+        return Util.packPerm(cp, true);
     }
 
     public void setCornerPermutation(int idx){
-        Util.unpackIndex(cp, idx, true);
+        Util.unpackPerm(cp, idx, true);
     }
 
     public int idxCornerOrientation(){
@@ -69,7 +69,7 @@ public class FtoCubie {
         int[] idx = new int[3];
         int count = 0;
 
-        for (int i = 11; i >= 0; i--) {
+        for (int i = 0; i < 12; i++) {
             //If the edge is a D-face edge
             if (edges[i] >= EDF){
                 idx[count++] = i;
@@ -80,7 +80,7 @@ public class FtoCubie {
             throw new IllegalStateException("Expected 3 D-face edges. This is not a possible FTO state.");
         }
 
-        return Util.choose(idx[0], 3) + Util.choose(idx[1], 2) + Util.choose(idx[2], 1);
+        return Util.packSubset(idx);
     }
 
     public int idxPhaseOneEdgePermutation(){
@@ -95,7 +95,7 @@ public class FtoCubie {
             }
         }
 
-        return Util.packIndex(perm, false);
+        return Util.packPerm(perm, false);
     }
 
     public void setG1Edges(int locIdx, int permIdx) {
@@ -117,7 +117,7 @@ public class FtoCubie {
         }
 
         //Unpack perm
-        Util.unpackIndex(perm, permIdx, false);
+        Util.unpackPerm(perm, permIdx, false);
         for (int i = 0; i < 3; i++) { perm[i] += 9; }
 
         //set the edges
