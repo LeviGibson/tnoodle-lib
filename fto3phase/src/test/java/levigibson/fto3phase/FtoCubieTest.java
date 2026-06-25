@@ -127,4 +127,56 @@ class FtoCubieTest {
             assertEquals(perm, testCube.idxPhaseOneEdgePermutation());
         }
     }
+
+    @Test
+    void testEveryMoveHasCorrectInverse() {
+        for (int trial = 0; trial < 50; trial++) {
+            // Generate a random non-solved state by applying 50 random moves
+            FtoCubie state = new FtoCubie();
+            FtoCubie tmp = new FtoCubie();
+            Random r = new Random(trial);
+            for (int i = 0; i < 50; i++) {
+                state.turn(r.nextInt(16), tmp);
+                FtoCubie swap = state;
+                state = tmp;
+                tmp = swap;
+            }
+
+            FtoCubie afterFirst = new FtoCubie();
+            FtoCubie result = new FtoCubie();
+
+            for (int move = 0; move < 16; move += 2) {
+                int cw = move;
+                int ccw = move + 1;
+
+                // CW then CCW should return to original state
+                state.turn(cw, afterFirst);
+                afterFirst.turn(ccw, result);
+                assertArrayEquals(state.cp, result.cp,
+                    "trial " + trial + " move " + cw + "+" + ccw + ": cp mismatch");
+                assertArrayEquals(state.co, result.co,
+                    "trial " + trial + " move " + cw + "+" + ccw + ": co mismatch");
+                assertArrayEquals(state.edges, result.edges,
+                    "trial " + trial + " move " + cw + "+" + ccw + ": edges mismatch");
+                assertArrayEquals(state.centers1, result.centers1,
+                    "trial " + trial + " move " + cw + "+" + ccw + ": centers1 mismatch");
+                assertArrayEquals(state.centers2, result.centers2,
+                    "trial " + trial + " move " + cw + "+" + ccw + ": centers2 mismatch");
+
+                // CCW then CW should also return to original state
+                state.turn(ccw, afterFirst);
+                afterFirst.turn(cw, result);
+                assertArrayEquals(state.cp, result.cp,
+                    "trial " + trial + " move " + ccw + "+" + cw + ": cp mismatch");
+                assertArrayEquals(state.co, result.co,
+                    "trial " + trial + " move " + ccw + "+" + cw + ": co mismatch");
+                assertArrayEquals(state.edges, result.edges,
+                    "trial " + trial + " move " + ccw + "+" + cw + ": edges mismatch");
+                assertArrayEquals(state.centers1, result.centers1,
+                    "trial " + trial + " move " + ccw + "+" + cw + ": centers1 mismatch");
+                assertArrayEquals(state.centers2, result.centers2,
+                    "trial " + trial + " move " + ccw + "+" + cw + ": centers2 mismatch");
+            }
+        }
+    }
 }

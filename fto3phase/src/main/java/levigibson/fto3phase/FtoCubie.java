@@ -5,12 +5,11 @@ import java.util.Arrays;
 
 public class FtoCubie {
 
-    public int[] cp;
-    public int[] co;
-    public int[] edges;
-    public int[] centers1;
-    public int[] centers2;
-
+    int[] cp;
+    int[] co;
+    int[] edges;
+    int[] centers1;
+    int[] centers2;
 
     public FtoCubie(){
         cp = new int[6];

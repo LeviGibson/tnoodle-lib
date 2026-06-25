@@ -29,9 +29,10 @@ public class FtoCoord {
 
     public static synchronized void init(){
         if (initialized) return;
-        initialized = true;
 
         initPhaseOneEdgeMoves();
+
+        initialized = true;
     }
 
 }
