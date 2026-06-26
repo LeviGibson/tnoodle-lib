@@ -115,16 +115,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int loc = ftoCubie.packPhaseOneEdgeLocations();
-            int perm = ftoCubie.packPhaseOneEdgePermutation();
+            int idx = ftoCubie.packPhaseOneEdges();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setPhaseOneEdges(loc, perm);
-            System.out.println();
-            System.out.println();
-
-            assertEquals(loc, testCube.packPhaseOneEdgeLocations());
-            assertEquals(perm, testCube.packPhaseOneEdgePermutation());
+            testCube.setPhaseOneEdges(idx);
+            assertEquals(idx, testCube.packPhaseOneEdges());
         }
     }
 

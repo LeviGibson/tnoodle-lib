@@ -63,15 +63,16 @@ public class FtoCubie {
         co[5] = Integer.bitCount(idx) % 2;
     }
 
-    //[0,219]
-    public int packPhaseOneEdgeLocations(){
-        int[] idx = new int[3];
+    public int packPhaseOneEdges() {
+        int[] loc = new int[3];
+        int[] perm = new int[3];
         int count = 0;
 
         for (int i = 0; i < 12; i++) {
-            //If the edge is a D-face edge
-            if (edges[i] >= EDF){
-                idx[count++] = i;
+            if (edges[i] >= EDF) {
+                loc[count] = i;
+                perm[count] = edges[i] - EDF;
+                count++;
             }
         }
 
@@ -79,25 +80,13 @@ public class FtoCubie {
             throw new IllegalStateException("Expected 3 D-face edges. This is not a possible FTO state.");
         }
 
-        return Util.packSubset(idx);
+        return Util.packSubset(loc) * 6 + Util.packPerm(perm, false);
     }
 
-    public int packPhaseOneEdgePermutation(){
-        int numSeen = 0;
+    public void setPhaseOneEdges(int idx){
+        int locIdx = idx / 6;
+        int permIdx = idx % 6;
 
-        int[] perm = {-1, -1, -1};
-
-        for (int i = 0; i < 12; i++) {
-            int e = edges[i] - 9;
-            if (e >= 0){
-                perm[numSeen++] = e;
-            }
-        }
-
-        return Util.packPerm(perm, false);
-    }
-
-    public void setPhaseOneEdges(int locIdx, int permIdx) {
         int[] loc = new int[3];
         int[] perm = new int[3];
 
@@ -121,6 +110,10 @@ public class FtoCubie {
         }
 
         //Parity fix
+        //(This has nothing to do with the phase 1 edges)
+        //(The other edges are filled with garbage)
+        //(But it should be garbage with the correct parity)
+        //(so it doesn't crash the program)
         if (Util.parity(edges)) {
             int i = 0;
             while (edges[i] >= 9) i++;
