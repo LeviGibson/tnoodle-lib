@@ -1,6 +1,8 @@
 package levigibson.fto3phase;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Util {
 
@@ -121,5 +123,54 @@ public class Util {
             remaining -= Util.choose(c, k);
             k--;
         }
+    }
+
+    private static final Map<String, Integer> MOVE_MAP = new HashMap<>();
+    static {
+        String[] names = {"R", "L", "B", "D", "U", "F", "BR", "BL"};
+        int[] cw  = {FtoCubie.R,  FtoCubie.L,  FtoCubie.B,  FtoCubie.D,
+            FtoCubie.U,  FtoCubie.F,  FtoCubie.BR, FtoCubie.BL};
+        int[] ccw = {FtoCubie.RP, FtoCubie.LP, FtoCubie.BP, FtoCubie.DP,
+            FtoCubie.UP, FtoCubie.FP, FtoCubie.BRP, FtoCubie.BLP};
+        for (int i = 0; i < 8; i++) {
+            MOVE_MAP.put(names[i], cw[i]);
+            MOVE_MAP.put(names[i] + "'", ccw[i]);
+        }
+    }
+
+    public static int parseMove(String s) {
+        Integer move = MOVE_MAP.get(s);
+        if (move == null) {
+            throw new IllegalArgumentException("Unrecognized move: " + s);
+        }
+        return move;
+    }
+
+    public static FtoCubie applyAlg(String alg) {
+        FtoCubie a = new FtoCubie();   // solved state
+        FtoCubie b = new FtoCubie();   // temp buffer
+        for (String token : alg.trim().split("\\s+")) {
+            a.turn(parseMove(token), b);
+            FtoCubie tmp = a;
+            a = b;
+            b = tmp;
+        }
+        return a;
+    }
+
+    private static final String[] MOVE_NAMES = {"R", "R'", "L", "L'", "B", "B'", "D", "D'", "U", "U'", "F", "F'", "BR", "BR'", "BL", "BL'"};
+
+    public static String moveArrayToString(int[] moves, int length) {
+        if (length > moves.length)
+            throw new IllegalArgumentException("length must be less than or equal to the size of moves[]");
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            if (i > 0) {
+                sb.append(' ');
+            }
+            sb.append(MOVE_NAMES[moves[i]]);
+        }
+        return sb.toString();
     }
 }

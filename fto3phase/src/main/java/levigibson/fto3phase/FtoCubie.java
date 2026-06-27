@@ -131,6 +131,8 @@ public class FtoCubie {
             if (centers2[i] == XD) idx[count++] = i;
         }
 
+        if (count != 3) throw new IllegalStateException("Less than 3 d-layer triangles");
+
         return Util.packSubset(idx);
     }
 
@@ -188,6 +190,8 @@ public class FtoCubie {
      * @param out output of the move
      */
     public void turn(int move, FtoCubie out){
+        if (out == this) throw new IllegalArgumentException("out can not be this");
+
         MoveEffect cycles = moveEffects[move];
 
         //Corners

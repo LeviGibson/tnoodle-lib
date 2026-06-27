@@ -3,8 +3,25 @@ package levigibson.fto3phase;
 public class FtoCoord {
     private static boolean initialized;
 
-    public static int[][] PHASE_ONE_EDGE_MOVES;
-    public static int[][] PHASE_ONE_TRIANGLE_MOVES;
+
+    //-------------- PHASE ONE --------------//
+
+    private static int[][] PHASE_ONE_EDGE_MOVES;
+    private static int[][] PHASE_ONE_TRIANGLE_MOVES;
+
+    public static int turnG1Edges(int idx, int move){
+        if (!initialized) throw new IllegalStateException("Can not turn the cube when its not initialized");
+        return PHASE_ONE_EDGE_MOVES[idx][move];
+    }
+
+    public static int turnG1Triangles(int idx, int move){
+        if (!initialized) throw new IllegalStateException("Can not turn the cube when its not initialized");
+        return PHASE_ONE_TRIANGLE_MOVES[idx][move];
+    }
+
+    public static boolean isPhaseOne(int edgeIdx, int triIdx){
+        return triIdx == 219 && (edgeIdx == 1314 || edgeIdx == 1318 || edgeIdx == 1317);
+    }
 
     private static synchronized void initPhaseOneEdgeMoves(){
         PHASE_ONE_EDGE_MOVES = new int[220 * 6][16];
@@ -36,7 +53,6 @@ public class FtoCoord {
                 moves[move] = turned.packPhaseOneTriangles();
             }
         }
-
     }
 
     public static synchronized void init(){
