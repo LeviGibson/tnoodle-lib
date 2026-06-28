@@ -43,10 +43,12 @@ public class Util {
         return swaps % 2 == 1;
     }
 
-    //https://medium.com/@benjamin.botto/sequentially-indexing-permutations-a-linear-algorithm-for-computing-lexicographic-rank-a22220ffd6e3
     public static int packPerm(int[] arr, boolean parity){
-        int size = arr.length;
+        return packPerm(arr, parity, arr.length);
+    }
 
+    //https://medium.com/@benjamin.botto/sequentially-indexing-permutations-a-linear-algorithm-for-computing-lexicographic-rank-a22220ffd6e3
+    public static int packPerm(int[] arr, boolean parity, int size) {
         int index = 0;
         int seen = 0;
 

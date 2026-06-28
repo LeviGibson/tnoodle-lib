@@ -55,11 +55,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.idxEdges();
+            int idx = ftoCubie.packEdges();
             FtoCubie testCube = new FtoCubie();
 
             testCube.setEdges(idx);
-            assertEquals(idx, testCube.idxEdges());
+            assertEquals(idx, testCube.packEdges());
             assertArrayEquals(ftoCubie.edges, testCube.edges);
         }
     }

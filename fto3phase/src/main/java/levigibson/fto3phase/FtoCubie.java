@@ -32,7 +32,7 @@ public class FtoCubie {
 
 
     //[0, 12!/2 - 1]
-    public int idxEdges(){
+    public int packEdges(){
         return Util.packPerm(edges, true);
     }
 
@@ -160,6 +160,32 @@ public class FtoCubie {
         }
     }
 
+//    public int packPhaseTwoEdges(){
+//        for (int i = 0; i < 9; i++) {
+//            if (edges[i] > 8) throw new IllegalStateException("Edges not in phase 1");
+//        }
+//
+//        return Util.packPerm(edges, true, 9);
+//    }
+//
+//    public int packPhaseTwoTris(){
+//        boolean[] used = new boolean[9];
+//        int[][] loc = new int[3][3];
+//
+//        for (int xo = 0; xo < 3; xo++) {
+//            int found = 0;
+//            int passed = 0;
+//            for (int i = 0; i < 12; i++) {
+//                if (centers1[i] == xo){
+//                    loc[xo][found++] = passed;
+////                    used[i]
+//                }
+//            }
+//        }
+//
+//
+//    }
+
     public boolean isSolved(){
         for (int i = 0; i < 6; i++) {
             if (co[i] != 0)
@@ -206,6 +232,39 @@ public class FtoCubie {
             out.centers1[i] = this.centers1[cycles.xp1[i]];
             out.centers2[i] = this.centers2[cycles.xp2[i]];
         }
+    }
+
+    public FtoCubie turn(int move){
+        FtoCubie fto = new FtoCubie();
+        this.turn(move, fto);
+        return fto;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+
+        FtoCubie fto = (FtoCubie) obj;
+
+        return Arrays.equals(fto.edges, this.edges) &&
+            Arrays.equals(fto.centers1, this.centers1) &&
+            Arrays.equals(fto.centers2, this.centers2) &&
+            Arrays.equals(fto.co, this.co) &&
+            Arrays.equals(fto.cp, this.cp);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(this.edges) ^
+            Arrays.hashCode(this.centers1) ^
+            Arrays.hashCode(this.centers2) ^
+            Arrays.hashCode(this.co) ^
+            Arrays.hashCode(this.cp);
     }
 
     private static class MoveEffect{
