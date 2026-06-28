@@ -2,6 +2,7 @@ package levigibson.fto3phase;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -191,6 +192,48 @@ class FtoCubieTest {
                 assertArrayEquals(state.centers2, result.centers2,
                     "trial " + trial + " move " + ccw + "+" + cw + ": centers2 mismatch");
             }
+        }
+    }
+
+    @Test
+    void testPhaseTwoTrisIndex(){
+        Random r = new Random(42);
+        int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; // R,RP,L,LP,B,BP,D,DP,U,UP
+        for (int i = 0; i < 10000; i++) {
+            FtoCubie ftoCubie = new FtoCubie();
+            for (int j = 0; j < 100; j++) {
+                FtoCubie out = new FtoCubie();
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
+                ftoCubie = out;
+            }
+
+            int idx = ftoCubie.packPhaseTwoTris();
+            FtoCubie testCube = new FtoCubie();
+
+            testCube.setPhaseTwoTris(idx);
+            assertEquals(idx, testCube.packPhaseTwoTris());
+            assertArrayEquals(ftoCubie.centers2, testCube.centers2);
+        }
+    }
+
+    @Test
+    void testPhaseTwoEdgesIndex(){
+        Random r = new Random(42);
+        int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; // R,RP,L,LP,B,BP,D,DP,U,UP
+        for (int i = 0; i < 10000; i++) {
+            FtoCubie ftoCubie = new FtoCubie();
+            for (int j = 0; j < 100; j++) {
+                FtoCubie out = new FtoCubie();
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
+                ftoCubie = out;
+            }
+
+            int idx = ftoCubie.packPhaseTwoEdges();
+            FtoCubie testCube = new FtoCubie();
+
+            testCube.setPhaseTwoEdges(idx);
+            assertEquals(idx, testCube.packPhaseTwoEdges());
+            assertArrayEquals(Arrays.copyOf(ftoCubie.edges, 9), Arrays.copyOf(testCube.edges, 9));
         }
     }
 }

@@ -11,6 +11,37 @@ public class Search {
 
     private int[] moves;
 
+    public void searchPhaseTwo(int depth, int maxl, int edge, int tri){
+
+        if (FtoCoord.isSolvedG2Edges(edge) &&
+            FtoCoord.isSolvedG2Tris(tri)){
+            System.out.println(Util.moveArrayToString(moves, maxl));
+            return;
+        }
+
+        if (depth == 0){
+            return;
+        }
+
+//        System.out.println(FtoCoord.prunG2Edge(edge));
+        if (depth < FtoCoord.prunG2Edge(edge))
+            return;
+
+        for (int move = 0; move < 10; move++) {
+            if (maxl > 0) {
+                int la = moves[maxl - 1] / 2;
+                int ca = move / 2;
+                if (((invalidMoves[la] >> ca) & 1) == 1) continue;
+            }
+
+            moves[maxl] = move;
+
+            searchPhaseTwo(depth-1, maxl+1,
+                FtoCoord.turnG2Edges(edge, move),
+                FtoCoord.turnG2Tris(tri, move));
+        }
+    }
+
     public void searchPhaseOne(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates){
 
         if (FtoCoord.isPhaseOne(edge, tri)){
@@ -52,10 +83,34 @@ public class Search {
         return candidates;
     }
 
+    public ArrayList<int[]> iteratePhaseTwo(FtoCubie cubie){
+
+        ArrayList<int[]> candidates = new ArrayList<>();
+
+        int edge = cubie.packPhaseTwoEdges();
+        int tri = cubie.packPhaseTwoTris();
+
+        for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
+            System.out.println("SD " + depth);
+            searchPhaseTwo(depth, 0, edge, tri);
+        }
+
+        return candidates;
+    }
+
     public synchronized String solution(FtoCubie RANDOM_STATE){
         FtoCoord.init();
 
         ArrayList<int[]> candidates = iteratePhaseOne(RANDOM_STATE);
+
+        FtoCubie fto = new FtoCubie(RANDOM_STATE);
+        for (int move : candidates.get(0)){
+            fto = fto.turn(move);
+        }
+
+        System.out.println(Util.moveArrayToString(candidates.get(0), candidates.get(0).length));
+
+        iteratePhaseTwo(fto);
 
         return "";
     }
@@ -88,8 +143,6 @@ public class Search {
         Search search = new Search();
         FtoCubie rs = Util.applyAlg("L' D L' D' R' L' D' L' U B R' L U' R' U' L' B U R D R BL' U' B R' BR B'");
         search.solution(rs);
-
-
     }
 
 }

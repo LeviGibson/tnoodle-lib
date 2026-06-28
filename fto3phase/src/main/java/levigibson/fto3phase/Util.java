@@ -63,11 +63,13 @@ public class Util {
         return parity ? index / 2 : index;
     }
 
-    public static void unpackPerm(int[] arr, int idx, boolean parity){
+    public static void unpackPerm(int[] arr, int idx, boolean parity) {
+        unpackPerm(arr, idx, arr.length, parity);
+    }
+
+    public static void unpackPerm(int[] arr, int idx, int size, boolean parity){
         if (parity)
             idx *= 2;
-
-        int size = arr.length;
 
         boolean[] used = new boolean[size];
         for (int i = 0; i < size; i++) {
@@ -129,11 +131,11 @@ public class Util {
 
     private static final Map<String, Integer> MOVE_MAP = new HashMap<>();
     static {
-        String[] names = {"R", "L", "B", "D", "U", "F", "BR", "BL"};
-        int[] cw  = {FtoCubie.R,  FtoCubie.L,  FtoCubie.B,  FtoCubie.D,
-            FtoCubie.U,  FtoCubie.F,  FtoCubie.BR, FtoCubie.BL};
-        int[] ccw = {FtoCubie.RP, FtoCubie.LP, FtoCubie.BP, FtoCubie.DP,
-            FtoCubie.UP, FtoCubie.FP, FtoCubie.BRP, FtoCubie.BLP};
+        String[] names = {"R", "L", "B", "U", "D", "F", "BR", "BL"};
+        int[] cw  = {FtoCubie.R,  FtoCubie.L,  FtoCubie.B,  FtoCubie.U,
+            FtoCubie.D,  FtoCubie.F,  FtoCubie.BR, FtoCubie.BL};
+        int[] ccw = {FtoCubie.RP, FtoCubie.LP, FtoCubie.BP, FtoCubie.UP,
+            FtoCubie.DP, FtoCubie.FP, FtoCubie.BRP, FtoCubie.BLP};
         for (int i = 0; i < 8; i++) {
             MOVE_MAP.put(names[i], cw[i]);
             MOVE_MAP.put(names[i] + "'", ccw[i]);
@@ -160,7 +162,7 @@ public class Util {
         return a;
     }
 
-    private static final String[] MOVE_NAMES = {"R", "R'", "L", "L'", "B", "B'", "D", "D'", "U", "U'", "F", "F'", "BR", "BR'", "BL", "BL'"};
+    private static final String[] MOVE_NAMES = {"R", "R'", "L", "L'", "B", "B'", "U", "U'", "D", "D'", "F", "F'", "BR", "BR'", "BL", "BL'"};
 
     public static String moveArrayToString(int[] moves, int length) {
         if (length > moves.length)

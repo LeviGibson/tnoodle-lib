@@ -30,6 +30,14 @@ public class FtoCubie {
         }
     }
 
+    public FtoCubie(FtoCubie other) {
+        this.cp = other.cp.clone();
+        this.co = other.co.clone();
+        this.edges = other.edges.clone();
+        this.centers1 = other.centers1.clone();
+        this.centers2 = other.centers2.clone();
+    }
+
 
     //[0, 12!/2 - 1]
     public int packEdges(){
@@ -160,31 +168,73 @@ public class FtoCubie {
         }
     }
 
-//    public int packPhaseTwoEdges(){
-//        for (int i = 0; i < 9; i++) {
-//            if (edges[i] > 8) throw new IllegalStateException("Edges not in phase 1");
-//        }
-//
-//        return Util.packPerm(edges, true, 9);
-//    }
-//
-//    public int packPhaseTwoTris(){
-//        boolean[] used = new boolean[9];
-//        int[][] loc = new int[3][3];
-//
-//        for (int xo = 0; xo < 3; xo++) {
-//            int found = 0;
-//            int passed = 0;
-//            for (int i = 0; i < 12; i++) {
-//                if (centers1[i] == xo){
-//                    loc[xo][found++] = passed;
-////                    used[i]
-//                }
-//            }
-//        }
-//
-//
-//    }
+    public int packPhaseTwoEdges(){
+        for (int i = 0; i < 9; i++) {
+            if (edges[i] > 8) throw new IllegalStateException("Edges not in phase 1");
+        }
+
+        return Util.packPerm(edges, true, 9);
+    }
+
+    public void setPhaseTwoEdges(int idx){
+        Util.unpackPerm(edges, idx, 9, true);
+        for (int i = 9; i < 12; i++) {
+            edges[i] = i;
+        }
+    }
+
+    public int packPhaseTwoTris(){
+        for (int i = 9; i < 12; i++) {
+            if (centers2[i] != XD)
+                throw new IllegalStateException("Tris must be in phase 1");
+        }
+
+        boolean[] used = new boolean[9];
+        int[][] loc = new int[2][3];
+
+        for (int xo = 0; xo < 2; xo++) {
+            int found = 0;
+            int passed = 0;
+            for (int i = 0; i < 9; i++) {
+                if (centers2[i] == xo){
+                    loc[xo][found++] = passed;
+                    used[i] = true;
+                    passed++;
+                } else if (!used[i]){
+                    passed++;
+                }
+            }
+
+            if (found != 3)
+                throw new IllegalStateException("Expected found=3. Instead, found=" + found);
+        }
+        return Util.packSubset(loc[1]) +
+            Util.packSubset(loc[0]) * Util.choose(6, 3);
+    }
+
+    public void setPhaseTwoTris(int idx){
+        int[] loc0 = new int[3];
+        int[] loc1 = new int[3];
+        Util.unpackSubset(loc0, idx / Util.choose(6, 3));
+        Util.unpackSubset(loc1, idx % Util.choose(6, 3));
+        Arrays.sort(loc1);
+
+        Arrays.fill(centers2, 0, 9, 2);
+        for (int v : loc0) centers2[v] = 0;
+
+        int nz = 0;
+        int li = 0;
+        for (int i = 0; i < 9; i++) {
+            if (centers2[i] == 0) continue;
+            if (li < 3 && nz == loc1[li]) {
+                centers2[i] = 1;
+                li++;
+            }
+            nz++;
+        }
+        for (int i = 9; i < 12; i++) centers2[i] = XD;
+    }
+
 
     public boolean isSolved(){
         for (int i = 0; i < 6; i++) {
@@ -278,8 +328,8 @@ public class FtoCubie {
     //Moves
     public static final int
         R = 0, RP = 1, L = 2, LP = 3,
-        B = 4, BP = 5, D = 6, DP = 7,
-        U = 8, UP = 9, F = 10, FP = 11,
+        B = 4, BP = 5, D = 8, DP = 9,
+        U = 6, UP = 7, F = 10, FP = 11,
         BR = 12, BRP = 13, BL = 14, BLP = 15;
 
     //Center Ordinals
@@ -315,53 +365,53 @@ public class FtoCubie {
         for (int i = 0; i < 16; i++) { moveEffects[i] = new MoveEffect(); }
 
         //R
-        moveEffects[0].cp = new int[]{CDR, CUF, CUBL, CDL, CUBR, CDB};
-        moveEffects[0].co = new int[]{1, 0, 0, 0, 1, 0};
-        moveEffects[0].ep = new int[]{EUB, EFR, EUL, EFL, ERBR, EUR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[0].xp1 = new int[]{XIUBL, XIFU, XIFBR, XIBRF, XIBRU, XIFBL, XIUF, XIBRBL, XIUBR, XIBLU, XIBLF, XIBLBR};
-        moveEffects[0].xp2 = new int[]{XIRD, XIRL, XIRB, XILB, XILR, XILD, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
+        moveEffects[R].cp = new int[]{CDR, CUF, CUBL, CDL, CUBR, CDB};
+        moveEffects[R].co = new int[]{1, 0, 0, 0, 1, 0};
+        moveEffects[R].ep = new int[]{EUB, EFR, EUL, EFL, ERBR, EUR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
+        moveEffects[R].xp1 = new int[]{XIUBL, XIFU, XIFBR, XIBRF, XIBRU, XIFBL, XIUF, XIBRBL, XIUBR, XIBLU, XIBLF, XIBLBR};
+        moveEffects[R].xp2 = new int[]{XIRD, XIRL, XIRB, XILB, XILR, XILD, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
         //L
-        moveEffects[2].cp = new int[]{CUBL,  CUBR, CDL, CUF, CDR, CDB};
-        moveEffects[2].co = new int[]{0, 0, 1, 1, 0, 0};
-        moveEffects[2].ep = new int[]{EUB, EUR, ELBL, EUL, EFR, ERBR, EBRB, EBLB, EFL, EDF, EDBR, EDBL};
-        moveEffects[2].xp1 = new int[]{XIBLF, XIUBR, XIBLU, XIUBL, XIFBR, XIUF, XIBRU, XIBRBL, XIBRF, XIFBL, XIFU, XIBLBR};
-        moveEffects[2].xp2 = new int[]{XIRL, XIRB, XIRD, XILD, XILB, XILR, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
+        moveEffects[L].cp = new int[]{CUBL,  CUBR, CDL, CUF, CDR, CDB};
+        moveEffects[L].co = new int[]{0, 0, 1, 1, 0, 0};
+        moveEffects[L].ep = new int[]{EUB, EUR, ELBL, EUL, EFR, ERBR, EBRB, EBLB, EFL, EDF, EDBR, EDBL};
+        moveEffects[L].xp1 = new int[]{XIBLF, XIUBR, XIBLU, XIUBL, XIFBR, XIUF, XIBRU, XIBRBL, XIBRF, XIFBL, XIFU, XIBLBR};
+        moveEffects[L].xp2 = new int[]{XIRL, XIRB, XIRD, XILD, XILB, XILR, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
         //B
-        moveEffects[4].cp = new int[]{CUF, CDB, CUBR, CDL, CDR, CUBL};
-        moveEffects[4].co = new int[]{0, 1, 0, 0, 0, 1};
-        moveEffects[4].ep = new int[]{EBRB, EUR, EUL, EFL, EFR, ERBR, EBLB, EUB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[4].xp1 = new int[]{XIBRU, XIBRBL, XIUF, XIFU, XIFBR, XIFBL, XIBLBR, XIBLU, XIBRF, XIUBR, XIBLF, XIUBL};
-        moveEffects[4].xp2 = new int[]{XIRL, XIRB, XIRD, XILB, XILR, XILD, XIBD, XIBR, XIBL, XIDR, XIDL, XIDB};
+        moveEffects[B].cp = new int[]{CUF, CDB, CUBR, CDL, CDR, CUBL};
+        moveEffects[B].co = new int[]{0, 1, 0, 0, 0, 1};
+        moveEffects[B].ep = new int[]{EBRB, EUR, EUL, EFL, EFR, ERBR, EBLB, EUB, ELBL, EDF, EDBR, EDBL};
+        moveEffects[B].xp1 = new int[]{XIBRU, XIBRBL, XIUF, XIFU, XIFBR, XIFBL, XIBLBR, XIBLU, XIBRF, XIUBR, XIBLF, XIUBL};
+        moveEffects[B].xp2 = new int[]{XIRL, XIRB, XIRD, XILB, XILR, XILD, XIBD, XIBR, XIBL, XIDR, XIDL, XIDB};
         //D
-        moveEffects[6].cp = new int[]{CUF, CUBR, CUBL, CDB, CDL, CDR};
-        moveEffects[6].co = new int[]{0, 0, 0, 0, 0, 0};
-        moveEffects[6].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDBL, EDF, EDBR};
-        moveEffects[6].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIBLF, XIBLBR, XIBRU, XIFBR, XIFBL, XIBLU, XIBRBL, XIBRF};
-        moveEffects[6].xp2 = new int[]{XIRL, XIRB, XIRD, XILB, XILR, XILD, XIBR, XIBL, XIBD, XIDL, XIDB, XIDR};
+        moveEffects[D].cp = new int[]{CUF, CUBR, CUBL, CDB, CDL, CDR};
+        moveEffects[D].co = new int[]{0, 0, 0, 0, 0, 0};
+        moveEffects[D].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDBL, EDF, EDBR};
+        moveEffects[D].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIBLF, XIBLBR, XIBRU, XIFBR, XIFBL, XIBLU, XIBRBL, XIBRF};
+        moveEffects[D].xp2 = new int[]{XIRL, XIRB, XIRD, XILB, XILR, XILD, XIBR, XIBL, XIBD, XIDL, XIDB, XIDR};
         //U
-        moveEffects[8].cp = new int[]{CUBR, CUBL, CUF, CDL, CDR, CDB};
-        moveEffects[8].co = new int[]{0, 0, 0, 0, 0, 0};
-        moveEffects[8].ep = new int[]{EUL, EUB, EUR, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[8].xp1 = new int[]{XIUF, XIUBL, XIUBR, XIFU, XIFBR, XIFBL, XIBRU, XIBRBL, XIBRF, XIBLU, XIBLF, XIBLBR};
-        moveEffects[8].xp2 = new int[]{XIBR, XIBL, XIRD, XIRL, XIRB, XILD, XILB, XILR, XIBD, XIDR, XIDL, XIDB};
+        moveEffects[U].cp = new int[]{CUBR, CUBL, CUF, CDL, CDR, CDB};
+        moveEffects[U].co = new int[]{0, 0, 0, 0, 0, 0};
+        moveEffects[U].ep = new int[]{EUL, EUB, EUR, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
+        moveEffects[U].xp1 = new int[]{XIUF, XIUBL, XIUBR, XIFU, XIFBR, XIFBL, XIBRU, XIBRBL, XIBRF, XIBLU, XIBLF, XIBLBR};
+        moveEffects[U].xp2 = new int[]{XIBR, XIBL, XIRD, XIRL, XIRB, XILD, XILB, XILR, XIBD, XIDR, XIDL, XIDB};
         //F
-        moveEffects[10].cp = new int[]{CDL, CUBR, CUBL, CDR, CUF, CDB};
-        moveEffects[10].co = new int[]{1, 0, 0, 1, 0, 0};
-        moveEffects[10].ep = new int[]{EUB, EUR, EUL, EDF, EFL, ERBR, EBRB, EBLB, ELBL, EFR, EDBR, EDBL};
-        moveEffects[10].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFBL, XIFU, XIFBR, XIBRU, XIBRBL, XIBRF, XIBLU, XIBLF, XIBLBR};
-        moveEffects[10].xp2 = new int[]{XILD, XIRB, XILR, XILB, XIDL, XIDR, XIBR, XIBL, XIBD, XIRL, XIRD, XIDB};
+        moveEffects[F].cp = new int[]{CDL, CUBR, CUBL, CDR, CUF, CDB};
+        moveEffects[F].co = new int[]{1, 0, 0, 1, 0, 0};
+        moveEffects[F].ep = new int[]{EUB, EUR, EUL, EDF, EFL, ERBR, EBRB, EBLB, ELBL, EFR, EDBR, EDBL};
+        moveEffects[F].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFBL, XIFU, XIFBR, XIBRU, XIBRBL, XIBRF, XIBLU, XIBLF, XIBLBR};
+        moveEffects[F].xp2 = new int[]{XILD, XIRB, XILR, XILB, XIDL, XIDR, XIBR, XIBL, XIBD, XIRL, XIRD, XIDB};
         //BR
-        moveEffects[12].cp = new int[]{CUF, CDR, CUBL, CDL, CDB, CUBR};
-        moveEffects[12].co = new int[]{0, 1, 0, 0, 0, 1};
-        moveEffects[12].ep = new int[]{EUB, EUR, EUL, EFL, EFR, EDBR, ERBR, EBLB, ELBL, EDF, EBRB, EDBL};
-        moveEffects[12].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRF, XIBRU, XIBRBL, XIBLU, XIBLF, XIBLBR};
-        moveEffects[12].xp2 = new int[]{XIRL, XIDR, XIDB, XILB, XILR, XILD, XIRD, XIBL, XIRB, XIBD, XIDL, XIBR};
+        moveEffects[BR].cp = new int[]{CUF, CDR, CUBL, CDL, CDB, CUBR};
+        moveEffects[BR].co = new int[]{0, 1, 0, 0, 0, 1};
+        moveEffects[BR].ep = new int[]{EUB, EUR, EUL, EFL, EFR, EDBR, ERBR, EBLB, ELBL, EDF, EBRB, EDBL};
+        moveEffects[BR].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRF, XIBRU, XIBRBL, XIBLU, XIBLF, XIBLBR};
+        moveEffects[BR].xp2 = new int[]{XIRL, XIDR, XIDB, XILB, XILR, XILD, XIRD, XIBL, XIRB, XIBD, XIDL, XIBR};
         //BL
-        moveEffects[14].cp = new int[]{CUF, CUBR, CDB, CUBL, CDR, CDL};
-        moveEffects[14].co = new int[]{0, 0, 1, 1, 0, 0};
-        moveEffects[14].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EDBL, EBLB, EDF, EDBR, ELBL};
-        moveEffects[14].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRU, XIBRBL, XIBRF, XIBLBR, XIBLU, XIBLF};
-        moveEffects[14].xp2 = new int[]{XIRL, XIRB, XIRD, XIBD, XILR, XIBL, XIBR, XIDB, XIDL, XIDR, XILB, XILD};
+        moveEffects[BL].cp = new int[]{CUF, CUBR, CDB, CUBL, CDR, CDL};
+        moveEffects[BL].co = new int[]{0, 0, 1, 1, 0, 0};
+        moveEffects[BL].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EDBL, EBLB, EDF, EDBR, ELBL};
+        moveEffects[BL].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRU, XIBRBL, XIBRF, XIBLBR, XIBLU, XIBLF};
+        moveEffects[BL].xp2 = new int[]{XIRL, XIRB, XIRD, XIBD, XILR, XIBL, XIBR, XIDB, XIDL, XIDR, XILB, XILD};
 
         //No need to hard code the inverse moves
         //You can just invert the cycles
