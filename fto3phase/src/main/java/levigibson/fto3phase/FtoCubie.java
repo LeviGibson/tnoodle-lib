@@ -235,6 +235,107 @@ public class FtoCubie {
         for (int i = 9; i < 12; i++) centers2[i] = XD;
     }
 
+    private static int[][] CORNER_PARITY = {
+        {0,0,0,-1,-1,-1},
+        {1,-1,-1,0,1,-1},
+        {-1,1,-1,-1,0,1},
+        {-1,-1,1,1,-1,0}};
+
+    //[0, 159]
+    private int packTripleCorners(int color){
+        int[] idx = new int[3];
+        int orientation = 0;
+
+        int found = 0;
+        for (int i = 0; i < 6; i++) {
+            int corner = cp[i];
+            int ori = co[i];
+
+            if (corner == -1) continue;
+
+            int parity = CORNER_PARITY[color][corner];
+
+            if (parity != -1){
+                orientation |= (parity ^ ori) << found;
+                idx[found++] = i;
+            }
+        }
+
+        if (found != 3){
+            throw new IllegalStateException("Expected 3 matching corners");
+        }
+
+        assert (orientation < 8);
+
+        return Util.packSubset(idx) * 8 + orientation;
+    }
+
+    private int packTripleTris(int color){
+        int[] idx = new int[3];
+
+        int found = 0;
+        for (int i = 0; i < 12; i++) {
+            if (centers1[i] == color){
+                idx[found++] = i;
+            }
+        }
+
+        return Util.packSubset(idx);
+    }
+
+    public int packTriples(int color){
+        if (color > 3 || color < 0){
+            throw new IllegalArgumentException("color must be U, F, BR, or BL");
+        }
+
+        return (160 * packTripleTris(color)) + packTripleCorners(color);
+    }
+
+    private void setTripleTris(int idx, int color){
+        int[] loc = new int[3];
+        Util.unpackSubset(loc, idx);
+        Arrays.fill(centers1, -1);
+
+        for (int i = 0; i < 3; i++) {
+            centers1[loc[i]] = color;
+        }
+    }
+
+    private void setTripleCorners(int idx, int color){
+        int[] loc = new int[3];
+        Util.unpackSubset(loc, idx / 8);
+
+        int orientation = idx % 8;
+
+        int[] relevantCorners = new int[3];
+        int found = 0;
+        for (int i = 0; i < 6; i++) {
+            if (CORNER_PARITY[color][i] != -1){
+                relevantCorners[found++] = i;
+            }
+        }
+
+        Arrays.fill(cp, -1);
+        Arrays.fill(co, -1);
+
+        for (int i = 0; i < 3; i++) {
+            int perm = loc[i];
+            int ori = (orientation >> i) & 1;
+
+            cp[perm] = relevantCorners[i];
+            co[perm] = ori ^ CORNER_PARITY[color][relevantCorners[i]];
+        }
+
+    }
+
+    public void setTriples(int idx, int color){
+        int tris = idx / 160;
+        int corners = idx % 160;
+
+        setTripleTris(tris, color);
+        setTripleCorners(corners, color);
+    }
+
 
     public boolean isSolved(){
         for (int i = 0; i < 6; i++) {
@@ -328,8 +429,8 @@ public class FtoCubie {
     //Moves
     public static final int
         R = 0, RP = 1, L = 2, LP = 3,
-        B = 4, BP = 5, D = 8, DP = 9,
-        U = 6, UP = 7, F = 10, FP = 11,
+        B = 4, BP = 5, U = 6, UP = 7,
+        D = 8, DP = 9, F = 10, FP = 11,
         BR = 12, BRP = 13, BL = 14, BLP = 15;
 
     //Center Ordinals
@@ -366,19 +467,19 @@ public class FtoCubie {
 
         //R
         moveEffects[R].cp = new int[]{CDR, CUF, CUBL, CDL, CUBR, CDB};
-        moveEffects[R].co = new int[]{1, 0, 0, 0, 1, 0};
+        moveEffects[R].co = new int[]{1, 1, 0, 0, 0, 0};
         moveEffects[R].ep = new int[]{EUB, EFR, EUL, EFL, ERBR, EUR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
         moveEffects[R].xp1 = new int[]{XIUBL, XIFU, XIFBR, XIBRF, XIBRU, XIFBL, XIUF, XIBRBL, XIUBR, XIBLU, XIBLF, XIBLBR};
         moveEffects[R].xp2 = new int[]{XIRD, XIRL, XIRB, XILB, XILR, XILD, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
         //L
         moveEffects[L].cp = new int[]{CUBL,  CUBR, CDL, CUF, CDR, CDB};
-        moveEffects[L].co = new int[]{0, 0, 1, 1, 0, 0};
+        moveEffects[L].co = new int[]{1, 0, 1, 0, 0, 0};
         moveEffects[L].ep = new int[]{EUB, EUR, ELBL, EUL, EFR, ERBR, EBRB, EBLB, EFL, EDF, EDBR, EDBL};
         moveEffects[L].xp1 = new int[]{XIBLF, XIUBR, XIBLU, XIUBL, XIFBR, XIUF, XIBRU, XIBRBL, XIBRF, XIFBL, XIFU, XIBLBR};
         moveEffects[L].xp2 = new int[]{XIRL, XIRB, XIRD, XILD, XILB, XILR, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
         //B
         moveEffects[B].cp = new int[]{CUF, CDB, CUBR, CDL, CDR, CUBL};
-        moveEffects[B].co = new int[]{0, 1, 0, 0, 0, 1};
+        moveEffects[B].co = new int[]{0, 1, 1, 0, 0, 0};
         moveEffects[B].ep = new int[]{EBRB, EUR, EUL, EFL, EFR, ERBR, EBLB, EUB, ELBL, EDF, EDBR, EDBL};
         moveEffects[B].xp1 = new int[]{XIBRU, XIBRBL, XIUF, XIFU, XIFBR, XIFBL, XIBLBR, XIBLU, XIBRF, XIUBR, XIBLF, XIUBL};
         moveEffects[B].xp2 = new int[]{XIRL, XIRB, XIRD, XILB, XILR, XILD, XIBD, XIBR, XIBL, XIDR, XIDL, XIDB};
@@ -402,13 +503,13 @@ public class FtoCubie {
         moveEffects[F].xp2 = new int[]{XILD, XIRB, XILR, XILB, XIDL, XIDR, XIBR, XIBL, XIBD, XIRL, XIRD, XIDB};
         //BR
         moveEffects[BR].cp = new int[]{CUF, CDR, CUBL, CDL, CDB, CUBR};
-        moveEffects[BR].co = new int[]{0, 1, 0, 0, 0, 1};
+        moveEffects[BR].co = new int[]{0, 1, 0, 0, 1, 0};
         moveEffects[BR].ep = new int[]{EUB, EUR, EUL, EFL, EFR, EDBR, ERBR, EBLB, ELBL, EDF, EBRB, EDBL};
         moveEffects[BR].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRF, XIBRU, XIBRBL, XIBLU, XIBLF, XIBLBR};
         moveEffects[BR].xp2 = new int[]{XIRL, XIDR, XIDB, XILB, XILR, XILD, XIRD, XIBL, XIRB, XIBD, XIDL, XIBR};
         //BL
         moveEffects[BL].cp = new int[]{CUF, CUBR, CDB, CUBL, CDR, CDL};
-        moveEffects[BL].co = new int[]{0, 0, 1, 1, 0, 0};
+        moveEffects[BL].co = new int[]{0, 0, 1, 0, 0, 1};
         moveEffects[BL].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EDBL, EBLB, EDF, EDBR, ELBL};
         moveEffects[BL].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRU, XIBRBL, XIBRF, XIBLBR, XIBLU, XIBLF};
         moveEffects[BL].xp2 = new int[]{XIRL, XIRB, XIRD, XIBD, XILR, XIBL, XIBR, XIDB, XIDL, XIDR, XILB, XILD};
@@ -437,7 +538,12 @@ public class FtoCubie {
                 inverse.xp2[normal.xp2[i]] = i;
             }
         }
+    }
 
+    public static void main(String[] args) {
+        for (int i = 0; i < 6; i++) {
+            System.out.println(FtoCubie.moveEffects[LP].co[i]);
+        }
     }
 
 }

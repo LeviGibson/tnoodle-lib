@@ -236,4 +236,27 @@ class FtoCubieTest {
             assertArrayEquals(Arrays.copyOf(ftoCubie.edges, 9), Arrays.copyOf(testCube.edges, 9));
         }
     }
+
+    @Test
+    void testPhaseTwoTriples(){
+        Random r = new Random(42);
+        int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; // R,RP,L,LP,B,BP,D,DP,U,UP
+        for (int i = 0; i < 10000; i++) {
+            FtoCubie ftoCubie = new FtoCubie();
+            for (int j = 0; j < 100; j++) {
+                FtoCubie out = new FtoCubie();
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
+                ftoCubie = out;
+            }
+
+            for (int color = 0; color < 4; color++) {
+                int idx = ftoCubie.packTriples(color);
+                FtoCubie testCube = new FtoCubie();
+
+                testCube.setTriples(idx, color);
+                assertEquals(idx, testCube.packTriples(color));
+            }
+
+        }
+    }
 }

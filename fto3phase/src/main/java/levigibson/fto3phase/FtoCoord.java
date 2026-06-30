@@ -79,21 +79,6 @@ public class FtoCoord {
 
     private static Set<Integer> PHASE_TWO_SOLVED_EDGES;
 
-    /**
-     * Builds the phase-two edge pruning table on the fly by BFS, replacing
-     * the previously-bundled {@code edgeprun.dat} resource.
-     *
-     * <p>Phase-one guarantees that D-face edges (positions 9-11) are solved
-     * entering phase two, so the reachable subspace is the even permutations of
-     * the remaining 9 edges — exactly {@code 9! / 2 = 181 440} states.</p>
-     *
-     * <p>D moves (D/DP) never change edges 0-8 and are excluded from the
-     * search.  The 27 starting orientations R^{0..2} L^{0..2} B^{0..2} are
-     * all seeded at distance 0 with a first-move restriction (U/UP only at
-     * ply 0), matching the semantics of the original generator.</p>
-     *
-     * @return a {@code byte[181440]} pruning table
-     */
     static byte[] generateEdgePruningTable() {
         final int size = 181440;
 
@@ -121,11 +106,9 @@ public class FtoCoord {
         }
         int uniqueStarts = startCount;
 
-        // ---- Step 3: BFS ----
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        // All starting orientations are at distance 0
         java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
         for (int s = 0; s < uniqueStarts; s++) {
             int idx = startIndices[s];
@@ -216,6 +199,10 @@ public class FtoCoord {
 
     public static int prunG2Edge(int idx){
         return edgePrun[idx];
+    }
+
+    public static void initTriples(){
+
     }
 
     public static synchronized void init(){
