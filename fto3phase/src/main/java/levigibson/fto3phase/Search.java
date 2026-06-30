@@ -11,21 +11,27 @@ public class Search {
 
     private int[] moves;
 
-    public void searchPhaseTwo(int depth, int maxl, int edge, int tri){
-
-        if (FtoCoord.isSolvedG2Edges(edge) &&
-            FtoCoord.isSolvedG2Tris(tri)){
-            System.out.println(Util.moveArrayToString(moves, maxl));
+    public void searchPhaseTwo(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
+        int edgePrun = FtoCoord.prunG2Edge(edge);
+        if (depth < edgePrun)
             return;
-        }
+
+        int triplePrun = FtoCoord.prunG2Triple(tp0, tp1, tp2, tp3);
+        if (depth < triplePrun)
+            return;
+
+        int trianglePrun = FtoCoord.prunG2Triangle(tri);
+        if (depth < trianglePrun)
+            return;
 
         if (depth == 0){
             return;
         }
 
-//        System.out.println(FtoCoord.prunG2Edge(edge));
-        if (depth < FtoCoord.prunG2Edge(edge))
+        if (triplePrun == 0 && edgePrun == 0 && trianglePrun == 0){
+            System.out.println(Util.moveArrayToString(moves, maxl));
             return;
+        }
 
         for (int move = 0; move < 10; move++) {
             if (maxl > 0) {
@@ -38,7 +44,12 @@ public class Search {
 
             searchPhaseTwo(depth-1, maxl+1,
                 FtoCoord.turnG2Edges(edge, move),
-                FtoCoord.turnG2Tris(tri, move));
+                FtoCoord.turnG2Tris(tri, move),
+                FtoCoord.turnG2Triple(tp0, move),
+                FtoCoord.turnG2Triple(tp1, move),
+                FtoCoord.turnG2Triple(tp2, move),
+                FtoCoord.turnG2Triple(tp3, move)
+            );
         }
     }
 
@@ -89,10 +100,14 @@ public class Search {
 
         int edge = cubie.packPhaseTwoEdges();
         int tri = cubie.packPhaseTwoTris();
+        int tp0 = cubie.packTriples(0);
+        int tp1 = cubie.packTriples(1);
+        int tp2 = cubie.packTriples(2);
+        int tp3 = cubie.packTriples(3);
 
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
             System.out.println("SD " + depth);
-            searchPhaseTwo(depth, 0, edge, tri);
+            searchPhaseTwo(depth, 0, edge, tri, tp0, tp1, tp2, tp3);
         }
 
         return candidates;
@@ -104,11 +119,11 @@ public class Search {
         ArrayList<int[]> candidates = iteratePhaseOne(RANDOM_STATE);
 
         FtoCubie fto = new FtoCubie(RANDOM_STATE);
-        for (int move : candidates.get(0)){
+        for (int move : candidates.get(1)){
             fto = fto.turn(move);
         }
 
-        System.out.println(Util.moveArrayToString(candidates.get(0), candidates.get(0).length));
+        System.out.println(Util.moveArrayToString(candidates.get(1), candidates.get(1).length));
 
         iteratePhaseTwo(fto);
 

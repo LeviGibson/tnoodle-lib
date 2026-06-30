@@ -2,6 +2,7 @@ package levigibson.fto3phase;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 
 public class FtoCoord {
@@ -14,6 +15,11 @@ public class FtoCoord {
     private static int[][] PHASE_ONE_TRIANGLE_MOVES;
     private static int[][] PHASE_TWO_TRIANGLE_MOVES;
     private static int[][] PHASE_TWO_EDGE_MOVES;
+    private static int[][] PHASE_TWO_TRIPLE_MOVES;
+
+    private static byte[] edgePrun;
+    private static byte[] triplePrun;
+    private static byte[] trianglePrun;
 
     public static int turnG1Edges(int idx, int move){
         if (!initialized) throw new IllegalStateException("Can not turn the cube when its not initialized");
@@ -61,6 +67,38 @@ public class FtoCoord {
         }
     }
 
+    static byte[] generateTrianglePruningTable() {
+        final int size = 1680;
+
+        final int[] edgeMoves = {FtoCubie.U, FtoCubie.UP, FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP};
+        final int moves = edgeMoves.length;
+
+        byte[] prun = new byte[size];
+        Arrays.fill(prun, (byte) -1);
+
+        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        frontier.add(new FtoCubie().packPhaseTwoTris());
+
+        int depth = 0;
+        while (!frontier.isEmpty()) {
+            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+
+            for (int idx : frontier) {
+                for (int m = 0; m < moves; m++) {
+                    int nextIdx = PHASE_TWO_TRIANGLE_MOVES[idx][edgeMoves[m]];
+                    if (prun[nextIdx] == -1) {
+                        prun[nextIdx] = (byte) (depth + 1);
+                        next.add(nextIdx);
+                    }
+                }
+            }
+            frontier = next;
+            depth++;
+        }
+
+        return prun;
+    }
+
     private static synchronized void initPhaseTwoTris(){
         PHASE_TWO_TRIANGLE_MOVES = new int[1680][10];
         FtoCubie fto = new FtoCubie();
@@ -75,6 +113,8 @@ public class FtoCoord {
                 moves[move] = turned.packPhaseTwoTris();
             }
         }
+
+        trianglePrun = generateTrianglePruningTable();
     }
 
     private static Set<Integer> PHASE_TWO_SOLVED_EDGES;
@@ -136,7 +176,7 @@ public class FtoCoord {
         return prun;
     }
 
-    private static byte[] edgePrun;
+
 
     private static synchronized void initPhaseTwoEdges(){
         PHASE_TWO_EDGE_MOVES = new int[181440][10];
@@ -201,8 +241,108 @@ public class FtoCoord {
         return edgePrun[idx];
     }
 
-    public static void initTriples(){
+    public static int prunG2Triple(int idx1, int idx2, int idx3, int idx4){
+        int prun = 0;
+        prun = Math.max(prun, triplePrun[idx1]);
+        prun = Math.max(prun, triplePrun[idx2]);
+        prun = Math.max(prun, triplePrun[idx3]);
+        prun = Math.max(prun, triplePrun[idx4]);
+        return prun;
+    }
 
+    private static LinkedList<Integer> generateTripleFrontier(){
+        final int size = 35200;
+        LinkedList<Integer> all = new LinkedList<>();
+
+        final int[] g3Moves = {FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.D, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP, FtoCubie.DP};
+        final int moves = g3Moves.length;
+
+        byte[] prun = new byte[size];
+        Arrays.fill(prun, (byte) -1);
+
+        LinkedList<Integer> frontier = new LinkedList<>();
+        frontier.add(new FtoCubie().packTriples(0));
+
+        int depth = 0;
+        while (!frontier.isEmpty()) {
+            all.addAll(frontier);
+            LinkedList<Integer> next = new LinkedList<>();
+
+            for (int idx : frontier) {
+                for (int m = 0; m < moves; m++) {
+                    int nextIdx = PHASE_TWO_TRIPLE_MOVES[idx][g3Moves[m]];
+                    if (prun[nextIdx] == -1) {
+                        prun[nextIdx] = (byte) (depth + 1);
+                        next.add(nextIdx);
+                    }
+                }
+            }
+
+            frontier = next;
+            depth++;
+        }
+
+        return all;
+    }
+
+    static byte[] generateTriplePruningTable() {
+        final int size = 35200;
+
+        final int[] edgeMoves = {FtoCubie.D, FtoCubie.DP, FtoCubie.U, FtoCubie.UP, FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP};
+        final int moves = edgeMoves.length;
+
+        byte[] prun = new byte[size];
+        Arrays.fill(prun, (byte) -1);
+
+        LinkedList<Integer> frontier = generateTripleFrontier();
+        for (Integer i : frontier) {
+            prun[i] = 0;
+        }
+
+        int depth = 0;
+        while (!frontier.isEmpty()) {
+            LinkedList<Integer> next = new LinkedList<>();
+
+            for (int idx : frontier) {
+                for (int m = 0; m < moves; m++) {
+                    int nextIdx = PHASE_TWO_TRIPLE_MOVES[idx][edgeMoves[m]];
+                    if (prun[nextIdx] == -1) {
+                        prun[nextIdx] = (byte) (depth + 1);
+                        next.add(nextIdx);
+                    }
+                }
+            }
+            frontier = next;
+            depth++;
+        }
+
+        return prun;
+    }
+
+    public static void initTriples(){
+        PHASE_TWO_TRIPLE_MOVES = new int[35200][10];
+        FtoCubie fto = new FtoCubie();
+        FtoCubie turned = new FtoCubie();
+
+        for (int idx = 0; idx < 35200; idx++) {
+            fto.setTriples(idx, 0);
+            int[] moves = PHASE_TWO_TRIPLE_MOVES[idx];
+
+            for (int move = 0; move < 10; move++) {
+                fto.turn(move, turned);
+                moves[move] = turned.packTriples(0);
+            }
+        }
+
+        triplePrun = generateTriplePruningTable();
+    }
+
+    public static int turnG2Triple(int idx, int move){
+        return PHASE_TWO_TRIPLE_MOVES[idx][move];
+    }
+
+    public static int prunG2Triangle(int idx){
+        return trianglePrun[idx];
     }
 
     public static synchronized void init(){
@@ -212,6 +352,7 @@ public class FtoCoord {
         initPhaseOneTriangles();
         initPhaseTwoTris();
         initPhaseTwoEdges();
+        initTriples();
 
         initialized = true;
     }
