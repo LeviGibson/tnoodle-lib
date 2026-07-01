@@ -56,11 +56,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packEdges();
+            int idx = ftoCubie.packAllEdges();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setEdges(idx);
-            assertEquals(idx, testCube.packEdges());
+            testCube.setAllEdges(idx);
+            assertEquals(idx, testCube.packAllEdges());
             assertArrayEquals(ftoCubie.edges, testCube.edges);
         }
     }
@@ -76,11 +76,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packCornerPermutation();
+            int idx = ftoCubie.packAllCornerPermutation();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setCornerPermutation(idx);
-            assertEquals(idx, testCube.packCornerPermutation());
+            testCube.setAllCornerPermutation(idx);
+            assertEquals(idx, testCube.packAllCornerPermutation());
             assertArrayEquals(ftoCubie.cp, testCube.cp);
         }
     }
@@ -96,11 +96,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packCornerOrientation();
+            int idx = ftoCubie.packAllCornerOrientation();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setCornerOrientation(idx);
-            assertEquals(idx, testCube.packCornerOrientation());
+            testCube.setAllCornerOrientation(idx);
+            assertEquals(idx, testCube.packAllCornerOrientation());
             assertArrayEquals(ftoCubie.co, testCube.co);
         }
     }
@@ -116,11 +116,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packPhaseOneEdges();
+            int idx = ftoCubie.packG1Edges();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setPhaseOneEdges(idx);
-            assertEquals(idx, testCube.packPhaseOneEdges());
+            testCube.setG1Edges(idx);
+            assertEquals(idx, testCube.packG1Edges());
         }
     }
 
@@ -135,11 +135,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packPhaseOneTriangles();
+            int idx = ftoCubie.packG1Triangles();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setPhaseOneTriangles(idx);
-            assertEquals(idx, testCube.packPhaseOneTriangles());
+            testCube.setG1Triangles(idx);
+            assertEquals(idx, testCube.packG1Triangles());
         }
     }
 
@@ -207,11 +207,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packPhaseTwoTris();
+            int idx = ftoCubie.packG2Tris();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setPhaseTwoTris(idx);
-            assertEquals(idx, testCube.packPhaseTwoTris());
+            testCube.setG2Triangles(idx);
+            assertEquals(idx, testCube.packG2Tris());
             assertArrayEquals(ftoCubie.centers2, testCube.centers2);
         }
     }
@@ -228,11 +228,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packPhaseTwoEdges();
+            int idx = ftoCubie.packG2Edges();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setPhaseTwoEdges(idx);
-            assertEquals(idx, testCube.packPhaseTwoEdges());
+            testCube.setG2Edges(idx);
+            assertEquals(idx, testCube.packG2Edges());
             assertArrayEquals(Arrays.copyOf(ftoCubie.edges, 9), Arrays.copyOf(testCube.edges, 9));
         }
     }
@@ -250,11 +250,11 @@ class FtoCubieTest {
             }
 
             for (int color = 0; color < 4; color++) {
-                int idx = ftoCubie.packTriples(color);
+                int idx = ftoCubie.packG2Triples(color);
                 FtoCubie testCube = new FtoCubie();
 
-                testCube.setTriples(idx, color);
-                assertEquals(idx, testCube.packTriples(color));
+                testCube.setG2Triples(idx, color);
+                assertEquals(idx, testCube.packG2Triples(color));
             }
 
         }
@@ -272,11 +272,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packPhaseThreeCorners();
+            int idx = ftoCubie.packG3Corners();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setPhaseThreeCorners(idx);
-            assertEquals(idx, testCube.packPhaseThreeCorners());
+            testCube.setG3Corners(idx);
+            assertEquals(idx, testCube.packG3Corners());
 
         }
     }

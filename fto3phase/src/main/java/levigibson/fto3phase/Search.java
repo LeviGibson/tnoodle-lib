@@ -12,7 +12,7 @@ public class Search {
         moves = new int[64];
     }
 
-    private static int initialized = 0;
+    private static boolean initialized = false;
 
     private int[] moves;
     private long[] nodes;
@@ -20,15 +20,15 @@ public class Search {
     public boolean searchPhaseTwo(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
         nodes[depth]++;
 
-        int edgePrun = FtoCoord.prunG2Edge(edge);
+        int edgePrun = FtoCoord.g2PrunEdge(edge);
         if (depth < edgePrun)
             return false;
 
-        int triplePrun = FtoCoord.prunG2Triple(tp0, tp1, tp2, tp3);
+        int triplePrun = FtoCoord.g2PrunTriple(tp0, tp1, tp2, tp3);
         if (depth < triplePrun)
             return false;
 
-        int trianglePrun = FtoCoord.prunG2Triangle(tri);
+        int trianglePrun = FtoCoord.g2PrunTriangle(tri);
         if (depth < trianglePrun)
             return false;
 
@@ -57,12 +57,12 @@ public class Search {
             moves[maxl] = move;
 
             boolean res = searchPhaseTwo(depth-1, maxl+1,
-                turnG2Edges(edge, move),
-                turnG2Tris(tri, move),
-                FtoCoord.turnG2Triple(tp0, move),
-                FtoCoord.turnG2Triple(tp1, move),
-                FtoCoord.turnG2Triple(tp2, move),
-                FtoCoord.turnG2Triple(tp3, move)
+                g2TurnEdges(edge, move),
+                g2TurnTris(tri, move),
+                FtoCoord.g2TurnTriple(tp0, move),
+                FtoCoord.g2TurnTriple(tp1, move),
+                FtoCoord.g2TurnTriple(tp2, move),
+                FtoCoord.g2TurnTriple(tp3, move)
             );
 
             if (res)
@@ -79,7 +79,7 @@ public class Search {
             return;
         }
 
-        if (depth < FtoCoord.prunG1Edge(edge))
+        if (depth < FtoCoord.g1PrunEdge(edge))
             return;
 
         if (depth <= 0){
@@ -97,7 +97,7 @@ public class Search {
             moves[maxl] = move;
 
             searchPhaseOne(depth-1, maxl+1,
-                FtoCoord.turnG1Edges(edge, move), FtoCoord.turnG1Triangles(tri, move), candidates);
+                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTriangles(tri, move), candidates);
 
         }
     }
@@ -106,8 +106,8 @@ public class Search {
 
         ArrayList<int[]> candidates = new ArrayList<>();
 
-        int edge = cubie.packPhaseOneEdges();
-        int tri = cubie.packPhaseOneTriangles();
+        int edge = cubie.packG1Edges();
+        int tri = cubie.packG1Triangles();
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
             searchPhaseOne(depth, 0, edge, tri, candidates);
             if (candidates.size() >= 500) break;
@@ -117,12 +117,12 @@ public class Search {
     }
 
     public int[] iteratePhaseTwo(FtoCubie cubie){
-        int edge = cubie.packPhaseTwoEdges();
-        int tri = cubie.packPhaseTwoTris();
-        int tp0 = cubie.packTriples(0);
-        int tp1 = cubie.packTriples(1);
-        int tp2 = cubie.packTriples(2);
-        int tp3 = cubie.packTriples(3);
+        int edge = cubie.packG2Edges();
+        int tri = cubie.packG2Tris();
+        int tp0 = cubie.packG2Triples(0);
+        int tp1 = cubie.packG2Triples(1);
+        int tp2 = cubie.packG2Triples(2);
+        int tp3 = cubie.packG2Triples(3);
 
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
             boolean res = searchPhaseTwo(depth, 0, edge, tri, tp0, tp1, tp2, tp3);
@@ -159,8 +159,8 @@ public class Search {
             moves[maxl] = move;
 
             boolean res = searchPhaseThree(depth-1, maxl+1,
-                turnG3Edge(edge, move),
-                turnG3Corner(corner, move));
+                g3TurnEdge(edge, move),
+                g3TurnCorner(corner, move));
 
             if (res)
                 return true;
@@ -171,8 +171,8 @@ public class Search {
 
     public int[] iteratePhaseThree(FtoCubie cubie){
 
-        int edge = cubie.packPhaseThreeEdges();
-        int corner = cubie.packPhaseThreeCorners();
+        int edge = cubie.packG3Edges();
+        int corner = cubie.packG3Corners();
 
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
             boolean res = searchPhaseThree(depth, 0, edge, corner);
@@ -185,8 +185,12 @@ public class Search {
     }
 
     public synchronized String solution(FtoCubie RANDOM_STATE){
-        FtoCoord.init();
-        initCenterPruning();
+
+        if (!FtoCoord.getInitialized())
+            FtoCoord.init();
+
+        if (initialized == false)
+            initCenterPruning();
 
         long start = System.currentTimeMillis();
 
@@ -264,8 +268,8 @@ public class Search {
             }
 
             centerPruningSearch(depth-1, maxl+1, move,
-                turnG2Edges(edge, move),
-                turnG2Tris(tri, move));
+                g2TurnEdges(edge, move),
+                g2TurnTris(tri, move));
 
         }
     }
@@ -284,6 +288,8 @@ public class Search {
         for (Integer edge : PHASE_TWO_SOLVED_EDGES) {
             centerPruningSearch(7, 0, 0, edge, 0);
         }
+
+        initialized = true;
     }
 
 

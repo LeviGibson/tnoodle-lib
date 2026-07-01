@@ -2,7 +2,6 @@ package levigibson.fto3phase;
 
 
 import java.util.Arrays;
-import java.util.Random;
 
 public class FtoCubie {
 
@@ -41,23 +40,23 @@ public class FtoCubie {
 
 
     //[0, 12!/2 - 1]
-    public int packEdges(){
+    public int packAllEdges(){
         return Util.packPerm(edges, true);
     }
 
-    public void setEdges(int idx){
+    public void setAllEdges(int idx){
         Util.unpackPerm(edges, idx, true);
     }
 
-    public int packCornerPermutation(){
+    public int packAllCornerPermutation(){
         return Util.packPerm(cp, true);
     }
 
-    public void setCornerPermutation(int idx){
+    public void setAllCornerPermutation(int idx){
         Util.unpackPerm(cp, idx, true);
     }
 
-    public int packCornerOrientation(){
+    public int packAllCornerOrientation(){
         int index = 0;
         for (int i = 0; i < 5; i++) {
             index |= co[i] << i;
@@ -65,14 +64,14 @@ public class FtoCubie {
         return index;
     }
 
-    public void setCornerOrientation(int idx){
+    public void setAllCornerOrientation(int idx){
         for (int i = 0; i < 5; i++) {
             co[i] = (idx >> i) & 1;
         }
         co[5] = Integer.bitCount(idx) % 2;
     }
 
-    public int packPhaseOneEdges() {
+    public int packG1Edges() {
         int[] loc = new int[3];
         int[] perm = new int[3];
         int count = 0;
@@ -92,7 +91,7 @@ public class FtoCubie {
         return Util.packSubset(loc) * 6 + Util.packPerm(perm, false);
     }
 
-    public void setPhaseOneEdges(int idx){
+    public void setG1Edges(int idx){
         int locIdx = idx / 6;
         int permIdx = idx % 6;
 
@@ -132,7 +131,7 @@ public class FtoCubie {
         }
     }
 
-    public int packPhaseOneTriangles(){
+    public int packG1Triangles(){
         int[] idx = new int[3];
         int count = 0;
 
@@ -145,7 +144,7 @@ public class FtoCubie {
         return Util.packSubset(idx);
     }
 
-    public void setPhaseOneTriangles(int idx){
+    public void setG1Triangles(int idx){
         //Unpack index
         int[] loc = new int[3];
         Util.unpackSubset(loc, idx);
@@ -169,7 +168,7 @@ public class FtoCubie {
         }
     }
 
-    public int packPhaseTwoEdges(){
+    public int packG2Edges(){
         for (int i = 0; i < 9; i++) {
             if (edges[i] > 8) throw new IllegalStateException("Edges not in phase 1");
         }
@@ -177,14 +176,14 @@ public class FtoCubie {
         return Util.packPerm(edges, true, 9);
     }
 
-    public void setPhaseTwoEdges(int idx){
+    public void setG2Edges(int idx){
         Util.unpackPerm(edges, idx, 9, true);
         for (int i = 9; i < 12; i++) {
             edges[i] = i;
         }
     }
 
-    public int packPhaseTwoTris(){
+    public int packG2Tris(){
         for (int i = 9; i < 12; i++) {
             if (centers2[i] != XD)
                 throw new IllegalStateException("Tris must be in phase 1");
@@ -213,7 +212,7 @@ public class FtoCubie {
             Util.packSubset(loc[0]) * Util.choose(6, 3);
     }
 
-    public void setPhaseTwoTris(int idx){
+    public void setG2Triangles(int idx){
         int[] loc0 = new int[3];
         int[] loc1 = new int[3];
         Util.unpackSubset(loc0, idx / Util.choose(6, 3));
@@ -243,7 +242,7 @@ public class FtoCubie {
         {-1,-1,1,1,-1,0}};
 
     //[0, 159]
-    private int packTripleCorners(int color){
+    private int packG2TripleCorners(int color){
         int[] idx = new int[3];
         int orientation = 0;
 
@@ -271,7 +270,7 @@ public class FtoCubie {
         return Util.packSubset(idx) * 8 + orientation;
     }
 
-    private int packTripleTris(int color){
+    private int packG2TripleTris(int color){
         int[] idx = new int[3];
 
         int found = 0;
@@ -284,15 +283,15 @@ public class FtoCubie {
         return Util.packSubset(idx);
     }
 
-    public int packTriples(int color){
+    public int packG2Triples(int color){
         if (color > 3 || color < 0){
             throw new IllegalArgumentException("color must be U, F, BR, or BL");
         }
 
-        return (160 * packTripleTris(color)) + packTripleCorners(color);
+        return (160 * packG2TripleTris(color)) + packG2TripleCorners(color);
     }
 
-    private void setTripleTris(int idx, int color){
+    private void setG2TripleTris(int idx, int color){
         int[] loc = new int[3];
         Util.unpackSubset(loc, idx);
         Arrays.fill(centers1, -1);
@@ -302,7 +301,7 @@ public class FtoCubie {
         }
     }
 
-    private void setTripleCorners(int idx, int color){
+    private void setG2TripleCorners(int idx, int color){
         int[] loc = new int[3];
         Util.unpackSubset(loc, idx / 8);
 
@@ -329,24 +328,24 @@ public class FtoCubie {
 
     }
 
-    public void setTriples(int idx, int color){
+    public void setG2Triples(int idx, int color){
         int tris = idx / 160;
         int corners = idx % 160;
 
-        setTripleTris(tris, color);
-        setTripleCorners(corners, color);
+        setG2TripleTris(tris, color);
+        setG2TripleCorners(corners, color);
     }
 
-    public int packPhaseThreeCorners(){
-        return (packCornerPermutation() * 32) + packCornerOrientation();
+    public int packG3Corners(){
+        return (packAllCornerPermutation() * 32) + packAllCornerOrientation();
     }
 
-    public void setPhaseThreeCorners(int idx){
-        setCornerPermutation(idx/32);
-        setCornerOrientation(idx%32);
+    public void setG3Corners(int idx){
+        setAllCornerPermutation(idx/32);
+        setAllCornerOrientation(idx%32);
     }
 
-    public int packPhaseThreeEdges(){
+    public int packG3Edges(){
         int[] loc = new int[4];
         Arrays.fill(loc, -1);
 
@@ -366,7 +365,7 @@ public class FtoCubie {
         return (27 * loc[0]) + (9 * loc[1]) + (3 * loc[2]) + (loc[3]);
     }
 
-    public void setPhaseThreeEdges(int idx){
+    public void setG3Edges(int idx){
         for (int i = 0; i < 12; i++) {
             edges[i] = i;
         }
