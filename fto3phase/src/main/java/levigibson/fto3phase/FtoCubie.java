@@ -2,6 +2,9 @@ package levigibson.fto3phase;
 
 
 import java.util.Arrays;
+import java.util.Random;
+
+import static levigibson.fto3phase.Util.*;
 
 public class FtoCubie {
 
@@ -38,22 +41,31 @@ public class FtoCubie {
         this.triangles2 = other.triangles2.clone();
     }
 
+    public static FtoCubie randomCube(Random r){
+        FtoCubie fto = new FtoCubie();
+        fto.setAllEdges(r.nextInt(239500800)); // 12! / 2
+        fto.setAllCornerOrientation(r.nextInt(32)); // 2 ^ 5
+        fto.setAllCornerPermutation(r.nextInt(360)); // 6! / 2
+        fto.setAllTriangles(r.nextInt(369600), 0); // C(12,3) * C(9,3) * C(6,3)
+        fto.setAllTriangles(r.nextInt(369600), 1); // C(12,3) * C(9,3) * C(6,3)
+        return fto;
+    }
 
     //[0, 12!/2 - 1]
     public int packAllEdges(){
-        return Util.packPerm(edges, true);
+        return packPerm(edges, true);
     }
 
     public void setAllEdges(int idx){
-        Util.unpackPerm(edges, idx, true);
+        unpackPerm(edges, idx, true);
     }
 
     public int packAllCornerPermutation(){
-        return Util.packPerm(cp, true);
+        return packPerm(cp, true);
     }
 
     public void setAllCornerPermutation(int idx){
-        Util.unpackPerm(cp, idx, true);
+        unpackPerm(cp, idx, true);
     }
 
     public int packAllCornerOrientation(){
@@ -97,11 +109,9 @@ public class FtoCubie {
                 throw new IllegalStateException("Expected found=3. Instead, found=" + found);
         }
 
-        int packed = (Util.packSubset(loc[0]) * Util.choose(12, 3) * Util.choose(9, 3))+
-            Util.packSubset(loc[1]) * Util.choose(12, 3) +
-            Util.packSubset(loc[2]);
-
-        return packed;
+        return (packSubset(loc[0]) * C(9, 3) * C(6, 3)) +
+            packSubset(loc[1]) * C(6, 3) +
+            packSubset(loc[2]);
     }
 
     public void setAllTriangles(int idx, int orbit){
@@ -111,8 +121,8 @@ public class FtoCubie {
         int[] triangles = orbit == 1 ? triangles2 : triangles1;
 
         final int[] coefficients = {
-            Util.choose(12, 3) * Util.choose(9, 3),
-            Util.choose(12, 3),
+            C(9, 3) * C(6, 3),
+            C(6, 3),
             1
         };
 
@@ -123,7 +133,7 @@ public class FtoCubie {
             int coefficient = coefficients[color];
             int digit = remaining / coefficient;
 
-            Util.unpackSubset(loc[color], digit);
+            unpackSubset(loc[color], digit);
 
             remaining -= coefficient * digit;
         }
@@ -161,7 +171,7 @@ public class FtoCubie {
             throw new IllegalStateException("Expected 3 D-face edges. This is not a possible FTO state.");
         }
 
-        return Util.packSubset(loc) * 6 + Util.packPerm(perm, false);
+        return packSubset(loc) * 6 + packPerm(perm, false);
     }
 
     public void setG1Edges(int idx){
@@ -172,10 +182,10 @@ public class FtoCubie {
         int[] perm = new int[3];
 
         //Unpack loc
-        Util.unpackSubset(loc, locIdx);
+        unpackSubset(loc, locIdx);
 
         //Unpack perm
-        Util.unpackPerm(perm, permIdx, false);
+        unpackPerm(perm, permIdx, false);
         for (int i = 0; i < 3; i++) { perm[i] += 9; }
 
         //set the edges
@@ -195,12 +205,12 @@ public class FtoCubie {
         //(The other edges are filled with garbage)
         //(But it should be garbage with the correct parity)
         //(so it doesn't crash the program)
-        if (Util.parity(edges)) {
+        if (parity(edges)) {
             int i = 0;
             while (edges[i] >= 9) i++;
             int j = i + 1;
             while (edges[j] >= 9) j++;
-            Util.swap(edges, i, j);
+            swap(edges, i, j);
         }
     }
 
@@ -214,13 +224,13 @@ public class FtoCubie {
 
         if (count != 3) throw new IllegalStateException("Less than 3 d-layer triangles");
 
-        return Util.packSubset(idx);
+        return packSubset(idx);
     }
 
     public void setG1Triangles(int idx){
         //Unpack index
         int[] loc = new int[3];
-        Util.unpackSubset(loc, idx);
+        unpackSubset(loc, idx);
 
         //Set the relevant centers
         for (int i = 0; i < 12; i++) {
@@ -246,11 +256,11 @@ public class FtoCubie {
             if (edges[i] > 8) throw new IllegalStateException("Edges not in phase 1");
         }
 
-        return Util.packPerm(edges, true, 9);
+        return packPerm(edges, true, 9);
     }
 
     public void setG2Edges(int idx){
-        Util.unpackPerm(edges, idx, 9, true);
+        unpackPerm(edges, idx, 9, true);
         for (int i = 9; i < 12; i++) {
             edges[i] = i;
         }
@@ -281,15 +291,15 @@ public class FtoCubie {
             if (found != 3)
                 throw new IllegalStateException("Expected found=3. Instead, found=" + found);
         }
-        return Util.packSubset(loc[1]) +
-            Util.packSubset(loc[0]) * Util.choose(6, 3);
+        return packSubset(loc[1]) +
+            packSubset(loc[0]) * C(6, 3);
     }
 
     public void setG2Triangles(int idx){
         int[] loc0 = new int[3];
         int[] loc1 = new int[3];
-        Util.unpackSubset(loc0, idx / Util.choose(6, 3));
-        Util.unpackSubset(loc1, idx % Util.choose(6, 3));
+        unpackSubset(loc0, idx / C(6, 3));
+        unpackSubset(loc1, idx % C(6, 3));
         Arrays.sort(loc1);
 
         Arrays.fill(triangles2, 0, 9, 2);
@@ -340,7 +350,7 @@ public class FtoCubie {
 
         assert (orientation < 8);
 
-        return Util.packSubset(idx) * 8 + orientation;
+        return packSubset(idx) * 8 + orientation;
     }
 
     private int packG2TripleTris(int color){
@@ -353,7 +363,7 @@ public class FtoCubie {
             }
         }
 
-        return Util.packSubset(idx);
+        return packSubset(idx);
     }
 
     public int packG2Triples(int color){
@@ -366,7 +376,7 @@ public class FtoCubie {
 
     private void setG2TripleTris(int idx, int color){
         int[] loc = new int[3];
-        Util.unpackSubset(loc, idx);
+        unpackSubset(loc, idx);
         Arrays.fill(triangles1, -1);
 
         for (int i = 0; i < 3; i++) {
@@ -376,7 +386,7 @@ public class FtoCubie {
 
     private void setG2TripleCorners(int idx, int color){
         int[] loc = new int[3];
-        Util.unpackSubset(loc, idx / 8);
+        unpackSubset(loc, idx / 8);
 
         int orientation = idx % 8;
 
@@ -445,12 +455,12 @@ public class FtoCubie {
 
         int remaining = idx;
         for (int axis = 0; axis < 4; axis++) {
-            int coefficient = Util.pow(3, 3-axis);
+            int coefficient = pow(3, 3-axis);
             int digit = remaining / coefficient;
 
             while (edges[G3_EDGES[axis][0]] != G3_EDGES[axis][digit]){
                 for (int i = 0; i < 2; i++) {
-                    Util.swap(edges, G3_EDGES[axis][0], G3_EDGES[axis][i + 1]);
+                    swap(edges, G3_EDGES[axis][0], G3_EDGES[axis][i + 1]);
                 }
             }
 

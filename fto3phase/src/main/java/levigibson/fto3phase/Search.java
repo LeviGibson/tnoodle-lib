@@ -3,6 +3,7 @@ package levigibson.fto3phase;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Random;
 
 import static levigibson.fto3phase.FtoCoord.*;
 
@@ -295,7 +296,8 @@ public class Search {
 
     public static void main(String[] args) {
         Search search = new Search();
-        FtoCubie rs = Util.applyAlg("L' D' R' L R D B' D U R' D U' R U' R D B L U F' R L' F' BR B BR");
+//        FtoCubie rs = Util.applyAlg("L' D' R' L R D B' D U R' D U' R U' R D B L U F' R L' F' BR B BR");
+        FtoCubie rs = FtoCubie.randomCube(new Random());
         System.out.println(search.solution(rs));
     }
 
