@@ -99,7 +99,7 @@ class FtoCubieTest {
             int idx = ftoCubie.packCornerOrientation();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.packCornerOrientation(idx);
+            testCube.setCornerOrientation(idx);
             assertEquals(idx, testCube.packCornerOrientation());
             assertArrayEquals(ftoCubie.co, testCube.co);
         }
@@ -256,6 +256,48 @@ class FtoCubieTest {
                 testCube.setTriples(idx, color);
                 assertEquals(idx, testCube.packTriples(color));
             }
+
+        }
+    }
+
+    @Test
+    void testPhaseThreeCorners(){
+        Random r = new Random(42);
+        int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7}; // R,RP,L,LP,B,BP,D,DP,U,UP
+        for (int i = 0; i < 10000; i++) {
+            FtoCubie ftoCubie = new FtoCubie();
+            for (int j = 0; j < 100; j++) {
+                FtoCubie out = new FtoCubie();
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
+                ftoCubie = out;
+            }
+
+            int idx = ftoCubie.packPhaseThreeCorners();
+            FtoCubie testCube = new FtoCubie();
+
+            testCube.setPhaseThreeCorners(idx);
+            assertEquals(idx, testCube.packPhaseThreeCorners());
+
+        }
+    }
+
+    @Test
+    void testPhaseThreeEdges(){
+        Random r = new Random(42);
+        int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7}; // R,RP,L,LP,B,BP,D,DP
+        for (int i = 0; i < 10000; i++) {
+            FtoCubie ftoCubie = new FtoCubie();
+            for (int j = 0; j < 100; j++) {
+                FtoCubie out = new FtoCubie();
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
+                ftoCubie = out;
+            }
+
+            int idx = ftoCubie.packPhaseThreeEdges();
+            FtoCubie testCube = new FtoCubie();
+
+            testCube.setPhaseThreeEdges(idx);
+            assertEquals(idx, testCube.packPhaseThreeEdges());
 
         }
     }

@@ -1,9 +1,6 @@
 package levigibson.fto3phase;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Set;
+import java.util.*;
 
 public class FtoCoord {
     private static boolean initialized;
@@ -16,6 +13,8 @@ public class FtoCoord {
     private static int[][] PHASE_TWO_TRIANGLE_MOVES;
     private static int[][] PHASE_TWO_EDGE_MOVES;
     private static int[][] PHASE_TWO_TRIPLE_MOVES;
+    private static int[][] PHASE_THREE_EDGE_MOVES;
+    private static int[][] PHASE_THREE_CORNER_MOVES;
 
     private static byte[] edgePrun;
     private static byte[] triplePrun;
@@ -78,6 +77,7 @@ public class FtoCoord {
 
         java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
         frontier.add(new FtoCubie().packPhaseTwoTris());
+        prun[frontier.get(0)] = 0;
 
         int depth = 0;
         while (!frontier.isEmpty()) {
@@ -117,7 +117,7 @@ public class FtoCoord {
         trianglePrun = generateTrianglePruningTable();
     }
 
-    private static Set<Integer> PHASE_TWO_SOLVED_EDGES;
+    public static Set<Integer> PHASE_TWO_SOLVED_EDGES;
 
     static byte[] generateEdgePruningTable() {
         final int size = 181440;
@@ -226,17 +226,6 @@ public class FtoCoord {
         return PHASE_TWO_TRIANGLE_MOVES[idx][move];
     }
 
-    public static boolean isSolvedG2Edges(int idx){
-        if (!initialized){
-            throw new IllegalStateException("Must be initialized");
-        }
-        return PHASE_TWO_SOLVED_EDGES.contains(idx);
-    }
-
-    public static boolean isSolvedG2Tris(int idx){
-        return idx == 0;
-    }
-
     public static int prunG2Edge(int idx){
         return edgePrun[idx];
     }
@@ -337,6 +326,74 @@ public class FtoCoord {
         triplePrun = generateTriplePruningTable();
     }
 
+    private static void initPhaseThreeEdges(){
+        PHASE_THREE_EDGE_MOVES = new int[81][10];
+
+        FtoCubie fto = new FtoCubie();
+        FtoCubie turned = new FtoCubie();
+
+        for (int idx = 0; idx < 81; idx++) {
+            fto.setPhaseThreeEdges(idx);
+            int[] moves = PHASE_THREE_EDGE_MOVES[idx];
+
+            for (int move = 0; move < 10; move++) {
+                if (move == FtoCubie.U || move == FtoCubie.UP){
+                    moves[move] = -1;
+                    continue;
+                }
+
+                fto.turn(move, turned);
+                moves[move] = turned.packPhaseThreeEdges();
+            }
+        }
+    }
+
+    private static void initPhaseThreeCorners(){
+        PHASE_THREE_CORNER_MOVES = new int[11520][10];
+
+        FtoCubie fto = new FtoCubie();
+        FtoCubie turned = new FtoCubie();
+
+        for (int idx = 0; idx < 11520; idx++) {
+            fto.setPhaseThreeCorners(idx);
+            int[] moves = PHASE_THREE_CORNER_MOVES[idx];
+
+            for (int move = 0; move < 10; move++) {
+                if (move == FtoCubie.U || move == FtoCubie.UP){
+                    moves[move] = -1;
+                    continue;
+                }
+
+                fto.turn(move, turned);
+                moves[move] = turned.packPhaseThreeCorners();
+            }
+        }
+    }
+
+    private static final int SOLVED_G3_EDGES;
+    private static final int SOLVED_G3_CORNERS;
+
+    static {
+        SOLVED_G3_EDGES = new FtoCubie().packPhaseThreeEdges();
+        SOLVED_G3_CORNERS = new FtoCubie().packPhaseThreeCorners();
+    }
+
+    public static boolean isSolvedG3Edges(int idx){
+        return (idx == SOLVED_G3_EDGES);
+    }
+
+    public static boolean isSolvedG3Corners(int idx){
+        return (idx == SOLVED_G3_CORNERS);
+    }
+
+    public static int turnG3Edge(int idx, int move){
+        return PHASE_THREE_EDGE_MOVES[idx][move];
+    }
+
+    public static int turnG3Corner(int idx, int move){
+        return PHASE_THREE_CORNER_MOVES[idx][move];
+    }
+
     public static int turnG2Triple(int idx, int move){
         return PHASE_TWO_TRIPLE_MOVES[idx][move];
     }
@@ -353,6 +410,8 @@ public class FtoCoord {
         initPhaseTwoTris();
         initPhaseTwoEdges();
         initTriples();
+        initPhaseThreeEdges();
+        initPhaseThreeCorners();
 
         initialized = true;
     }

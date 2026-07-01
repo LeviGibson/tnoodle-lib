@@ -2,6 +2,7 @@ package levigibson.fto3phase;
 
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class FtoCubie {
 
@@ -64,7 +65,7 @@ public class FtoCubie {
         return index;
     }
 
-    public void packCornerOrientation(int idx){
+    public void setCornerOrientation(int idx){
         for (int i = 0; i < 5; i++) {
             co[i] = (idx >> i) & 1;
         }
@@ -336,6 +337,56 @@ public class FtoCubie {
         setTripleCorners(corners, color);
     }
 
+    public int packPhaseThreeCorners(){
+        return (packCornerPermutation() * 32) + packCornerOrientation();
+    }
+
+    public void setPhaseThreeCorners(int idx){
+        setCornerPermutation(idx/32);
+        setCornerOrientation(idx%32);
+    }
+
+    public int packPhaseThreeEdges(){
+        int[] loc = new int[4];
+        Arrays.fill(loc, -1);
+
+        for (int axis = 0; axis < 4; axis++) {
+            for (int i = 0; i < 3; i++) {
+                if (G3_EDGES[axis][i] == edges[G3_EDGES[axis][0]]){
+                    loc[axis] = i;
+                }
+            }
+        }
+
+        for (int i = 0; i < 4; i++) {
+            if (loc[i] == -1)
+                throw new IllegalStateException("Cound not find G3 edges");
+        }
+
+        return (27 * loc[0]) + (9 * loc[1]) + (3 * loc[2]) + (loc[3]);
+    }
+
+    public void setPhaseThreeEdges(int idx){
+        for (int i = 0; i < 12; i++) {
+            edges[i] = i;
+        }
+
+        int remaining = idx;
+        for (int axis = 0; axis < 4; axis++) {
+            int coefficient = Util.pow(3, 3-axis);
+            int digit = remaining / coefficient;
+
+            while (edges[G3_EDGES[axis][0]] != G3_EDGES[axis][digit]){
+                for (int i = 0; i < 2; i++) {
+                    Util.swap(edges, G3_EDGES[axis][0], G3_EDGES[axis][i + 1]);
+                }
+            }
+
+            remaining -= coefficient * digit;
+        }
+
+    }
+
 
     public boolean isSolved(){
         for (int i = 0; i < 6; i++) {
@@ -457,6 +508,14 @@ public class FtoCubie {
     public static final int
         CUF = 0, CUBR = 1, CUBL = 2,
         CDL = 3, CDR = 4, CDB = 5;
+
+    //EUB = 0, EUR = 1, EUL
+    private static final int[][] G3_EDGES = {
+        {EUB, EBRB, EBLB},
+        {EUR, EFR, ERBR},
+        {EUL, ELBL, EFL},
+        {EDF, EDBR, EDBL}
+    };
 
     private static final MoveEffect[] moveEffects;
 
