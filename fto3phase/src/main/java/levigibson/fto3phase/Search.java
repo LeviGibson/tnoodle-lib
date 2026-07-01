@@ -79,6 +79,9 @@ public class Search {
             return;
         }
 
+        if (depth < FtoCoord.prunG1Edge(edge))
+            return;
+
         if (depth <= 0){
             return;
         }
@@ -136,10 +139,6 @@ public class Search {
         if (isSolvedG3Corners(corner) &&
             isSolvedG3Edges(edge)){
 
-//            System.out.println(corner);
-//            System.out.println(edge);
-//            System.out.println(Util.moveArrayToString(moves, maxl));
-
             return true;
         }
 
@@ -176,7 +175,6 @@ public class Search {
         int corner = cubie.packPhaseThreeCorners();
 
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
-            System.out.println("SD " + depth);
             boolean res = searchPhaseThree(depth, 0, edge, corner);
             if (res){
                 return Arrays.copyOf(moves, depth);

@@ -16,9 +16,11 @@ public class FtoCoord {
     private static int[][] PHASE_THREE_EDGE_MOVES;
     private static int[][] PHASE_THREE_CORNER_MOVES;
 
-    private static byte[] edgePrun;
+    private static byte[] g2edgePrun;
     private static byte[] triplePrun;
     private static byte[] trianglePrun;
+    private static byte[] g1EdgePrun;
+
 
     public static int turnG1Edges(int idx, int move){
         if (!initialized) throw new IllegalStateException("Can not turn the cube when its not initialized");
@@ -34,8 +36,38 @@ public class FtoCoord {
         return triIdx == 219 && (edgeIdx == 1314 || edgeIdx == 1318 || edgeIdx == 1317);
     }
 
+    static byte[] generateG1EdgesPruningTable() {
+        final int size = 1320;
+
+        byte[] prun = new byte[size];
+        Arrays.fill(prun, (byte) -1);
+
+        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        frontier.add(new FtoCubie().packPhaseOneEdges());
+        prun[frontier.get(0)] = 0;
+
+        int depth = 0;
+        while (!frontier.isEmpty()) {
+            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+
+            for (int idx : frontier) {
+                for (int m = 0; m < 16; m++) {
+                    int nextIdx = PHASE_ONE_EDGE_MOVES[idx][m];
+                    if (prun[nextIdx] == -1) {
+                        prun[nextIdx] = (byte) (depth + 1);
+                        next.add(nextIdx);
+                    }
+                }
+            }
+            frontier = next;
+            depth++;
+        }
+
+        return prun;
+    }
+
     private static synchronized void initPhaseOneEdges(){
-        PHASE_ONE_EDGE_MOVES = new int[220 * 6][16];
+        PHASE_ONE_EDGE_MOVES = new int[1320][16];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
@@ -48,6 +80,12 @@ public class FtoCoord {
                     locMoves[move] = turned.packPhaseOneEdges();
                 }
         }
+
+        g1EdgePrun = generateG1EdgesPruningTable();
+    }
+
+    public static int prunG1Edge(int idx){
+        return g1EdgePrun[idx];
     }
 
     private static synchronized void initPhaseOneTriangles(){
@@ -215,7 +253,7 @@ public class FtoCoord {
             }
         }
 
-        edgePrun = generateEdgePruningTable();
+        g2edgePrun = generateEdgePruningTable();
     }
 
     public static int turnG2Edges(int idx, int move){
@@ -227,7 +265,7 @@ public class FtoCoord {
     }
 
     public static int prunG2Edge(int idx){
-        return edgePrun[idx];
+        return g2edgePrun[idx];
     }
 
     public static int prunG2Triple(int idx1, int idx2, int idx3, int idx4){
