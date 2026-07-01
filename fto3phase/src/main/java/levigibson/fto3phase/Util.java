@@ -8,7 +8,7 @@ public class Util {
 
     public static final int[] FACTORIAL = new int[] {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600};
 
-    public static int C(int n, int k) {
+    public static int nCr(int n, int k) {
         if (k < 0 || k > n) return 0;
         if (k == 0 || k == n) return 1;
         if (k > n - k) k = n - k;
@@ -107,7 +107,7 @@ public class Util {
 
         int index = 0;
         for (int i = idx.length-1; i >= 0; i--) {
-            index += C(idx[i], i+1);
+            index += nCr(idx[i], i+1);
         }
         return index;
     }
@@ -120,11 +120,11 @@ public class Util {
 
         for (int pos = 0; pos < subsetSize; pos++) {
             int c = k - 1;
-            while (Util.C(c + 1, k) <= remaining) {
+            while (nCr(c + 1, k) <= remaining) {
                 c++;
             }
             arr[subsetSize - 1 - pos] = c;
-            remaining -= Util.C(c, k);
+            remaining -= nCr(c, k);
             k--;
         }
     }

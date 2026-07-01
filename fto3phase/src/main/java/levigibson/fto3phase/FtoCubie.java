@@ -109,8 +109,8 @@ public class FtoCubie {
                 throw new IllegalStateException("Expected found=3. Instead, found=" + found);
         }
 
-        return (packSubset(loc[0]) * C(9, 3) * C(6, 3)) +
-            packSubset(loc[1]) * C(6, 3) +
+        return (packSubset(loc[0]) * nCr(9, 3) * nCr(6, 3)) +
+            packSubset(loc[1]) * nCr(6, 3) +
             packSubset(loc[2]);
     }
 
@@ -121,8 +121,8 @@ public class FtoCubie {
         int[] triangles = orbit == 1 ? triangles2 : triangles1;
 
         final int[] coefficients = {
-            C(9, 3) * C(6, 3),
-            C(6, 3),
+            nCr(9, 3) * nCr(6, 3),
+            nCr(6, 3),
             1
         };
 
@@ -292,14 +292,14 @@ public class FtoCubie {
                 throw new IllegalStateException("Expected found=3. Instead, found=" + found);
         }
         return packSubset(loc[1]) +
-            packSubset(loc[0]) * C(6, 3);
+            packSubset(loc[0]) * nCr(6, 3);
     }
 
     public void setG2Triangles(int idx){
         int[] loc0 = new int[3];
         int[] loc1 = new int[3];
-        unpackSubset(loc0, idx / C(6, 3));
-        unpackSubset(loc1, idx % C(6, 3));
+        unpackSubset(loc0, idx / nCr(6, 3));
+        unpackSubset(loc1, idx % nCr(6, 3));
         Arrays.sort(loc1);
 
         Arrays.fill(triangles2, 0, 9, 2);
