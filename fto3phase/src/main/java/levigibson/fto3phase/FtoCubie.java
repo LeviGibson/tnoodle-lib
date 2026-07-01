@@ -8,15 +8,15 @@ public class FtoCubie {
     int[] cp;
     int[] co;
     int[] edges;
-    int[] centers1;
-    int[] centers2;
+    int[] triangles1;
+    int[] triangles2;
 
     public FtoCubie(){
         cp = new int[6];
         co = new int[6];
         edges = new int[12];
-        centers1 = new int[12];
-        centers2 = new int[12];
+        triangles1 = new int[12];
+        triangles2 = new int[12];
 
         for (int i = 0; i < 6; i++) {
             cp[i] = i;
@@ -25,8 +25,8 @@ public class FtoCubie {
 
         for (int i = 0; i < 12; i++) {
             edges[i] = i;
-            centers1[i] = i / 3; // centers1 = 000 111 222 333
-            centers2[i] = i / 3;
+            triangles1[i] = i / 3; // centers1 = 000 111 222 333
+            triangles2[i] = i / 3;
         }
     }
 
@@ -34,8 +34,8 @@ public class FtoCubie {
         this.cp = other.cp.clone();
         this.co = other.co.clone();
         this.edges = other.edges.clone();
-        this.centers1 = other.centers1.clone();
-        this.centers2 = other.centers2.clone();
+        this.triangles1 = other.triangles1.clone();
+        this.triangles2 = other.triangles2.clone();
     }
 
 
@@ -69,6 +69,79 @@ public class FtoCubie {
             co[i] = (idx >> i) & 1;
         }
         co[5] = Integer.bitCount(idx) % 2;
+    }
+
+    public int packAllTriangles(int orbit){
+        if (orbit != 0 && orbit != 1)
+            throw new IllegalArgumentException("Orbit must be 0 or 1");
+
+        int[] triangles = orbit == 1 ? triangles2 : triangles1;
+
+        boolean[] used = new boolean[12];
+        int[][] loc = new int[3][3];
+
+        for (int xo = 0; xo < 3; xo++) {
+            int found = 0;
+            int passed = 0;
+            for (int i = 0; i < 12; i++) {
+                if (triangles[i] == xo){
+                    loc[xo][found++] = passed;
+                    used[i] = true;
+                    passed++;
+                } else if (!used[i]){
+                    passed++;
+                }
+            }
+
+            if (found != 3)
+                throw new IllegalStateException("Expected found=3. Instead, found=" + found);
+        }
+
+        int packed = (Util.packSubset(loc[0]) * Util.choose(12, 3) * Util.choose(9, 3))+
+            Util.packSubset(loc[1]) * Util.choose(12, 3) +
+            Util.packSubset(loc[2]);
+
+        return packed;
+    }
+
+    public void setAllTriangles(int idx, int orbit){
+        if (orbit != 0 && orbit != 1)
+            throw new IllegalArgumentException("Orbit must be 0 or 1");
+
+        int[] triangles = orbit == 1 ? triangles2 : triangles1;
+
+        final int[] coefficients = {
+            Util.choose(12, 3) * Util.choose(9, 3),
+            Util.choose(12, 3),
+            1
+        };
+
+        int[][] loc = new int[3][3];
+
+        int remaining = idx;
+        for (int color = 0; color < 3; color++) {
+            int coefficient = coefficients[color];
+            int digit = remaining / coefficient;
+
+            Util.unpackSubset(loc[color], digit);
+
+            remaining -= coefficient * digit;
+        }
+
+        Arrays.fill(triangles, 3);
+
+        for (int color = 0; color < 3; color++) {
+            int nz = 0;
+            int li = 0;
+            for (int i = 0; i < 12; i++) {
+                if (triangles[i] < color) continue;
+                if (li < 3 && nz == loc[color][li]) {
+                    triangles[i] = color;
+                    li++;
+                }
+                nz++;
+            }
+        }
     }
 
     public int packG1Edges() {
@@ -136,7 +209,7 @@ public class FtoCubie {
         int count = 0;
 
         for (int i = 0; i < 12; i++) {
-            if (centers2[i] == XD) idx[count++] = i;
+            if (triangles2[i] == XD) idx[count++] = i;
         }
 
         if (count != 3) throw new IllegalStateException("Less than 3 d-layer triangles");
@@ -151,18 +224,18 @@ public class FtoCubie {
 
         //Set the relevant centers
         for (int i = 0; i < 12; i++) {
-            centers2[i] = -1;
+            triangles2[i] = -1;
         }
         for (int i = 0; i < 3; i++) {
-            centers2[loc[i]] = XD;
+            triangles2[loc[i]] = XD;
         }
 
         //Fill in the rest with garbage
         //(But it has to not crash the other functions)
         int count = 0;
         for (int i = 0; i < 12; i++) {
-            if (centers2[i] == -1){
-                centers2[i] = count/3;
+            if (triangles2[i] == -1){
+                triangles2[i] = count/3;
                 count++;
             }
         }
@@ -185,7 +258,7 @@ public class FtoCubie {
 
     public int packG2Tris(){
         for (int i = 9; i < 12; i++) {
-            if (centers2[i] != XD)
+            if (triangles2[i] != XD)
                 throw new IllegalStateException("Tris must be in phase 1");
         }
 
@@ -196,7 +269,7 @@ public class FtoCubie {
             int found = 0;
             int passed = 0;
             for (int i = 0; i < 9; i++) {
-                if (centers2[i] == xo){
+                if (triangles2[i] == xo){
                     loc[xo][found++] = passed;
                     used[i] = true;
                     passed++;
@@ -219,20 +292,20 @@ public class FtoCubie {
         Util.unpackSubset(loc1, idx % Util.choose(6, 3));
         Arrays.sort(loc1);
 
-        Arrays.fill(centers2, 0, 9, 2);
-        for (int v : loc0) centers2[v] = 0;
+        Arrays.fill(triangles2, 0, 9, 2);
+        for (int v : loc0) triangles2[v] = 0;
 
         int nz = 0;
         int li = 0;
         for (int i = 0; i < 9; i++) {
-            if (centers2[i] == 0) continue;
+            if (triangles2[i] == 0) continue;
             if (li < 3 && nz == loc1[li]) {
-                centers2[i] = 1;
+                triangles2[i] = 1;
                 li++;
             }
             nz++;
         }
-        for (int i = 9; i < 12; i++) centers2[i] = XD;
+        for (int i = 9; i < 12; i++) triangles2[i] = XD;
     }
 
     private static int[][] CORNER_PARITY = {
@@ -275,7 +348,7 @@ public class FtoCubie {
 
         int found = 0;
         for (int i = 0; i < 12; i++) {
-            if (centers1[i] == color){
+            if (triangles1[i] == color){
                 idx[found++] = i;
             }
         }
@@ -294,10 +367,10 @@ public class FtoCubie {
     private void setG2TripleTris(int idx, int color){
         int[] loc = new int[3];
         Util.unpackSubset(loc, idx);
-        Arrays.fill(centers1, -1);
+        Arrays.fill(triangles1, -1);
 
         for (int i = 0; i < 3; i++) {
-            centers1[loc[i]] = color;
+            triangles1[loc[i]] = color;
         }
     }
 
@@ -396,9 +469,9 @@ public class FtoCubie {
         }
 
         for (int i = 0; i < 12; i++) {
-            if (centers1[i] != i / 3)
+            if (triangles1[i] != i / 3)
                 return false;
-            if (centers2[i] != i / 3)
+            if (triangles2[i] != i / 3)
                 return false;
             if (edges[i] != i){
                 return false;
@@ -430,8 +503,8 @@ public class FtoCubie {
         //Edges + Triangles
         for (int i = 0; i < 12; i++) {
             out.edges[i] = this.edges[cycles.ep[i]];
-            out.centers1[i] = this.centers1[cycles.xp1[i]];
-            out.centers2[i] = this.centers2[cycles.xp2[i]];
+            out.triangles1[i] = this.triangles1[cycles.xp1[i]];
+            out.triangles2[i] = this.triangles2[cycles.xp2[i]];
         }
     }
 
@@ -453,8 +526,8 @@ public class FtoCubie {
         FtoCubie fto = (FtoCubie) obj;
 
         return Arrays.equals(fto.edges, this.edges) &&
-            Arrays.equals(fto.centers1, this.centers1) &&
-            Arrays.equals(fto.centers2, this.centers2) &&
+            Arrays.equals(fto.triangles1, this.triangles1) &&
+            Arrays.equals(fto.triangles2, this.triangles2) &&
             Arrays.equals(fto.co, this.co) &&
             Arrays.equals(fto.cp, this.cp);
     }
@@ -462,8 +535,8 @@ public class FtoCubie {
     @Override
     public int hashCode() {
         return Arrays.hashCode(this.edges) ^
-            Arrays.hashCode(this.centers1) ^
-            Arrays.hashCode(this.centers2) ^
+            Arrays.hashCode(this.triangles1) ^
+            Arrays.hashCode(this.triangles2) ^
             Arrays.hashCode(this.co) ^
             Arrays.hashCode(this.cp);
     }

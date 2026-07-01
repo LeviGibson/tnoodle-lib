@@ -66,6 +66,26 @@ class FtoCubieTest {
     }
 
     @Test
+    void testTriangleIndex(){
+        Random r = new Random(42);
+        for (int i = 0; i < 10000; i++) {
+            FtoCubie ftoCubie = new FtoCubie();
+            for (int j = 0; j < 100; j++) {
+                FtoCubie out = new FtoCubie();
+                ftoCubie.turn(r.nextInt(16), out);
+                ftoCubie = out;
+            }
+
+            int idx = ftoCubie.packAllTriangles(0);
+            FtoCubie testCube = new FtoCubie();
+
+            testCube.setAllTriangles(idx, 0);
+            assertEquals(idx, testCube.packAllTriangles(0));
+            assertArrayEquals(ftoCubie.triangles1, testCube.triangles1);
+        }
+    }
+
+    @Test
     void testCornerPermutationIndex(){
         Random r = new Random(42);
         for (int i = 0; i < 10000; i++) {
@@ -173,9 +193,9 @@ class FtoCubieTest {
                     "trial " + trial + " move " + cw + "+" + ccw + ": co mismatch");
                 assertArrayEquals(state.edges, result.edges,
                     "trial " + trial + " move " + cw + "+" + ccw + ": edges mismatch");
-                assertArrayEquals(state.centers1, result.centers1,
+                assertArrayEquals(state.triangles1, result.triangles1,
                     "trial " + trial + " move " + cw + "+" + ccw + ": centers1 mismatch");
-                assertArrayEquals(state.centers2, result.centers2,
+                assertArrayEquals(state.triangles2, result.triangles2,
                     "trial " + trial + " move " + cw + "+" + ccw + ": centers2 mismatch");
 
                 // CCW then CW should also return to original state
@@ -187,9 +207,9 @@ class FtoCubieTest {
                     "trial " + trial + " move " + ccw + "+" + cw + ": co mismatch");
                 assertArrayEquals(state.edges, result.edges,
                     "trial " + trial + " move " + ccw + "+" + cw + ": edges mismatch");
-                assertArrayEquals(state.centers1, result.centers1,
+                assertArrayEquals(state.triangles1, result.triangles1,
                     "trial " + trial + " move " + ccw + "+" + cw + ": centers1 mismatch");
-                assertArrayEquals(state.centers2, result.centers2,
+                assertArrayEquals(state.triangles2, result.triangles2,
                     "trial " + trial + " move " + ccw + "+" + cw + ": centers2 mismatch");
             }
         }
@@ -212,7 +232,7 @@ class FtoCubieTest {
 
             testCube.setG2Triangles(idx);
             assertEquals(idx, testCube.packG2Tris());
-            assertArrayEquals(ftoCubie.centers2, testCube.centers2);
+            assertArrayEquals(ftoCubie.triangles2, testCube.triangles2);
         }
     }
 
