@@ -286,19 +286,33 @@ public class Search {
     private static void initCenterPruning(){
         centerPrun = new HashMap<>();
 
-        for (Integer edge : PHASE_TWO_SOLVED_EDGES) {
-            centerPruningSearch(7, 0, 0, edge, 0);
-        }
+        centerPruningSearch(7, 0, 0, new FtoCubie().packG2Edges(), 0);
 
         initialized = true;
     }
 
+    static void performanceTest(){
+        Random r = new Random(42);
+        long start = System.currentTimeMillis();
+
+        Search search = new Search();
+        for (int i = 0; i < 20; i++) {
+            FtoCubie rs = FtoCubie.randomCube(r);
+            System.out.println(search.solution(rs));
+        }
+
+        System.out.println((System.currentTimeMillis() - start) / 20);
+    }
+
 
     public static void main(String[] args) {
+//        performanceTest();
         Search search = new Search();
-//        FtoCubie rs = Util.applyAlg("L' D' R' L R D B' D U R' D U' R U' R D B L U F' R L' F' BR B BR");
-        FtoCubie rs = FtoCubie.randomCube(new Random());
-        System.out.println(search.solution(rs));
+
+        FtoCubie fto = Util.applyAlg("R' B L D' R L BR' B R' L BR D' R' B' BR' R D B D U' F' R' BL U L");
+
+        System.out.println(search.solution(fto));
+
     }
 
 }

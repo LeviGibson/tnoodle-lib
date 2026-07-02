@@ -43,7 +43,7 @@ public class FtoCubie {
 
     public static FtoCubie randomCube(Random r){
         FtoCubie fto = new FtoCubie();
-        fto.setAllEdges(r.nextInt(239500800)); // 12! / 2
+        fto.setAllEdges(r.nextInt(239500800)); //8481 12! / 2
         fto.setAllCornerOrientation(r.nextInt(32)); // 2 ^ 5
         fto.setAllCornerPermutation(r.nextInt(360)); // 6! / 2
         fto.setAllTriangles(r.nextInt(369600), 0); // C(12,3) * C(9,3) * C(6,3)
@@ -251,18 +251,112 @@ public class FtoCubie {
         }
     }
 
+    private int[] G2_EDGE_COLORS = {XB, XR, XL, XL, XR, XR, XB, XB, XL};
+    //        EUB = 0, EUR = 1, EUL = 2, EFL = 3,
+    //        EFR = 4, ERBR = 5, EBRB = 6, EBLB = 7,
+    //        ELBL = 8, EDF = 9, EDBR = 10, EDBL = 11;
+    private int[] G2_EDGE_NORM = {0, 0, 0, 1, 1, 2, 1, 2, 2};
+    private int[][] G2_EDGE_NORM_INV = {
+        {EUR, EFR, ERBR},
+        {EUL, EFL, ELBL},
+        {EUB, EBRB, EBLB},
+    };
+
     public int packG2Edges(){
         for (int i = 0; i < 9; i++) {
             if (edges[i] > 8) throw new IllegalStateException("Edges not in phase 1");
         }
 
-        return packPerm(edges, true, 9);
+        boolean[] used = new boolean[9];
+        int[][] loc = new int[2][3];
+        int[][] perm = new int[2][3];
+        int[] parity = new int[2];
+
+        for (int xo = 0; xo < 2; xo++) {
+            int found = 0;
+            int passed = 0;
+            for (int i = 0; i < 9; i++) {
+                if (G2_EDGE_COLORS[edges[i]] == xo){
+                    perm[xo][found] = G2_EDGE_NORM[edges[i]];
+                    loc[xo][found++] = passed;
+                    used[i] = true;
+                    passed++;
+                } else if (!used[i]){
+                    passed++;
+                }
+            }
+
+            if (found != 3)
+                throw new IllegalStateException("Expected found=3. Instead, found=" + found);
+        }
+
+        for (int i = 0; i < 2; i++) {
+            parity[i] = parity(perm[i]) ? 1 : 0;
+        }
+
+        int subsetIndex = packSubset(loc[1]) +
+            packSubset(loc[0]) * nCr(6, 3);
+
+        int parityIndex = parity[1] * 2 + parity[0];
+
+        return (subsetIndex * 4) + parityIndex;
     }
 
     public void setG2Edges(int idx){
-        unpackPerm(edges, idx, 9, true);
+        int subsetIndex = idx/4;
+        int parityIndex = idx % 4;
+
+        int[][] loc = new int[2][3];
+        int[][] perm = new int[2][3];
+        int[] parity = new int[2];
+
+        parity[0] = parityIndex & 1;
+        parity[1] = (parityIndex >> 1) & 1;
+
+        unpackSubset(loc[0], subsetIndex / nCr(6, 3));
+        unpackSubset(loc[1], subsetIndex % nCr(6, 3));
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 3; j++) {
+                perm[i][j] = G2_EDGE_NORM_INV[i][j];
+            }
+            if (parity[i] == 1){
+                swap(perm[i], 1, 2);
+            }
+        }
+
+        Arrays.fill(edges, -1);
+
         for (int i = 9; i < 12; i++) {
             edges[i] = i;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            edges[loc[0][i]] = perm[0][i];
+        }
+
+        int nz = 0;
+        int li = 0;
+        for (int i = 0; i < 9; i++) {
+            if (edges[i] != -1) continue;
+            if (li < 3 && nz == loc[1][li]) {
+                edges[i] = perm[1][li];
+                li++;
+            }
+            nz++;
+        }
+
+        int[] bloc = new int[3];
+        li = 0;
+        for (int i = 0; i < 9; i++) {
+            if (edges[i] == -1) {
+                bloc[li] = i;
+                edges[i] = G2_EDGE_NORM_INV[2][li++];
+            }
+        }
+
+        if (parity(edges)){
+            swap(edges, bloc[0], bloc[1]);
         }
     }
 

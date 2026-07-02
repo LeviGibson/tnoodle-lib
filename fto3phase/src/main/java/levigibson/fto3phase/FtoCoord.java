@@ -135,41 +135,17 @@ public class FtoCoord {
     }
 
     static byte[] g2GenerateEdgesPruningTable() {
-        final int size = 181440;
+        final int size = 6720;
 
         final int[] edgeMoves = {FtoCubie.U, FtoCubie.UP, FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP};
         final int moves = edgeMoves.length;
-
-        boolean[] startSeen = new boolean[size];
-        int[] startIndices = new int[27];
-        int startCount = 0;
-        for (int r = 0; r < 3; r++) {
-            for (int l = 0; l < 3; l++) {
-                for (int b = 0; b < 3; b++) {
-                    FtoCubie fto = new FtoCubie();
-                    for (int ri = 0; ri < r; ri++) fto = fto.turn(FtoCubie.R);
-                    for (int li = 0; li < l; li++) fto = fto.turn(FtoCubie.L);
-                    for (int bi = 0; bi < b; bi++) fto = fto.turn(FtoCubie.B);
-
-                    int idx = fto.packG2Edges();
-                    if (!startSeen[idx]) {
-                        startSeen[idx] = true;
-                        startIndices[startCount++] = idx;
-                    }
-                }
-            }
-        }
-        int uniqueStarts = startCount;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
         java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
-        for (int s = 0; s < uniqueStarts; s++) {
-            int idx = startIndices[s];
-            prun[idx] = 0;
-            frontier.add(idx);
-        }
+        frontier.add(new FtoCubie().packG2Edges());
+        prun[frontier.get(0)] = 0;
 
         int depth = 0;
         while (!frontier.isEmpty()) {
@@ -347,42 +323,18 @@ public class FtoCoord {
         g2trianglePrun = g2GenerateTrianglePruningTable();
     }
 
-    public static Set<Integer> PHASE_TWO_SOLVED_EDGES;
-
     private static synchronized void initPhaseTwoEdges(){
-        G2_EDGE_MOVES = new int[181440][10];
+        G2_EDGE_MOVES = new int[6720][10];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 181440; idx++) {
+        for (int idx = 0; idx < 6720; idx++) {
             fto.setG2Edges(idx);
             int[] moves = G2_EDGE_MOVES[idx];
 
             for (int move = 0; move < 10; move++) {
                 fto.turn(move, turned);
                 moves[move] = turned.packG2Edges();
-            }
-        }
-
-        PHASE_TWO_SOLVED_EDGES = new HashSet<>();
-
-        for (int r = 0; r < 3; r++) {
-            for (int l = 0; l < 3; l++) {
-                for (int b = 0; b < 3; b++) {
-                    fto = new FtoCubie();
-
-                    for (int i = 0; i < r; i++) {
-                        fto = fto.turn(FtoCubie.R);
-                    }
-                    for (int i = 0; i < l; i++) {
-                        fto = fto.turn(FtoCubie.L);
-                    }
-                    for (int i = 0; i < b; i++) {
-                        fto = fto.turn(FtoCubie.B);
-                    }
-
-                    PHASE_TWO_SOLVED_EDGES.add(fto.packG2Edges());
-                }
             }
         }
 
