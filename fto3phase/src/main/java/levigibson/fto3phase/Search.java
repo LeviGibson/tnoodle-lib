@@ -2,8 +2,8 @@ package levigibson.fto3phase;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 import static levigibson.fto3phase.FtoCoord.*;
 
@@ -14,11 +14,8 @@ public class Search {
     }
 
     private int[] moves;
-    private long[] nodes;
 
     public boolean searchPhaseTwo(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
-        nodes[depth]++;
-
         int edgePrun = FtoCoord.g2PrunEdge(edge);
         if (depth < edgePrun)
             return false;
@@ -115,19 +112,57 @@ public class Search {
         return candidates;
     }
 
-    public int[] iteratePhaseTwo(FtoCubie cubie){
-        int edge = cubie.packG2Edges();
-        int tri = cubie.packG2Tris();
-        int tp0 = cubie.packG2Triples(0);
-        int tp1 = cubie.packG2Triples(1);
-        int tp2 = cubie.packG2Triples(2);
-        int tp3 = cubie.packG2Triples(3);
+    private static int[][] buildStatesFromCandidates(FtoCubie cubie, ArrayList<int[]> candidates){
+        int[][] states = new int[candidates.size()][6];
+
+        for (int i = 0; i < candidates.size(); i++) {
+            FtoCubie fto = new FtoCubie(cubie);
+            int[] moves = candidates.get(i);
+
+            for (int move : moves) {
+                fto = fto.turn(move);
+            }
+
+            states[i][0] = fto.packG2Edges();
+            states[i][1] = fto.packG2Tris();
+            states[i][2] = fto.packG2Triples(0);
+            states[i][3] = fto.packG2Triples(1);
+            states[i][4] = fto.packG2Triples(2);
+            states[i][5] = fto.packG2Triples(3);
+        }
+
+        return states;
+    }
+
+    private static int[] buildLengthFromCandidates(ArrayList<int[]> candidates){
+        int[] lengths = new int[candidates.size()];
+        for (int i = 0; i < candidates.size(); i++) {
+            lengths[i] = candidates.get(i).length;
+        }
+        return lengths;
+    }
+
+    public int[] iteratePhaseTwo(FtoCubie cubie, ArrayList<int[]> candidates){
+        int[][] states = buildStatesFromCandidates(cubie, candidates);
+        int[] lengths = buildLengthFromCandidates(candidates);
 
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
-            boolean res = searchPhaseTwo(depth, 0, edge, tri, tp0, tp1, tp2, tp3);
-            if (res){
-                return Arrays.copyOf(moves, depth);
+            for (int c = 0; c < states.length; c++) {
+
+                int searchDepth = depth - lengths[c];
+                if (searchDepth < 0) continue;
+
+                int[] s = states[c];
+
+                boolean res = searchPhaseTwo(searchDepth, 0, s[0], s[1], s[2], s[3], s[4], s[5]);
+                if (res){
+                    int[] g1sol = candidates.get(c);
+                    int[] g2sol = Arrays.copyOf(moves, searchDepth);
+
+                    return IntStream.concat(Arrays.stream(g1sol), Arrays.stream(g2sol)).toArray();
+                }
             }
+
         }
 
         throw new RuntimeException("Could not find Phase 2 solution");
@@ -188,33 +223,16 @@ public class Search {
         if (!FtoCoord.getInitialized())
             FtoCoord.init();
 
-        long start = System.currentTimeMillis();
-
-        nodes = new long[24];
-
         ArrayList<int[]> candidates = iteratePhaseOne(RANDOM_STATE);
-        int[] g1sol = candidates.get(0);
-
-        System.out.println("Phase 1 time: " + (System.currentTimeMillis() - start));
-
         FtoCubie fto = new FtoCubie(RANDOM_STATE);
-        for (int move : candidates.get(0)){
-            fto = fto.turn(move);
-        }
 
-        int[] g2sol = iteratePhaseTwo(fto);
-
-        for (int move : g2sol){
-            fto = fto.turn(move);
-        }
-
-        System.out.println("Phase 2 time: " + (System.currentTimeMillis() - start));
-
+        int[] g2sol = iteratePhaseTwo(fto, candidates);
+        for (int move : g2sol){ fto = fto.turn(move);}
         int[] g3sol = iteratePhaseThree(fto);
 
-        System.out.println("Phase 3 time: " + (System.currentTimeMillis() - start));
+        int[] fullSolution = IntStream.concat(Arrays.stream(g2sol), Arrays.stream(g3sol)).toArray();
 
-        return Util.moveArrayToString(g1sol) + " " + Util.moveArrayToString(g2sol) + " " + Util.moveArrayToString(g3sol);
+        return Util.moveArrayToInvertedString(fullSolution);
     }
 
     private static final int[] invalidMoves;
@@ -240,26 +258,24 @@ public class Search {
         invalidMoves = initInvalidMoveTable();
     }
 
-    static void performanceTest(){
+    static void performanceTest(int n){
         Random r = new Random(42);
         long start = System.currentTimeMillis();
 
         Search search = new Search();
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < n; i++) {
             FtoCubie rs = FtoCubie.randomCube(r);
             System.out.println(search.solution(rs));
         }
 
-        System.out.println((System.currentTimeMillis() - start) / 20);
+        System.out.println((System.currentTimeMillis() - start) / n);
     }
 
 
     public static void main(String[] args) {
-        performanceTest();
+        performanceTest(500);
 //        Search search = new Search();
-//
 //        FtoCubie fto = Util.applyAlg("R' B L D' R L BR' B R' L BR D' R' B' BR' R D B D U' F' R' BL U L");
-//
 //        System.out.println(search.solution(fto));
 
     }

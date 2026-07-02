@@ -162,18 +162,16 @@ public class Util {
         return a;
     }
 
-    private static final String[] MOVE_NAMES = {"R", "R'", "L", "L'", "B", "B'", "U", "U'", "D", "D'", "F", "F'", "BR", "BR'", "BL", "BL'"};
+    private static final String[] INVERSE_MOVE_NAMES = {"R'", "R", "L'", "L", "B'", "B", "U'", "U", "D'", "D", "F'", "F", "BR'", "BR", "BL'", "BL"};
 
-    public static String moveArrayToString(int[] moves, int length) {
-        if (length > moves.length)
-            throw new IllegalArgumentException("length must be less than or equal to the size of moves[]");
+    public static String moveArrayToInvertedString(int[] moves) {
 
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < moves.length; i++) {
             if (i > 0) {
                 sb.append(' ');
             }
-            sb.append(MOVE_NAMES[moves[i]]);
+            sb.append(INVERSE_MOVE_NAMES[moves[moves.length - 1 - i]]);
         }
         return sb.toString();
     }
@@ -184,9 +182,5 @@ public class Util {
             c *= a;
         }
         return c;
-    }
-
-    public static String moveArrayToString(int[] moves) {
-        return moveArrayToString(moves, moves.length);
     }
 }
