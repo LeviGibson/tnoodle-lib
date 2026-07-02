@@ -128,7 +128,7 @@ class FtoCubieTest {
     @Test
     void testG1EdgeIndex(){
         Random r = new Random(42);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 100000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
                 FtoCubie out = new FtoCubie();

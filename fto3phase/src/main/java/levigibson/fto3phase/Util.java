@@ -28,7 +28,7 @@ public class Util {
         arr[i1] = tmp;
     }
 
-    public static boolean parity(int[] perm) {
+    public static boolean isParity(int[] perm) {
         perm = Arrays.copyOf(perm, perm.length);
 
         int n = perm.length;
@@ -92,7 +92,7 @@ public class Util {
             used[e] = true;
         }
 
-        if (parity && Util.parity(arr)){
+        if (parity && Util.isParity(arr)){
             Util.swap(arr, size-2, size-1);
         }
     }

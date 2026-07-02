@@ -71,13 +71,15 @@ public class Search {
 
     public void searchPhaseOne(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates){
 
-        if (FtoCoord.isPhaseOne(edge, tri)){
+        int edgePrun = FtoCoord.g1PrunEdge(edge);
+
+        if (depth < edgePrun)
+            return;
+
+        if (tri == 219 && edgePrun == 0){
             candidates.add(Arrays.copyOf(moves, maxl));
             return;
         }
-
-        if (depth < FtoCoord.g1PrunEdge(edge))
-            return;
 
         if (depth <= 0){
             return;

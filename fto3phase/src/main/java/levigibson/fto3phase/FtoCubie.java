@@ -171,22 +171,21 @@ public class FtoCubie {
             throw new IllegalStateException("Expected 3 D-face edges. This is not a possible FTO state.");
         }
 
-        return packSubset(loc) * 6 + packPerm(perm, false);
+        int parity = isParity(perm) ? 1 : 0;
+
+        return packSubset(loc) * 2 + parity;
     }
 
     public void setG1Edges(int idx){
-        int locIdx = idx / 6;
-        int permIdx = idx % 6;
+        int locIdx = idx / 2;
+        int parity = idx % 2;
 
         int[] loc = new int[3];
-        int[] perm = new int[3];
+        int[] perm = {EDF, EDBR, EDBL};
+        if (parity == 1) swap(perm, 1, 2);
 
         //Unpack loc
         unpackSubset(loc, locIdx);
-
-        //Unpack perm
-        unpackPerm(perm, permIdx, false);
-        for (int i = 0; i < 3; i++) { perm[i] += 9; }
 
         //set the edges
         Arrays.fill(edges, -1);
@@ -198,19 +197,6 @@ public class FtoCubie {
             if (edges[i] == -1) {
                 edges[i] = nonD++;
             }
-        }
-
-        //Parity fix
-        //(This has nothing to do with the phase 1 edges)
-        //(The other edges are filled with garbage)
-        //(But it should be garbage with the correct parity)
-        //(so it doesn't crash the program)
-        if (parity(edges)) {
-            int i = 0;
-            while (edges[i] >= 9) i++;
-            int j = i + 1;
-            while (edges[j] >= 9) j++;
-            swap(edges, i, j);
         }
     }
 
@@ -251,12 +237,9 @@ public class FtoCubie {
         }
     }
 
-    private int[] G2_EDGE_COLORS = {XB, XR, XL, XL, XR, XR, XB, XB, XL};
-    //        EUB = 0, EUR = 1, EUL = 2, EFL = 3,
-    //        EFR = 4, ERBR = 5, EBRB = 6, EBLB = 7,
-    //        ELBL = 8, EDF = 9, EDBR = 10, EDBL = 11;
-    private int[] G2_EDGE_NORM = {0, 0, 0, 1, 1, 2, 1, 2, 2};
-    private int[][] G2_EDGE_NORM_INV = {
+    private final int[] G2_EDGE_COLORS = {XB, XR, XL, XL, XR, XR, XB, XB, XL};
+    private final int[] G2_EDGE_NORM = {0, 0, 0, 1, 1, 2, 1, 2, 2};
+    private final int[][] G2_EDGE_NORM_INV = {
         {EUR, EFR, ERBR},
         {EUL, EFL, ELBL},
         {EUB, EBRB, EBLB},
@@ -291,7 +274,7 @@ public class FtoCubie {
         }
 
         for (int i = 0; i < 2; i++) {
-            parity[i] = parity(perm[i]) ? 1 : 0;
+            parity[i] = isParity(perm[i]) ? 1 : 0;
         }
 
         int subsetIndex = packSubset(loc[1]) +
@@ -355,7 +338,7 @@ public class FtoCubie {
             }
         }
 
-        if (parity(edges)){
+        if (isParity(edges)){
             swap(edges, bloc[0], bloc[1]);
         }
     }

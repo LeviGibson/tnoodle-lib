@@ -110,7 +110,7 @@ public class FtoCoord {
     //-------------- Pruning Table Generation --------------//
 
     static byte[] g1GenerateEdgesPruningTable() {
-        final int size = 1320;
+        final int size = 440;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
@@ -138,6 +138,36 @@ public class FtoCoord {
 
         return prun;
     }
+
+//    static byte[] g1GenerateTrianglesPruningTable() {
+//        final int size = 220;
+//
+//        byte[] prun = new byte[size];
+//        Arrays.fill(prun, (byte) -1);
+//
+//        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+//        frontier.add(new FtoCubie().packG1Edges());
+//        prun[frontier.get(0)] = 0;
+//
+//        int depth = 0;
+//        while (!frontier.isEmpty()) {
+//            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+//
+//            for (int idx : frontier) {
+//                for (int m = 0; m < 16; m++) {
+//                    int nextIdx = G1_EDGE_MOVES[idx][m];
+//                    if (prun[nextIdx] == -1) {
+//                        prun[nextIdx] = (byte) (depth + 1);
+//                        next.add(nextIdx);
+//                    }
+//                }
+//            }
+//            frontier = next;
+//            depth++;
+//        }
+//
+//        return prun;
+//    }
 
     static byte[] g2GenerateEdgesPruningTable() {
         final int size = 6720;
@@ -322,11 +352,11 @@ public class FtoCoord {
     //-------------- Move Table Generation --------------//
 
     private static synchronized void initPhaseOneEdges(){
-        G1_EDGE_MOVES = new int[1320][16];
+        G1_EDGE_MOVES = new int[440][16];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 220 * 6; idx++) {
+        for (int idx = 0; idx < 440; idx++) {
                 fto.setG1Edges(idx);
                 int[] locMoves = G1_EDGE_MOVES[idx];
 
