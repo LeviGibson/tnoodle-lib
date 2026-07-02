@@ -13,8 +13,6 @@ public class Search {
         moves = new int[64];
     }
 
-    private static boolean initialized = false;
-
     private int[] moves;
     private long[] nodes;
 
@@ -33,11 +31,9 @@ public class Search {
         if (depth < trianglePrun)
             return false;
 
-        if (depth <= 7) {
-            int centerPrun = prunG2Centers(edge, tri);
-
-            if (depth < centerPrun)
-                return false;
+        int txEPrun = FtoCoord.g2PrunTxE(edge, tri);
+        if (depth < txEPrun){
+            return false;
         }
 
         if (triplePrun == 0 && edgePrun == 0 && trianglePrun == 0){
@@ -190,9 +186,6 @@ public class Search {
         if (!FtoCoord.getInitialized())
             FtoCoord.init();
 
-        if (initialized == false)
-            initCenterPruning();
-
         long start = System.currentTimeMillis();
 
         nodes = new long[24];
@@ -245,52 +238,6 @@ public class Search {
         invalidMoves = initInvalidMoveTable();
     }
 
-    private static HashMap<Integer, Integer> centerPrun;
-
-    private static void centerPruningSearch(int depth, int maxl, int lm, int edge, int tri){
-
-        int key = edge | (tri << 19);
-
-        if (centerPrun.containsKey(key)){
-            centerPrun.put(key, Math.min(centerPrun.get(key), depth));
-        } else {
-            centerPrun.put(key, depth);
-        }
-
-        if (depth == 0){
-            return;
-        }
-
-        for (int move = 0; move < 10; move++) {
-            if (maxl > 0) {
-                int la = lm / 2;
-                int ca = move / 2;
-                if (((invalidMoves[la] >> ca) & 1) == 1) continue;
-            }
-
-            centerPruningSearch(depth-1, maxl+1, move,
-                g2TurnEdges(edge, move),
-                g2TurnTris(tri, move));
-
-        }
-    }
-
-    public static int prunG2Centers(int edge, int tri){
-        int key = edge | (tri << 19);
-        if (!centerPrun.containsKey(key))
-            return Integer.MAX_VALUE;
-
-        return centerPrun.get(key);
-    }
-
-    private static void initCenterPruning(){
-        centerPrun = new HashMap<>();
-
-        centerPruningSearch(7, 0, 0, new FtoCubie().packG2Edges(), 0);
-
-        initialized = true;
-    }
-
     static void performanceTest(){
         Random r = new Random(42);
         long start = System.currentTimeMillis();
@@ -306,12 +253,12 @@ public class Search {
 
 
     public static void main(String[] args) {
-//        performanceTest();
-        Search search = new Search();
-
-        FtoCubie fto = Util.applyAlg("R' B L D' R L BR' B R' L BR D' R' B' BR' R D B D U' F' R' BL U L");
-
-        System.out.println(search.solution(fto));
+        performanceTest();
+//        Search search = new Search();
+//
+//        FtoCubie fto = Util.applyAlg("R' B L D' R L BR' B R' L BR D' R' B' BR' R D B D U' F' R' BL U L");
+//
+//        System.out.println(search.solution(fto));
 
     }
 

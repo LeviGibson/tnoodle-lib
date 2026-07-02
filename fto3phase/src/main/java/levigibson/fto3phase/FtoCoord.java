@@ -23,6 +23,7 @@ public class FtoCoord {
     private static byte[] g2edgePrun;
     private static byte[] g2triplePrun;
     private static byte[] g2trianglePrun;
+    private static byte[] g2TxEPrun;
     private static byte[] g1EdgePrun;
 
     //-------------- Public Turn Functions --------------//
@@ -78,6 +79,10 @@ public class FtoCoord {
 
     public static int g2PrunTriangle(int idx){
         return g2trianglePrun[idx];
+    }
+
+    public static int g2PrunTxE(int edge, int tris){
+        return g2TxEPrun[packTxE(edge, tris)];
     }
 
     //-------------- Solve Check Functions --------------//
@@ -269,6 +274,51 @@ public class FtoCoord {
         return prun;
     }
 
+    private static int packTxE(int edge, int tri){
+        return edge * 1680 + tri;
+    };
+
+    private static int turnTxE(int idx, int move){
+        int edge = idx / 1680;
+        int tri = idx % 1680;
+
+        edge = g2TurnEdges(edge, move);
+        tri = g2TurnTris(tri, move);
+
+        return packTxE(edge, tri);
+    }
+
+    private static synchronized void initTxEPrun(){
+        final int size = 6720 * 1680;
+
+        byte[] prun = new byte[size];
+        Arrays.fill(prun, (byte) -1);
+
+        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        FtoCubie solved = new FtoCubie();
+        frontier.add(packTxE(solved.packG2Edges(), solved.packG2Tris()));
+        prun[frontier.get(0)] = 0;
+
+        int depth = 0;
+        while (!frontier.isEmpty()) {
+            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+
+            for (int idx : frontier) {
+                for (int m = 0; m < 10; m++) {
+                    int nextIdx = turnTxE(idx, m);
+                    if (prun[nextIdx] == -1) {
+                        prun[nextIdx] = (byte) (depth + 1);
+                        next.add(nextIdx);
+                    }
+                }
+            }
+            frontier = next;
+            depth++;
+        }
+
+        g2TxEPrun = prun;
+    }
+
     //-------------- Move Table Generation --------------//
 
     private static synchronized void initPhaseOneEdges(){
@@ -415,17 +465,22 @@ public class FtoCoord {
             return;
         };
 
+        long start = System.currentTimeMillis();
+
         initPhaseOneEdges();
         initPhaseOneTriangles();
         initPhaseTwoTris();
-        long start = System.currentTimeMillis();
 
         initPhaseTwoEdges();
-        System.out.println("Time to initialize: " + (System.currentTimeMillis() - start));
 
         initTriples();
         initPhaseThreeEdges();
         initPhaseThreeCorners();
+
+        initTxEPrun();
+
+        System.out.println("Time to initialize: " + (System.currentTimeMillis() - start));
+
 
         initialized = true;
     }
