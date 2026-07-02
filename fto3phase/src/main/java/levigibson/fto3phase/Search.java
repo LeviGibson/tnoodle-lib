@@ -16,16 +16,9 @@ public class Search {
     private int[] moves;
 
     public boolean searchPhaseTwo(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
-        int edgePrun = FtoCoord.g2PrunEdge(edge);
-        if (depth < edgePrun)
-            return false;
 
         int triplePrun = FtoCoord.g2PrunTriple(tp0, tp1, tp2, tp3);
         if (depth < triplePrun)
-            return false;
-
-        int trianglePrun = FtoCoord.g2PrunTriangle(tri);
-        if (depth < trianglePrun)
             return false;
 
         int txEPrun = FtoCoord.g2PrunTxE(edge, tri);
@@ -33,7 +26,7 @@ public class Search {
             return false;
         }
 
-        if (triplePrun == 0 && edgePrun == 0 && trianglePrun == 0){
+        if (triplePrun == 0 && txEPrun == 0){
             return true;
         }
 

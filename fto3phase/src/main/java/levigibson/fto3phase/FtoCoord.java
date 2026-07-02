@@ -20,9 +20,7 @@ public class FtoCoord {
 
     //-------------- Pruning Tables --------------//
 
-    private static byte[] g2edgePrun;
     private static byte[] g2triplePrun;
-    private static byte[] g2trianglePrun;
     private static byte[] g2TxEPrun;
     private static byte[] g1Prun;
 
@@ -62,10 +60,6 @@ public class FtoCoord {
         return g1Prun[packG1(edge, tris)];
     }
 
-    public static int g2PrunEdge(int idx){
-        return g2edgePrun[idx];
-    }
-
     public static int g2PrunTriple(int idx1, int idx2, int idx3, int idx4){
         int prun = 0;
         prun = Math.max(prun, g2triplePrun[idx1]);
@@ -73,10 +67,6 @@ public class FtoCoord {
         prun = Math.max(prun, g2triplePrun[idx3]);
         prun = Math.max(prun, g2triplePrun[idx4]);
         return prun;
-    }
-
-    public static int g2PrunTriangle(int idx){
-        return g2trianglePrun[idx];
     }
 
     public static int g2PrunTxE(int edge, int tris){
@@ -139,72 +129,6 @@ public class FtoCoord {
             for (int idx : frontier) {
                 for (int m = 0; m < 16; m++) {
                     int nextIdx = turnG1(idx, m);
-                    if (prun[nextIdx] == -1) {
-                        prun[nextIdx] = (byte) (depth + 1);
-                        next.add(nextIdx);
-                    }
-                }
-            }
-            frontier = next;
-            depth++;
-        }
-
-        return prun;
-    }
-
-    static byte[] g2GenerateEdgesPruningTable() {
-        final int size = 6720;
-
-        final int[] edgeMoves = {FtoCubie.U, FtoCubie.UP, FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP};
-        final int moves = edgeMoves.length;
-
-        byte[] prun = new byte[size];
-        Arrays.fill(prun, (byte) -1);
-
-        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
-        frontier.add(new FtoCubie().packG2Edges());
-        prun[frontier.get(0)] = 0;
-
-        int depth = 0;
-        while (!frontier.isEmpty()) {
-            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
-
-            for (int idx : frontier) {
-                for (int m = 0; m < moves; m++) {
-                    int nextIdx = G2_EDGE_MOVES[idx][edgeMoves[m]];
-                    if (prun[nextIdx] == -1) {
-                        prun[nextIdx] = (byte) (depth + 1);
-                        next.add(nextIdx);
-                    }
-                }
-            }
-            frontier = next;
-            depth++;
-        }
-
-        return prun;
-    }
-
-    static byte[] g2GenerateTrianglePruningTable() {
-        final int size = 1680;
-
-        final int[] edgeMoves = {FtoCubie.U, FtoCubie.UP, FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP};
-        final int moves = edgeMoves.length;
-
-        byte[] prun = new byte[size];
-        Arrays.fill(prun, (byte) -1);
-
-        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
-        frontier.add(new FtoCubie().packG2Tris());
-        prun[frontier.get(0)] = 0;
-
-        int depth = 0;
-        while (!frontier.isEmpty()) {
-            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
-
-            for (int idx : frontier) {
-                for (int m = 0; m < moves; m++) {
-                    int nextIdx = G2_TRIANGLE_MOVES[idx][edgeMoves[m]];
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
                         next.add(nextIdx);
@@ -380,8 +304,6 @@ public class FtoCoord {
                 moves[move] = turned.packG2Tris();
             }
         }
-
-        g2trianglePrun = g2GenerateTrianglePruningTable();
     }
 
     private static synchronized void initPhaseTwoEdges(){
@@ -398,8 +320,6 @@ public class FtoCoord {
                 moves[move] = turned.packG2Edges();
             }
         }
-
-        g2edgePrun = g2GenerateEdgesPruningTable();
     }
 
     public static void initTriples(){
