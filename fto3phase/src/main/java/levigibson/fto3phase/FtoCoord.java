@@ -24,17 +24,15 @@ public class FtoCoord {
     private static byte[] g2triplePrun;
     private static byte[] g2trianglePrun;
     private static byte[] g2TxEPrun;
-    private static byte[] g1EdgePrun;
+    private static byte[] g1Prun;
 
     //-------------- Public Turn Functions --------------//
 
     public static int g1TurnEdges(int idx, int move){
-        if (!initialized) throw new IllegalStateException("Can not turn the cube when its not initialized");
         return G1_EDGE_MOVES[idx][move];
     }
 
     public static int g1TurnTriangles(int idx, int move){
-        if (!initialized) throw new IllegalStateException("Can not turn the cube when its not initialized");
         return G1_TRIANGLE_MOVES[idx][move];
     }
 
@@ -60,8 +58,8 @@ public class FtoCoord {
 
     //-------------- Public Pruning Functions --------------//
 
-    public static int g1PrunEdge(int idx){
-        return g1EdgePrun[idx];
+    public static int g1Prun(int edge, int tris){
+        return g1Prun[packG1(edge, tris)];
     }
 
     public static int g2PrunEdge(int idx){
@@ -109,14 +107,29 @@ public class FtoCoord {
 
     //-------------- Pruning Table Generation --------------//
 
-    static byte[] g1GenerateEdgesPruningTable() {
-        final int size = 440;
+    private static int packG1(int edge, int tris){
+        return edge * 220 + tris;
+    }
+
+    private static int turnG1(int idx, int move){
+        int edge = idx / 220;
+        int tri = idx % 220;
+
+        edge = g1TurnEdges(edge, move);
+        tri = g1TurnTriangles(tri, move);
+
+        return packG1(edge, tri);
+    }
+
+    static byte[] g1GeneratePruningTable() {
+        final int size = 440 * 220;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
         java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
-        frontier.add(new FtoCubie().packG1Edges());
+        FtoCubie solved = new FtoCubie();
+        frontier.add(packG1(solved.packG1Edges(), solved.packG1Triangles()));
         prun[frontier.get(0)] = 0;
 
         int depth = 0;
@@ -125,7 +138,7 @@ public class FtoCoord {
 
             for (int idx : frontier) {
                 for (int m = 0; m < 16; m++) {
-                    int nextIdx = G1_EDGE_MOVES[idx][m];
+                    int nextIdx = turnG1(idx, m);
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
                         next.add(nextIdx);
@@ -365,8 +378,6 @@ public class FtoCoord {
                     locMoves[move] = turned.packG1Edges();
                 }
         }
-
-        g1EdgePrun = g1GenerateEdgesPruningTable();
     }
 
     private static synchronized void initPhaseOneTriangles(){
@@ -499,8 +510,9 @@ public class FtoCoord {
 
         initPhaseOneEdges();
         initPhaseOneTriangles();
-        initPhaseTwoTris();
+        g1Prun = g1GeneratePruningTable();
 
+        initPhaseTwoTris();
         initPhaseTwoEdges();
 
         initTriples();

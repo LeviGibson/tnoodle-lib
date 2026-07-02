@@ -71,12 +71,12 @@ public class Search {
 
     public void searchPhaseOne(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates){
 
-        int edgePrun = FtoCoord.g1PrunEdge(edge);
+        int prun = FtoCoord.g1Prun(edge, tri);
 
-        if (depth < edgePrun)
+        if (depth < prun)
             return;
 
-        if (tri == 219 && edgePrun == 0){
+        if (prun == 0){
             candidates.add(Arrays.copyOf(moves, maxl));
             return;
         }
