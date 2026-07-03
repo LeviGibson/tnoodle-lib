@@ -58,10 +58,8 @@ public class Search {
         }
 
         for (int move = 0; move < 10; move++) {
-            if (maxl > 0) {
-                int la = moves[maxl - 1] / 2;
-                int ca = move / 2;
-                if (((invalidMoves[la] >> ca) & 1) == 1) continue;
+            if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
+                continue;
             }
 
             moves[maxl] = move;
@@ -100,10 +98,8 @@ public class Search {
 
         for (int move = 0; move < 16; move++) {
 
-            if (maxl > 0) {
-                int la = moves[maxl - 1] / 2;
-                int ca = move / 2;
-                if (((invalidMoves[la] >> ca) & 1) == 1) continue;
+            if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
+                continue;
             }
 
             moves[maxl] = move;
@@ -198,10 +194,8 @@ public class Search {
             if (move == FtoCubie.U || move == FtoCubie.UP)
                 continue;
 
-            if (maxl > 0) {
-                int la = moves[maxl - 1] / 2;
-                int ca = move / 2;
-                if (((invalidMoves[la] >> ca) & 1) == 1) continue;
+            if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
+                continue;
             }
 
             moves[maxl] = move;
@@ -230,6 +224,12 @@ public class Search {
         }
 
         throw new RuntimeException();
+    }
+
+    private static boolean isValidMove(int lastMove, int move){
+        int la = lastMove / 2;
+        int ca = move / 2;
+        return ((invalidMoves[la] >> ca) & 1) != 1;
     }
 
     private static final int[] invalidMoves;
