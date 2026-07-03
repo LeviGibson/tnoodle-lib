@@ -300,4 +300,27 @@ class FtoCubieTest {
 
         }
     }
+
+    @Test
+    void performanceTest(){
+        int n = 500;
+
+        Random r = new Random(42);
+        long start = System.currentTimeMillis();
+        int totalMoves = 0;
+
+        Search search = new Search();
+        for (int i = 0; i < n; i++) {
+            FtoCubie rs = FtoCubie.randomCube(r);
+            String solution = search.solution(rs);
+            int sollen = solution.split(" ").length;
+            System.out.print(solution);
+            System.out.println("(" + sollen + ")");
+
+            totalMoves += sollen;
+        }
+
+        System.out.println("Average Time per Scramble: " + ((System.currentTimeMillis() - start) / n) + "ms");
+        System.out.println("Average Moves per Scramble: " + (float)(totalMoves) / (float)n);
+    }
 }

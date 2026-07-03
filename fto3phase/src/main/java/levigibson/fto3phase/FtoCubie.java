@@ -192,12 +192,6 @@ public class FtoCubie {
         for (int i = 0; i < 3; i++) {
             edges[loc[i]] = perm[i];
         }
-        int nonD = 0;
-        for (int i = 0; i < 12; i++) {
-            if (edges[i] == -1) {
-                edges[i] = nonD++;
-            }
-        }
     }
 
     public int packG1Triangles(){
@@ -224,16 +218,6 @@ public class FtoCubie {
         }
         for (int i = 0; i < 3; i++) {
             triangles2[loc[i]] = XD;
-        }
-
-        //Fill in the rest with garbage
-        //(But it has to not crash the other functions)
-        int count = 0;
-        for (int i = 0; i < 12; i++) {
-            if (triangles2[i] == -1){
-                triangles2[i] = count/3;
-                count++;
-            }
         }
     }
 

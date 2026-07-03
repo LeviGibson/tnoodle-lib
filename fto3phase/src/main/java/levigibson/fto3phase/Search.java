@@ -256,30 +256,4 @@ public class Search {
     static {
         invalidMoves = initInvalidMoveTable();
     }
-
-    static void performanceTest(int n){
-        Random r = new Random(42);
-        long start = System.currentTimeMillis();
-        int totalMoves = 0;
-
-        Search search = new Search();
-        for (int i = 0; i < n; i++) {
-            FtoCubie rs = FtoCubie.randomCube(r);
-            String solution = search.solution(rs);
-            System.out.println(solution);
-        }
-
-        System.out.println((System.currentTimeMillis() - start) / n);
-        System.out.println((float)(totalMoves) / (float)n);
-    }
-
-
-    public static void main(String[] args) {
-        performanceTest(500);
-//        Search search = new Search();
-//        FtoCubie fto = Util.applyAlg("R' B L D' R L BR' B R' L BR D' R' B' BR' R D B D U' F' R' BL U L");
-//        System.out.println(search.solution(fto));
-
-    }
-
 }
