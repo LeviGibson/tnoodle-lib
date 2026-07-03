@@ -2,7 +2,7 @@ package levigibson.fto3phase;
 
 import java.util.*;
 
-public class FtoCoord {
+class FtoCoord {
     private static boolean initialized;
 
 
@@ -20,9 +20,13 @@ public class FtoCoord {
 
     //-------------- Pruning Tables --------------//
 
+    private static byte[] g1Prun;
+
     private static byte[] g2TriplePrun;
     private static byte[] g2TxEPrun;
-    private static byte[] g1Prun;
+
+    private static byte[] g3CornerPrun;
+
 
     //-------------- Public Turn Functions --------------//
 
@@ -71,6 +75,10 @@ public class FtoCoord {
 
     public static int g2PrunTxE(int edge, int tris){
         return g2TxEPrun[packTxE(edge, tris)];
+    }
+
+    public static int g3PrunCorners(int corners){
+        return g3CornerPrun[corners];
     }
 
     //-------------- Solve Check Functions --------------//
@@ -250,6 +258,38 @@ public class FtoCoord {
         return prun;
     }
 
+    private static byte[] g3GenerateCornerPrun(){
+        final int size = 11520;
+
+        final int[] moves = {FtoCubie.R, FtoCubie.RP, FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP, FtoCubie.D, FtoCubie.DP};
+
+        byte[] prun = new byte[size];
+        Arrays.fill(prun, (byte) -1);
+
+        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        frontier.add(new FtoCubie().g3PackCorners());
+        prun[frontier.get(0)] = 0;
+
+        int depth = 0;
+        while (!frontier.isEmpty()) {
+            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+
+            for (int idx : frontier) {
+                for (int move : moves) {
+                    int nextIdx = g3TurnCorners(idx, move);
+                    if (prun[nextIdx] == -1) {
+                        prun[nextIdx] = (byte) (depth + 1);
+                        next.add(nextIdx);
+                    }
+                }
+            }
+            frontier = next;
+            depth++;
+        }
+
+        return prun;
+    }
+
     //-------------- Move Table Generation --------------//
 
     private static void g1InitEdges(){
@@ -384,8 +424,7 @@ public class FtoCoord {
 
     public static synchronized void init(){
         if (initialized) {
-            System.out.println("FtoCoord::init() called twice");
-            return;
+            throw new RuntimeException("init() called twice");
         }
 
         long start = System.currentTimeMillis();
@@ -402,6 +441,7 @@ public class FtoCoord {
 
         g3InitEdges();
         g3InitCorners();
+        g3CornerPrun = g3GenerateCornerPrun();
 
         initialized = true;
 
