@@ -36,7 +36,7 @@ public class Search {
         moves = new int[64];
     }
 
-    private int[] moves;
+    private final int[] moves;
 
     public boolean searchPhaseTwo(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
 
@@ -69,10 +69,10 @@ public class Search {
             boolean res = searchPhaseTwo(depth-1, maxl+1,
                 g2TurnEdges(edge, move),
                 g2TurnTris(tri, move),
-                FtoCoord.g2TurnTriple(tp0, move),
-                FtoCoord.g2TurnTriple(tp1, move),
-                FtoCoord.g2TurnTriple(tp2, move),
-                FtoCoord.g2TurnTriple(tp3, move)
+                g2TurnTriples(tp0, move),
+                g2TurnTriples(tp1, move),
+                g2TurnTriples(tp2, move),
+                g2TurnTriples(tp3, move)
             );
 
             if (res)
@@ -109,7 +109,7 @@ public class Search {
             moves[maxl] = move;
 
             searchPhaseOne(depth-1, maxl+1,
-                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTriangles(tri, move), candidates);
+                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTris(tri, move), candidates);
 
         }
     }
@@ -118,8 +118,8 @@ public class Search {
 
         ArrayList<int[]> candidates = new ArrayList<>();
 
-        int edge = cubie.packG1Edges();
-        int tri = cubie.packG1Triangles();
+        int edge = cubie.g1PackEdges();
+        int tri = cubie.g1PackTriangles();
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
             searchPhaseOne(depth, 0, edge, tri, candidates);
             if (candidates.size() >= 500) break;
@@ -137,12 +137,12 @@ public class Search {
 
             FtoCubie candidateCubie = fto.applyMoves(moves);
 
-            states[i][0] = candidateCubie.packG2Edges();
-            states[i][1] = candidateCubie.packG2Tris();
-            states[i][2] = candidateCubie.packG2Triples(0);
-            states[i][3] = candidateCubie.packG2Triples(1);
-            states[i][4] = candidateCubie.packG2Triples(2);
-            states[i][5] = candidateCubie.packG2Triples(3);
+            states[i][0] = candidateCubie.g2PackEdges();
+            states[i][1] = candidateCubie.g2PackTris();
+            states[i][2] = candidateCubie.g2PackTriples(0);
+            states[i][3] = candidateCubie.g2PackTriples(1);
+            states[i][4] = candidateCubie.g2PackTriples(2);
+            states[i][5] = candidateCubie.g2PackTriples(3);
         }
 
         return states;
@@ -207,8 +207,8 @@ public class Search {
             moves[maxl] = move;
 
             boolean res = searchPhaseThree(depth-1, maxl+1,
-                g3TurnEdge(edge, move),
-                g3TurnCorner(corner, move));
+                g3TurnEdges(edge, move),
+                g3TurnCorners(corner, move));
 
             if (res)
                 return true;
@@ -219,8 +219,8 @@ public class Search {
 
     public int[] iteratePhaseThree(FtoCubie cubie){
 
-        int edge = cubie.packG3Edges();
-        int corner = cubie.packG3Corners();
+        int edge = cubie.g3PackEdges();
+        int corner = cubie.g3PackCorners();
 
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
             boolean res = searchPhaseThree(depth, 0, edge, corner);

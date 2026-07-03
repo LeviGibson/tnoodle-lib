@@ -1,6 +1,5 @@
 package levigibson.fto3phase;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -136,11 +135,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packG1Edges();
+            int idx = ftoCubie.g1PackEdges();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setG1Edges(idx);
-            assertEquals(idx, testCube.packG1Edges());
+            testCube.g1SetEdges(idx);
+            assertEquals(idx, testCube.g1PackEdges());
         }
     }
 
@@ -155,11 +154,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packG1Triangles();
+            int idx = ftoCubie.g1PackTriangles();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setG1Triangles(idx);
-            assertEquals(idx, testCube.packG1Triangles());
+            testCube.g1SetTriangles(idx);
+            assertEquals(idx, testCube.g1PackTriangles());
         }
     }
 
@@ -227,11 +226,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packG2Tris();
+            int idx = ftoCubie.g2PackTris();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setG2Triangles(idx);
-            assertEquals(idx, testCube.packG2Tris());
+            testCube.g2SetTriangles(idx);
+            assertEquals(idx, testCube.g2PackTris());
             assertArrayEquals(ftoCubie.getTriangles2(), testCube.getTriangles2());
         }
     }
@@ -248,11 +247,11 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packG2Edges();
+            int idx = ftoCubie.g2PackEdges();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setG2Edges(idx);
-            assertEquals(idx, testCube.packG2Edges());
+            testCube.g2SetEdges(idx);
+            assertEquals(idx, testCube.g2PackEdges());
 //            assertArrayEquals(Arrays.copyOf(ftoCubie.edges, 9), Arrays.copyOf(testCube.edges, 9));
         }
     }
@@ -270,11 +269,11 @@ class FtoCubieTest {
             }
 
             for (int color = 0; color < 4; color++) {
-                int idx = ftoCubie.packG2Triples(color);
+                int idx = ftoCubie.g2PackTriples(color);
                 FtoCubie testCube = new FtoCubie();
 
-                testCube.setG2Triples(idx, color);
-                assertEquals(idx, testCube.packG2Triples(color));
+                testCube.g2SetTriples(idx, color);
+                assertEquals(idx, testCube.g2PackTriples(color));
             }
 
         }
@@ -292,16 +291,16 @@ class FtoCubieTest {
                 ftoCubie = out;
             }
 
-            int idx = ftoCubie.packG3Corners();
+            int idx = ftoCubie.g3PackCorners();
             FtoCubie testCube = new FtoCubie();
 
-            testCube.setG3Corners(idx);
-            assertEquals(idx, testCube.packG3Corners());
+            testCube.g3SetCorners(idx);
+            assertEquals(idx, testCube.g3PackCorners());
 
         }
     }
 
-    @Disabled("Don't include in the test suite")
+//    @Disabled("Don't include in the test suite")
     @Test
     void performanceTest(){
         int n = 500;

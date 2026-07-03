@@ -8,11 +8,15 @@ import static levigibson.fto3phase.Util.*;
 
 public class FtoCubie {
 
-    private int[] cornerPerm;
-    private int[] cornerOri;
-    private int[] edges;
-    private int[] triangles1;
-    private int[] triangles2;
+    //-------------- State --------------//
+
+    private final int[] cornerPerm;
+    private final int[] cornerOri;
+    private final int[] edges;
+    private final int[] triangles1;
+    private final int[] triangles2;
+
+    //-------------- Constructors --------------//
 
     public FtoCubie(){
         cornerPerm = new int[6];
@@ -40,6 +44,8 @@ public class FtoCubie {
         this.triangles1 = other.triangles1.clone();
         this.triangles2 = other.triangles2.clone();
     }
+
+    //-------------- Handy Public Stuff --------------//
 
     public static FtoCubie randomCube(Random r){
         FtoCubie fto = new FtoCubie();
@@ -69,12 +75,52 @@ public class FtoCubie {
         return target;
     }
 
+    //-------------- Move & Cubie Definitions --------------//
+
+    //Moves
+    public static final int
+        R = 0, RP = 1, L = 2, LP = 3,
+        B = 4, BP = 5, U = 6, UP = 7,
+        D = 8, DP = 9, F = 10, FP = 11,
+        BR = 12, BRP = 13, BL = 14, BLP = 15;
+
+    //Triangle Ordinals
+    //Represents the colors of the triangles
+    public static final int
+        TOU = 0, TOF = 1, TOBR = 2, TOBL = 3,
+        TOR = 0, TOL = 1, TOB = 2, TOD = 3;
+
+    //Triangle Indices
+    //Represents the index of a specific triangle
+    public static final int
+        TIUBL = 0, TIUBR = 1, TIUF = 2, TIFU = 3,
+        TIFBR = 4, TIFBL = 5, TIBRU = 6, TIBRBL = 7,
+        TIBRF = 8, TIBLU = 9, TIBLF = 10, TIBLBR = 11,
+        TIRL = 0,  TIRB = 1,  TIRD = 2,  TILB = 3,
+        TILR = 4,  TILD = 5,  TIBR = 6,  TIBL = 7,
+        TIBD = 8,  TIDR = 9,  TIDL = 10, TIDB = 11;
+
+    //Edges
+    public static final int
+        EUB = 0, EUR = 1, EUL = 2, EFL = 3,
+        EFR = 4, ERBR = 5, EBRB = 6, EBLB = 7,
+        ELBL = 8, EDF = 9, EDBR = 10, EDBL = 11;
+
+    //Corners
+    public static final int
+        CUF = 0, CUBR = 1, CUBL = 2,
+        CDL = 3, CDR = 4, CDB = 5;
+
+    //-------------- Lehmer Indexing Functions --------------//
+
     //[0, 12!/2 - 1]
     public int packAllEdges(){
         return packPerm(edges, true);
     }
 
     public void setAllEdges(int idx){
+        //12!/2
+        if (idx < 0 || idx >= 239500800) throw new IllegalArgumentException("Index " + idx + " out of range");
         unpackPerm(edges, idx, true);
     }
 
@@ -83,6 +129,8 @@ public class FtoCubie {
     }
 
     public void setAllCornerPermutation(int idx){
+        //6!/2
+        if (idx < 0 || idx >= 360) throw new IllegalArgumentException("Index " + idx + " out of range");
         unpackPerm(cornerPerm, idx, true);
     }
 
@@ -95,6 +143,8 @@ public class FtoCubie {
     }
 
     public void setAllCornerOrientation(int idx){
+        //2^5
+        if (idx < 0 || idx >= 32) throw new IllegalArgumentException("Index " + idx + " out of range");
         for (int i = 0; i < 5; i++) {
             cornerOri[i] = (idx >> i) & 1;
         }
@@ -133,6 +183,9 @@ public class FtoCubie {
     }
 
     public void setAllTriangles(int idx, int orbit){
+        //C(12,3) * C(9,3) * C(6,3) * C(3,3)
+        if (idx < 0 || idx >= 369600) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         if (orbit != 0 && orbit != 1)
             throw new IllegalArgumentException("Orbit must be 0 or 1");
 
@@ -172,7 +225,7 @@ public class FtoCubie {
         }
     }
 
-    public int packG1Edges() {
+    public int g1PackEdges() {
         int[] loc = new int[3];
         int[] perm = new int[3];
         int count = 0;
@@ -194,7 +247,10 @@ public class FtoCubie {
         return packSubset(loc) * 2 + parity;
     }
 
-    public void setG1Edges(int idx){
+    public void g1SetEdges(int idx){
+        //C(12,3) * 2
+        if (idx < 0 || idx >= 440) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         int locIdx = idx / 2;
         int parity = idx % 2;
 
@@ -212,12 +268,12 @@ public class FtoCubie {
         }
     }
 
-    public int packG1Triangles(){
+    public int g1PackTriangles(){
         int[] idx = new int[3];
         int count = 0;
 
         for (int i = 0; i < 12; i++) {
-            if (triangles2[i] == XD) idx[count++] = i;
+            if (triangles2[i] == TOD) idx[count++] = i;
         }
 
         if (count != 3) throw new IllegalStateException("Less than 3 d-layer triangles");
@@ -225,7 +281,10 @@ public class FtoCubie {
         return packSubset(idx);
     }
 
-    public void setG1Triangles(int idx){
+    public void g1SetTriangles(int idx){
+        //C(12,3)
+        if (idx < 0 || idx >= 220) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         //Unpack index
         int[] loc = new int[3];
         unpackSubset(loc, idx);
@@ -235,19 +294,19 @@ public class FtoCubie {
             triangles2[i] = -1;
         }
         for (int i = 0; i < 3; i++) {
-            triangles2[loc[i]] = XD;
+            triangles2[loc[i]] = TOD;
         }
     }
 
-    private final int[] G2_EDGE_COLORS = {XB, XR, XL, XL, XR, XR, XB, XB, XL};
-    private final int[] G2_EDGE_NORM = {0, 0, 0, 1, 1, 2, 1, 2, 2};
-    private final int[][] G2_EDGE_NORM_INV = {
+    private static final int[] G2_EDGE_COLORS = {TOB, TOR, TOL, TOL, TOR, TOR, TOB, TOB, TOL};
+    private static final int[] G2_EDGE_NORM = {0, 0, 0, 1, 1, 2, 1, 2, 2};
+    private static final int[][] G2_EDGE_NORM_INV = {
         {EUR, EFR, ERBR},
         {EUL, EFL, ELBL},
         {EUB, EBRB, EBLB},
     };
 
-    public int packG2Edges(){
+    public int g2PackEdges(){
         boolean[] used = new boolean[9];
         int[][] loc = new int[2][3];
         int[][] perm = new int[2][3];
@@ -287,7 +346,10 @@ public class FtoCubie {
         return (subsetIndex * 4) + parityIndex;
     }
 
-    public void setG2Edges(int idx){
+    public void g2SetEdges(int idx){
+        //9!/2
+        if (idx < 0 || idx >= 181440) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         int subsetIndex = idx/4;
         int parityIndex = idx % 4;
 
@@ -302,9 +364,7 @@ public class FtoCubie {
         unpackSubset(loc[1], subsetIndex % nCr(6, 3));
 
         for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 3; j++) {
-                perm[i][j] = G2_EDGE_NORM_INV[i][j];
-            }
+            System.arraycopy(G2_EDGE_NORM_INV[i], 0, perm[i], 0, 3);
             if (parity[i] == 1){
                 swap(perm[i], 1, 2);
             }
@@ -345,9 +405,9 @@ public class FtoCubie {
         }
     }
 
-    public int packG2Tris(){
+    public int g2PackTris(){
         for (int i = 9; i < 12; i++) {
-            if (triangles2[i] != XD)
+            if (triangles2[i] != TOD)
                 throw new IllegalStateException("Tris must be in phase 1");
         }
 
@@ -374,7 +434,10 @@ public class FtoCubie {
             packSubset(loc[0]) * nCr(6, 3);
     }
 
-    public void setG2Triangles(int idx){
+    public void g2SetTriangles(int idx){
+        //C(9,3) * C(6,3) * C(3,3)
+        if (idx < 0 || idx >= 1680) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         int[] loc0 = new int[3];
         int[] loc1 = new int[3];
         unpackSubset(loc0, idx / nCr(6, 3));
@@ -394,17 +457,36 @@ public class FtoCubie {
             }
             nz++;
         }
-        for (int i = 9; i < 12; i++) triangles2[i] = XD;
+        for (int i = 9; i < 12; i++) triangles2[i] = TOD;
     }
 
-    private static int[][] CORNER_PARITY = {
+    public int g2PackTriples(int color){
+        if (color > 3 || color < 0){
+            throw new IllegalArgumentException("color must be U, F, BR, or BL");
+        }
+
+        return (160 * g2PackTripleTris(color)) + g2PackTripleCorners(color);
+    }
+
+    public void g2SetTriples(int idx, int color){
+        //C(12,3) * C(6,3) * 2^3
+        if (idx < 0 || idx >= 35200) throw new IllegalArgumentException("Index " + idx + " out of range");
+
+        int tris = idx / 160;
+        int corners = idx % 160;
+
+        g2SetTripleTris(tris, color);
+        g2SetTripleCorners(corners, color);
+    }
+
+    private static final int[][] CORNER_PARITY = {
         {0,0,0,-1,-1,-1},
         {1,-1,-1,0,1,-1},
         {-1,1,-1,-1,0,1},
         {-1,-1,1,1,-1,0}};
 
     //[0, 159]
-    private int packG2TripleCorners(int color){
+    private int g2PackTripleCorners(int color){
         int[] idx = new int[3];
         int orientation = 0;
 
@@ -432,7 +514,7 @@ public class FtoCubie {
         return packSubset(idx) * 8 + orientation;
     }
 
-    private int packG2TripleTris(int color){
+    private int g2PackTripleTris(int color){
         int[] idx = new int[3];
 
         int found = 0;
@@ -445,15 +527,10 @@ public class FtoCubie {
         return packSubset(idx);
     }
 
-    public int packG2Triples(int color){
-        if (color > 3 || color < 0){
-            throw new IllegalArgumentException("color must be U, F, BR, or BL");
-        }
+    private void g2SetTripleTris(int idx, int color){
+        //C(12,3)
+        if (idx < 0 || idx >= 220) throw new IllegalArgumentException("Index " + idx + " out of range");
 
-        return (160 * packG2TripleTris(color)) + packG2TripleCorners(color);
-    }
-
-    private void setG2TripleTris(int idx, int color){
         int[] loc = new int[3];
         unpackSubset(loc, idx);
         Arrays.fill(triangles1, -1);
@@ -463,7 +540,10 @@ public class FtoCubie {
         }
     }
 
-    private void setG2TripleCorners(int idx, int color){
+    private void g2SetTripleCorners(int idx, int color){
+        //C(12,3) * 2^3
+        if (idx < 0 || idx >= 160) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         int[] loc = new int[3];
         unpackSubset(loc, idx / 8);
 
@@ -490,24 +570,19 @@ public class FtoCubie {
 
     }
 
-    public void setG2Triples(int idx, int color){
-        int tris = idx / 160;
-        int corners = idx % 160;
-
-        setG2TripleTris(tris, color);
-        setG2TripleCorners(corners, color);
-    }
-
-    public int packG3Corners(){
+    public int g3PackCorners(){
         return (packAllCornerPermutation() * 32) + packAllCornerOrientation();
     }
 
-    public void setG3Corners(int idx){
+    public void g3SetCorners(int idx){
+        //(6!/2) * 2^5
+        if (idx < 0 || idx >= 11520) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         setAllCornerPermutation(idx/32);
         setAllCornerOrientation(idx%32);
     }
 
-    public int packG3Edges(){
+    public int g3PackEdges(){
         int[] loc = new int[4];
         Arrays.fill(loc, -1);
 
@@ -527,7 +602,10 @@ public class FtoCubie {
         return (27 * loc[0]) + (9 * loc[1]) + (3 * loc[2]) + (loc[3]);
     }
 
-    public void setG3Edges(int idx){
+    public void g3SetEdges(int idx){
+        //3 ^ 4
+        if (idx < 0 || idx >= 81) throw new IllegalArgumentException("Index " + idx + " out of range");
+
         for (int i = 0; i < 12; i++) {
             edges[i] = i;
         }
@@ -644,38 +722,6 @@ public class FtoCubie {
         public int[] ep;
     }
 
-    //Moves
-    public static final int
-        R = 0, RP = 1, L = 2, LP = 3,
-        B = 4, BP = 5, U = 6, UP = 7,
-        D = 8, DP = 9, F = 10, FP = 11,
-        BR = 12, BRP = 13, BL = 14, BLP = 15;
-
-    //Center Ordinals
-    public static final int
-        XU = 0, XF = 1, XBR = 2, XBL = 3,
-        XR = 0, XL = 1, XB = 2, XD = 3;
-
-    //Center Indices
-    public static final int
-        XIUBL = 0, XIUBR = 1, XIUF = 2, XIFU = 3,
-        XIFBR = 4, XIFBL = 5, XIBRU = 6, XIBRBL = 7,
-        XIBRF = 8, XIBLU = 9, XIBLF = 10, XIBLBR = 11,
-        XIRL = 0,  XIRB = 1,  XIRD = 2,  XILB = 3,
-        XILR = 4,  XILD = 5,  XIBR = 6,  XIBL = 7,
-        XIBD = 8,  XIDR = 9,  XIDL = 10, XIDB = 11;
-
-    //Edges
-    public static final int
-        EUB = 0, EUR = 1, EUL = 2, EFL = 3,
-        EFR = 4, ERBR = 5, EBRB = 6, EBLB = 7,
-        ELBL = 8, EDF = 9, EDBR = 10, EDBL = 11;
-
-    //Corners
-    public static final int
-        CUF = 0, CUBR = 1, CUBL = 2,
-        CDL = 3, CDR = 4, CDB = 5;
-
     //EUB = 0, EUR = 1, EUL
     private static final int[][] G3_EDGES = {
         {EUB, EBRB, EBLB},
@@ -695,50 +741,50 @@ public class FtoCubie {
         moveEffects[R].cp = new int[]{CDR, CUF, CUBL, CDL, CUBR, CDB};
         moveEffects[R].co = new int[]{1, 1, 0, 0, 0, 0};
         moveEffects[R].ep = new int[]{EUB, EFR, EUL, EFL, ERBR, EUR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[R].xp1 = new int[]{XIUBL, XIFU, XIFBR, XIBRF, XIBRU, XIFBL, XIUF, XIBRBL, XIUBR, XIBLU, XIBLF, XIBLBR};
-        moveEffects[R].xp2 = new int[]{XIRD, XIRL, XIRB, XILB, XILR, XILD, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
+        moveEffects[R].xp1 = new int[]{TIUBL, TIFU, TIFBR, TIBRF, TIBRU, TIFBL, TIUF, TIBRBL, TIUBR, TIBLU, TIBLF, TIBLBR};
+        moveEffects[R].xp2 = new int[]{TIRD, TIRL, TIRB, TILB, TILR, TILD, TIBR, TIBL, TIBD, TIDR, TIDL, TIDB};
         //L
         moveEffects[L].cp = new int[]{CUBL,  CUBR, CDL, CUF, CDR, CDB};
         moveEffects[L].co = new int[]{1, 0, 1, 0, 0, 0};
         moveEffects[L].ep = new int[]{EUB, EUR, ELBL, EUL, EFR, ERBR, EBRB, EBLB, EFL, EDF, EDBR, EDBL};
-        moveEffects[L].xp1 = new int[]{XIBLF, XIUBR, XIBLU, XIUBL, XIFBR, XIUF, XIBRU, XIBRBL, XIBRF, XIFBL, XIFU, XIBLBR};
-        moveEffects[L].xp2 = new int[]{XIRL, XIRB, XIRD, XILD, XILB, XILR, XIBR, XIBL, XIBD, XIDR, XIDL, XIDB};
+        moveEffects[L].xp1 = new int[]{TIBLF, TIUBR, TIBLU, TIUBL, TIFBR, TIUF, TIBRU, TIBRBL, TIBRF, TIFBL, TIFU, TIBLBR};
+        moveEffects[L].xp2 = new int[]{TIRL, TIRB, TIRD, TILD, TILB, TILR, TIBR, TIBL, TIBD, TIDR, TIDL, TIDB};
         //B
         moveEffects[B].cp = new int[]{CUF, CDB, CUBR, CDL, CDR, CUBL};
         moveEffects[B].co = new int[]{0, 1, 1, 0, 0, 0};
         moveEffects[B].ep = new int[]{EBRB, EUR, EUL, EFL, EFR, ERBR, EBLB, EUB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[B].xp1 = new int[]{XIBRU, XIBRBL, XIUF, XIFU, XIFBR, XIFBL, XIBLBR, XIBLU, XIBRF, XIUBR, XIBLF, XIUBL};
-        moveEffects[B].xp2 = new int[]{XIRL, XIRB, XIRD, XILB, XILR, XILD, XIBD, XIBR, XIBL, XIDR, XIDL, XIDB};
+        moveEffects[B].xp1 = new int[]{TIBRU, TIBRBL, TIUF, TIFU, TIFBR, TIFBL, TIBLBR, TIBLU, TIBRF, TIUBR, TIBLF, TIUBL};
+        moveEffects[B].xp2 = new int[]{TIRL, TIRB, TIRD, TILB, TILR, TILD, TIBD, TIBR, TIBL, TIDR, TIDL, TIDB};
         //D
         moveEffects[D].cp = new int[]{CUF, CUBR, CUBL, CDB, CDL, CDR};
         moveEffects[D].co = new int[]{0, 0, 0, 0, 0, 0};
         moveEffects[D].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDBL, EDF, EDBR};
-        moveEffects[D].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIBLF, XIBLBR, XIBRU, XIFBR, XIFBL, XIBLU, XIBRBL, XIBRF};
-        moveEffects[D].xp2 = new int[]{XIRL, XIRB, XIRD, XILB, XILR, XILD, XIBR, XIBL, XIBD, XIDL, XIDB, XIDR};
+        moveEffects[D].xp1 = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIBLF, TIBLBR, TIBRU, TIFBR, TIFBL, TIBLU, TIBRBL, TIBRF};
+        moveEffects[D].xp2 = new int[]{TIRL, TIRB, TIRD, TILB, TILR, TILD, TIBR, TIBL, TIBD, TIDL, TIDB, TIDR};
         //U
         moveEffects[U].cp = new int[]{CUBR, CUBL, CUF, CDL, CDR, CDB};
         moveEffects[U].co = new int[]{0, 0, 0, 0, 0, 0};
         moveEffects[U].ep = new int[]{EUL, EUB, EUR, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[U].xp1 = new int[]{XIUF, XIUBL, XIUBR, XIFU, XIFBR, XIFBL, XIBRU, XIBRBL, XIBRF, XIBLU, XIBLF, XIBLBR};
-        moveEffects[U].xp2 = new int[]{XIBR, XIBL, XIRD, XIRL, XIRB, XILD, XILB, XILR, XIBD, XIDR, XIDL, XIDB};
+        moveEffects[U].xp1 = new int[]{TIUF, TIUBL, TIUBR, TIFU, TIFBR, TIFBL, TIBRU, TIBRBL, TIBRF, TIBLU, TIBLF, TIBLBR};
+        moveEffects[U].xp2 = new int[]{TIBR, TIBL, TIRD, TIRL, TIRB, TILD, TILB, TILR, TIBD, TIDR, TIDL, TIDB};
         //F
         moveEffects[F].cp = new int[]{CDL, CUBR, CUBL, CDR, CUF, CDB};
         moveEffects[F].co = new int[]{1, 0, 0, 1, 0, 0};
         moveEffects[F].ep = new int[]{EUB, EUR, EUL, EDF, EFL, ERBR, EBRB, EBLB, ELBL, EFR, EDBR, EDBL};
-        moveEffects[F].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFBL, XIFU, XIFBR, XIBRU, XIBRBL, XIBRF, XIBLU, XIBLF, XIBLBR};
-        moveEffects[F].xp2 = new int[]{XILD, XIRB, XILR, XILB, XIDL, XIDR, XIBR, XIBL, XIBD, XIRL, XIRD, XIDB};
+        moveEffects[F].xp1 = new int[]{TIUBL, TIUBR, TIUF, TIFBL, TIFU, TIFBR, TIBRU, TIBRBL, TIBRF, TIBLU, TIBLF, TIBLBR};
+        moveEffects[F].xp2 = new int[]{TILD, TIRB, TILR, TILB, TIDL, TIDR, TIBR, TIBL, TIBD, TIRL, TIRD, TIDB};
         //BR
         moveEffects[BR].cp = new int[]{CUF, CDR, CUBL, CDL, CDB, CUBR};
         moveEffects[BR].co = new int[]{0, 1, 0, 0, 1, 0};
         moveEffects[BR].ep = new int[]{EUB, EUR, EUL, EFL, EFR, EDBR, ERBR, EBLB, ELBL, EDF, EBRB, EDBL};
-        moveEffects[BR].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRF, XIBRU, XIBRBL, XIBLU, XIBLF, XIBLBR};
-        moveEffects[BR].xp2 = new int[]{XIRL, XIDR, XIDB, XILB, XILR, XILD, XIRD, XIBL, XIRB, XIBD, XIDL, XIBR};
+        moveEffects[BR].xp1 = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIFBR, TIFBL, TIBRF, TIBRU, TIBRBL, TIBLU, TIBLF, TIBLBR};
+        moveEffects[BR].xp2 = new int[]{TIRL, TIDR, TIDB, TILB, TILR, TILD, TIRD, TIBL, TIRB, TIBD, TIDL, TIBR};
         //BL
         moveEffects[BL].cp = new int[]{CUF, CUBR, CDB, CUBL, CDR, CDL};
         moveEffects[BL].co = new int[]{0, 0, 1, 0, 0, 1};
         moveEffects[BL].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EDBL, EBLB, EDF, EDBR, ELBL};
-        moveEffects[BL].xp1 = new int[]{XIUBL, XIUBR, XIUF, XIFU, XIFBR, XIFBL, XIBRU, XIBRBL, XIBRF, XIBLBR, XIBLU, XIBLF};
-        moveEffects[BL].xp2 = new int[]{XIRL, XIRB, XIRD, XIBD, XILR, XIBL, XIBR, XIDB, XIDL, XIDR, XILB, XILD};
+        moveEffects[BL].xp1 = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIFBR, TIFBL, TIBRU, TIBRBL, TIBRF, TIBLBR, TIBLU, TIBLF};
+        moveEffects[BL].xp2 = new int[]{TIRL, TIRB, TIRD, TIBD, TILR, TIBL, TIBR, TIDB, TIDL, TIDR, TILB, TILD};
 
         //No need to hard code the inverse moves
         //You can just invert the cycles
