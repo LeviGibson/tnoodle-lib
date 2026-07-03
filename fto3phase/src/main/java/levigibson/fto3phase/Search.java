@@ -9,9 +9,12 @@ import static levigibson.fto3phase.FtoCoord.*;
 
 public class Search {
 
+    public boolean validateSolution(String moves, FtoCubie RANDOM_STATE){
+        FtoCubie test = Util.applyAlg(moves);
+        return (RANDOM_STATE.equals(test));
+    }
 
     public synchronized String solution(FtoCubie RANDOM_STATE){
-
         if (!FtoCoord.getInitialized())
             FtoCoord.init();
 
@@ -19,12 +22,17 @@ public class Search {
         FtoCubie fto = new FtoCubie(RANDOM_STATE);
 
         int[] g2sol = g2Iterate(fto, candidates);
-        for (int move : g2sol){ fto = fto.turn(move);}
+        fto = fto.applyMoves(g2sol);
         int[] g3sol = g3Iterate(fto);
 
         int[] fullSolution = IntStream.concat(Arrays.stream(g2sol), Arrays.stream(g3sol)).toArray();
+        String fullSolutionStr = Util.moveArrayToInvertedString(fullSolution);
 
-        return Util.moveArrayToInvertedString(fullSolution);
+        if (!validateSolution(fullSolutionStr, RANDOM_STATE)){
+            throw new RuntimeException("CRITICAL: Found solution does not match random state");
+        }
+
+        return fullSolutionStr;
     }
 
     public String randomState(Random r){
