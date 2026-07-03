@@ -51,6 +51,24 @@ public class FtoCubie {
         return fto;
     }
 
+    public FtoCubie applyMoves(int[] moves){
+        FtoCubie[] ftos = new FtoCubie[2];
+        ftos[0] = new FtoCubie(this);
+        ftos[1] = new FtoCubie();
+
+        FtoCubie source;
+        FtoCubie target = ftos[1]; // makes the compiler happy
+
+        for (int i = 0; i < moves.length; i++) {
+            source = ftos[i % 2];
+            target = ftos[(i+1) % 2];
+
+            source.turn(moves[i], target);
+        }
+
+        return target;
+    }
+
     //[0, 12!/2 - 1]
     public int packAllEdges(){
         return packPerm(edges, true);

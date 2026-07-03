@@ -130,21 +130,19 @@ public class Search {
 
     private static int[][] buildStatesFromCandidates(FtoCubie cubie, ArrayList<int[]> candidates){
         int[][] states = new int[candidates.size()][6];
+        FtoCubie fto = new FtoCubie(cubie);
 
         for (int i = 0; i < candidates.size(); i++) {
-            FtoCubie fto = new FtoCubie(cubie);
             int[] moves = candidates.get(i);
 
-            for (int move : moves) {
-                fto = fto.turn(move);
-            }
+            FtoCubie candidateCubie = fto.applyMoves(moves);
 
-            states[i][0] = fto.packG2Edges();
-            states[i][1] = fto.packG2Tris();
-            states[i][2] = fto.packG2Triples(0);
-            states[i][3] = fto.packG2Triples(1);
-            states[i][4] = fto.packG2Triples(2);
-            states[i][5] = fto.packG2Triples(3);
+            states[i][0] = candidateCubie.packG2Edges();
+            states[i][1] = candidateCubie.packG2Tris();
+            states[i][2] = candidateCubie.packG2Triples(0);
+            states[i][3] = candidateCubie.packG2Triples(1);
+            states[i][4] = candidateCubie.packG2Triples(2);
+            states[i][5] = candidateCubie.packG2Triples(3);
         }
 
         return states;
