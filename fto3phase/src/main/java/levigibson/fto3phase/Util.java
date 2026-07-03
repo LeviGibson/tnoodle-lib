@@ -8,7 +8,13 @@ public class Util {
 
     public static final int[] FACTORIAL = new int[] {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600};
 
+    static int[][] Cnk;
+
     public static int nCr(int n, int k) {
+        return Cnk[n][k];
+    }
+
+    private static int choose(int n, int k){
         if (k < 0 || k > n) return 0;
         if (k == 0 || k == n) return 1;
         if (k > n - k) k = n - k;
@@ -21,6 +27,18 @@ public class Util {
             : "choose(" + n + ", " + k + ") = " + result + " overflows int";
         return (int) result;
     }
+
+    private static void computeChooseTable(){
+        Cnk = new int[13][13];
+
+        for (int n = 0; n < 13; n++) {
+            for (int k = 0; k < 13; k++) {
+                Cnk[n][k] = choose(n, k);
+            }
+        }
+    }
+
+    static {computeChooseTable();}
 
     public static void swap(int[] arr, int i1, int i2){
         int tmp = arr[i2];
