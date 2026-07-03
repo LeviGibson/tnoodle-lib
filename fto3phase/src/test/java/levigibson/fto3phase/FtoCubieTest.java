@@ -61,7 +61,7 @@ class FtoCubieTest {
 
             testCube.setAllEdges(idx);
             assertEquals(idx, testCube.packAllEdges());
-            assertArrayEquals(ftoCubie.edges, testCube.edges);
+            assertArrayEquals(ftoCubie.getEdges(), testCube.getEdges());
         }
     }
 
@@ -81,7 +81,7 @@ class FtoCubieTest {
 
             testCube.setAllTriangles(idx, 0);
             assertEquals(idx, testCube.packAllTriangles(0));
-            assertArrayEquals(ftoCubie.triangles1, testCube.triangles1);
+            assertArrayEquals(ftoCubie.getTriangles1(), testCube.getTriangles1());
         }
     }
 
@@ -101,7 +101,7 @@ class FtoCubieTest {
 
             testCube.setAllCornerPermutation(idx);
             assertEquals(idx, testCube.packAllCornerPermutation());
-            assertArrayEquals(ftoCubie.cp, testCube.cp);
+            assertArrayEquals(ftoCubie.getCornerPerm(), testCube.getCornerPerm());
         }
     }
 
@@ -121,7 +121,7 @@ class FtoCubieTest {
 
             testCube.setAllCornerOrientation(idx);
             assertEquals(idx, testCube.packAllCornerOrientation());
-            assertArrayEquals(ftoCubie.co, testCube.co);
+            assertArrayEquals(ftoCubie.getCornerOri(), testCube.getCornerOri());
         }
     }
 
@@ -187,29 +187,29 @@ class FtoCubieTest {
                 // CW then CCW should return to original state
                 state.turn(cw, afterFirst);
                 afterFirst.turn(ccw, result);
-                assertArrayEquals(state.cp, result.cp,
+                assertArrayEquals(state.getCornerPerm(), result.getCornerPerm(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": cp mismatch");
-                assertArrayEquals(state.co, result.co,
+                assertArrayEquals(state.getCornerOri(), result.getCornerOri(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": co mismatch");
-                assertArrayEquals(state.edges, result.edges,
+                assertArrayEquals(state.getEdges(), result.getEdges(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": edges mismatch");
-                assertArrayEquals(state.triangles1, result.triangles1,
+                assertArrayEquals(state.getTriangles1(), result.getTriangles1(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": centers1 mismatch");
-                assertArrayEquals(state.triangles2, result.triangles2,
+                assertArrayEquals(state.getTriangles2(), result.getTriangles2(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": centers2 mismatch");
 
                 // CCW then CW should also return to original state
                 state.turn(ccw, afterFirst);
                 afterFirst.turn(cw, result);
-                assertArrayEquals(state.cp, result.cp,
+                assertArrayEquals(state.getCornerPerm(), result.getCornerPerm(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": cp mismatch");
-                assertArrayEquals(state.co, result.co,
+                assertArrayEquals(state.getCornerOri(), result.getCornerOri(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": co mismatch");
-                assertArrayEquals(state.edges, result.edges,
+                assertArrayEquals(state.getEdges(), result.getEdges(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": edges mismatch");
-                assertArrayEquals(state.triangles1, result.triangles1,
+                assertArrayEquals(state.getTriangles1(), result.getTriangles1(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": centers1 mismatch");
-                assertArrayEquals(state.triangles2, result.triangles2,
+                assertArrayEquals(state.getTriangles2(), result.getTriangles2(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": centers2 mismatch");
             }
         }
@@ -232,7 +232,7 @@ class FtoCubieTest {
 
             testCube.setG2Triangles(idx);
             assertEquals(idx, testCube.packG2Tris());
-            assertArrayEquals(ftoCubie.triangles2, testCube.triangles2);
+            assertArrayEquals(ftoCubie.getTriangles2(), testCube.getTriangles2());
         }
     }
 

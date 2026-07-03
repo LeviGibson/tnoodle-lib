@@ -9,6 +9,29 @@ import static levigibson.fto3phase.FtoCoord.*;
 
 public class Search {
 
+
+    public synchronized String solution(FtoCubie RANDOM_STATE){
+
+        if (!FtoCoord.getInitialized())
+            FtoCoord.init();
+
+        ArrayList<int[]> candidates = iteratePhaseOne(RANDOM_STATE);
+        FtoCubie fto = new FtoCubie(RANDOM_STATE);
+
+        int[] g2sol = iteratePhaseTwo(fto, candidates);
+        for (int move : g2sol){ fto = fto.turn(move);}
+        int[] g3sol = iteratePhaseThree(fto);
+
+        int[] fullSolution = IntStream.concat(Arrays.stream(g2sol), Arrays.stream(g3sol)).toArray();
+
+        return Util.moveArrayToInvertedString(fullSolution);
+    }
+
+    public String randomState(Random r){
+        final FtoCubie RANDOM_STATE = FtoCubie.randomCube(r);
+        return solution(RANDOM_STATE);
+    }
+
     public Search(){
         moves = new int[64];
     }
@@ -211,23 +234,6 @@ public class Search {
         throw new RuntimeException();
     }
 
-    public synchronized String solution(FtoCubie RANDOM_STATE){
-
-        if (!FtoCoord.getInitialized())
-            FtoCoord.init();
-
-        ArrayList<int[]> candidates = iteratePhaseOne(RANDOM_STATE);
-        FtoCubie fto = new FtoCubie(RANDOM_STATE);
-
-        int[] g2sol = iteratePhaseTwo(fto, candidates);
-        for (int move : g2sol){ fto = fto.turn(move);}
-        int[] g3sol = iteratePhaseThree(fto);
-
-        int[] fullSolution = IntStream.concat(Arrays.stream(g2sol), Arrays.stream(g3sol)).toArray();
-
-        return Util.moveArrayToInvertedString(fullSolution);
-    }
-
     private static final int[] invalidMoves;
 
     private static int[] initInvalidMoveTable() {
@@ -254,14 +260,17 @@ public class Search {
     static void performanceTest(int n){
         Random r = new Random(42);
         long start = System.currentTimeMillis();
+        int totalMoves = 0;
 
         Search search = new Search();
         for (int i = 0; i < n; i++) {
             FtoCubie rs = FtoCubie.randomCube(r);
-            System.out.println(search.solution(rs));
+            String solution = search.solution(rs);
+            System.out.println(solution);
         }
 
         System.out.println((System.currentTimeMillis() - start) / n);
+        System.out.println((float)(totalMoves) / (float)n);
     }
 
 

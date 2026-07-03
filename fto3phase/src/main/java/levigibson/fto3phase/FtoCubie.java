@@ -8,22 +8,22 @@ import static levigibson.fto3phase.Util.*;
 
 public class FtoCubie {
 
-    int[] cp;
-    int[] co;
-    int[] edges;
-    int[] triangles1;
-    int[] triangles2;
+    private int[] cornerPerm;
+    private int[] cornerOri;
+    private int[] edges;
+    private int[] triangles1;
+    private int[] triangles2;
 
     public FtoCubie(){
-        cp = new int[6];
-        co = new int[6];
+        cornerPerm = new int[6];
+        cornerOri = new int[6];
         edges = new int[12];
         triangles1 = new int[12];
         triangles2 = new int[12];
 
         for (int i = 0; i < 6; i++) {
-            cp[i] = i;
-            co[i] = 0;
+            cornerPerm[i] = i;
+            cornerOri[i] = 0;
         }
 
         for (int i = 0; i < 12; i++) {
@@ -34,8 +34,8 @@ public class FtoCubie {
     }
 
     public FtoCubie(FtoCubie other) {
-        this.cp = other.cp.clone();
-        this.co = other.co.clone();
+        this.cornerPerm = other.cornerPerm.clone();
+        this.cornerOri = other.cornerOri.clone();
         this.edges = other.edges.clone();
         this.triangles1 = other.triangles1.clone();
         this.triangles2 = other.triangles2.clone();
@@ -61,26 +61,26 @@ public class FtoCubie {
     }
 
     public int packAllCornerPermutation(){
-        return packPerm(cp, true);
+        return packPerm(cornerPerm, true);
     }
 
     public void setAllCornerPermutation(int idx){
-        unpackPerm(cp, idx, true);
+        unpackPerm(cornerPerm, idx, true);
     }
 
     public int packAllCornerOrientation(){
         int index = 0;
         for (int i = 0; i < 5; i++) {
-            index |= co[i] << i;
+            index |= cornerOri[i] << i;
         }
         return index;
     }
 
     public void setAllCornerOrientation(int idx){
         for (int i = 0; i < 5; i++) {
-            co[i] = (idx >> i) & 1;
+            cornerOri[i] = (idx >> i) & 1;
         }
-        co[5] = Integer.bitCount(idx) % 2;
+        cornerOri[5] = Integer.bitCount(idx) % 2;
     }
 
     public int packAllTriangles(int orbit){
@@ -408,8 +408,8 @@ public class FtoCubie {
 
         int found = 0;
         for (int i = 0; i < 6; i++) {
-            int corner = cp[i];
-            int ori = co[i];
+            int corner = cornerPerm[i];
+            int ori = cornerOri[i];
 
             if (corner == -1) continue;
 
@@ -475,15 +475,15 @@ public class FtoCubie {
             }
         }
 
-        Arrays.fill(cp, -1);
-        Arrays.fill(co, -1);
+        Arrays.fill(cornerPerm, -1);
+        Arrays.fill(cornerOri, -1);
 
         for (int i = 0; i < 3; i++) {
             int perm = loc[i];
             int ori = (orientation >> i) & 1;
 
-            cp[perm] = relevantCorners[i];
-            co[perm] = ori ^ CORNER_PARITY[color][relevantCorners[i]];
+            cornerPerm[perm] = relevantCorners[i];
+            cornerOri[perm] = ori ^ CORNER_PARITY[color][relevantCorners[i]];
         }
 
     }
@@ -549,9 +549,9 @@ public class FtoCubie {
 
     public boolean isSolved(){
         for (int i = 0; i < 6; i++) {
-            if (co[i] != 0)
+            if (cornerOri[i] != 0)
                 return false;
-            if (cp[i] != i)
+            if (cornerPerm[i] != i)
                 return false;
         }
 
@@ -583,8 +583,8 @@ public class FtoCubie {
 
         //Corners
         for (int i = 0; i < 6; i++) {
-            out.cp[i] = this.cp[cycles.cp[i]];
-            out.co[i] = this.co[cycles.cp[i]] ^ cycles.co[i];
+            out.cornerPerm[i] = this.cornerPerm[cycles.cp[i]];
+            out.cornerOri[i] = this.cornerOri[cycles.cp[i]] ^ cycles.co[i];
         }
 
         //Edges + Triangles
@@ -615,8 +615,8 @@ public class FtoCubie {
         return Arrays.equals(fto.edges, this.edges) &&
             Arrays.equals(fto.triangles1, this.triangles1) &&
             Arrays.equals(fto.triangles2, this.triangles2) &&
-            Arrays.equals(fto.co, this.co) &&
-            Arrays.equals(fto.cp, this.cp);
+            Arrays.equals(fto.cornerOri, this.cornerOri) &&
+            Arrays.equals(fto.cornerPerm, this.cornerPerm);
     }
 
     @Override
@@ -624,9 +624,15 @@ public class FtoCubie {
         return Arrays.hashCode(this.edges) ^
             Arrays.hashCode(this.triangles1) ^
             Arrays.hashCode(this.triangles2) ^
-            Arrays.hashCode(this.co) ^
-            Arrays.hashCode(this.cp);
+            Arrays.hashCode(this.cornerOri) ^
+            Arrays.hashCode(this.cornerPerm);
     }
+
+    public int[] getCornerPerm(){ return cornerPerm.clone(); }
+    public int[] getCornerOri(){ return cornerOri.clone(); }
+    public int[] getEdges(){ return edges.clone(); }
+    public int[] getTriangles1(){ return triangles1.clone(); }
+    public int[] getTriangles2(){ return triangles2.clone(); }
 
     private static class MoveEffect{
         public int[] co;
@@ -757,11 +763,4 @@ public class FtoCubie {
             }
         }
     }
-
-    public static void main(String[] args) {
-        for (int i = 0; i < 6; i++) {
-            System.out.println(FtoCubie.moveEffects[LP].co[i]);
-        }
-    }
-
 }
