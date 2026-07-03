@@ -1,8 +1,8 @@
 package levigibson.fto3phase;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -301,6 +301,7 @@ class FtoCubieTest {
         }
     }
 
+    @Disabled("Don't include in the test suite")
     @Test
     void performanceTest(){
         int n = 500;

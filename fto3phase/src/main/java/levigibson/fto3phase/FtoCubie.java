@@ -230,10 +230,6 @@ public class FtoCubie {
     };
 
     public int packG2Edges(){
-        for (int i = 0; i < 9; i++) {
-            if (edges[i] > 8) throw new IllegalStateException("Edges not in phase 1");
-        }
-
         boolean[] used = new boolean[9];
         int[][] loc = new int[2][3];
         int[][] perm = new int[2][3];
@@ -243,6 +239,10 @@ public class FtoCubie {
             int found = 0;
             int passed = 0;
             for (int i = 0; i < 9; i++) {
+                if (edges[i] == EDF || edges[i] == EDBL || edges[i] == EDBR){
+                    throw new IllegalStateException("Edges not in phase 1");
+                }
+
                 if (G2_EDGE_COLORS[edges[i]] == xo){
                     perm[xo][found] = G2_EDGE_NORM[edges[i]];
                     loc[xo][found++] = passed;
@@ -292,11 +292,11 @@ public class FtoCubie {
             }
         }
 
+        //Set edges to blank slate with G1 solved
         Arrays.fill(edges, -1);
-
-        for (int i = 9; i < 12; i++) {
-            edges[i] = i;
-        }
+        edges[EDF] = EDF;
+        edges[EDBL] = EDBL;
+        edges[EDBR] = EDBR;
 
         for (int i = 0; i < 3; i++) {
             edges[loc[0][i]] = perm[0][i];
