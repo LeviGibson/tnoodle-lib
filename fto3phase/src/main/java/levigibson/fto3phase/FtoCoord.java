@@ -5,7 +5,6 @@ import java.util.*;
 class FtoCoord {
     private static boolean initialized;
 
-
     //-------------- Move Tables --------------//
 
     private static int[][] G1_EDGE_MOVES;
@@ -229,29 +228,41 @@ class FtoCoord {
 
     private static byte[] g2GenerateTxEPrun(){
         final int size = 11_289_600;
+        final int maxFrontierWidth = 4194993;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        int[] frontier = new int[maxFrontierWidth];
+        int fs = 1;
+
+        int[] next = new int[maxFrontierWidth];
+        int ns = 0;
+
         FtoCubie solved = new FtoCubie();
-        frontier.add(packTxE(solved.g2PackEdges(), solved.g2PackTris()));
-        prun[frontier.get(0)] = 0;
+        frontier[0] = (packTxE(solved.g2PackEdges(), solved.g2PackTris()));
+        prun[frontier[0]] = 0;
 
         int depth = 0;
-        while (!frontier.isEmpty()) {
-            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+        while (fs > 0) {
+            for (int i = 0; i < fs; i++) {
+                int idx = frontier[i];
 
-            for (int idx : frontier) {
                 for (int m = 0; m < 10; m++) {
                     int nextIdx = turnTxE(idx, m);
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
-                        next.add(nextIdx);
+                        next[ns++] = nextIdx;
                     }
                 }
             }
+
+            int[] tmp = frontier;
             frontier = next;
+            next = tmp;
+            fs = ns;
+            ns = 0;
+
             depth++;
         }
 
