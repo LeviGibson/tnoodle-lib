@@ -2,7 +2,6 @@ package levigibson.fto3phase;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.stream.IntStream;
 
 import static levigibson.fto3phase.FtoCoord.*;
@@ -22,7 +21,7 @@ public class Search {
         FtoCubie fto = new FtoCubie(RANDOM_STATE);
 
         int[] g2sol = g2Iterate(fto, candidates);
-        fto = fto.applyMoves(g2sol);
+        fto = fto.fromMoves(g2sol);
         int[] g3sol = g3Iterate(fto);
 
         int[] fullSolution = IntStream.concat(Arrays.stream(g2sol), Arrays.stream(g3sol)).toArray();
@@ -35,10 +34,15 @@ public class Search {
         return fullSolutionStr;
     }
 
-    public String randomState(Random r){
-        final FtoCubie RANDOM_STATE = FtoCubie.randomCube(r);
-        return solution(RANDOM_STATE);
-    }
+    private static final int[] G1_MOVESET = {FtoCubie.R, FtoCubie.RP,
+        FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,
+        FtoCubie.U, FtoCubie.UP, FtoCubie.D, FtoCubie.DP,
+        FtoCubie.F, FtoCubie.FP, FtoCubie.BR, FtoCubie.BRP};
+    private static final int[] G2_MOVESET = {FtoCubie.R, FtoCubie.RP,
+        FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,
+        FtoCubie.U, FtoCubie.UP, FtoCubie.D, FtoCubie.DP};
+    private static final int[] G3_MOVESET = {FtoCubie.R, FtoCubie.RP,
+        FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,FtoCubie.D, FtoCubie.DP};
 
     public Search(){
         moves = new int[64];
@@ -46,7 +50,7 @@ public class Search {
 
     private final int[] moves;
 
-    public boolean g2Search(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
+    private boolean g2Search(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
 
         int triplePrun = FtoCoord.g2PrunTriple(tp0, tp1, tp2, tp3);
         if (depth < triplePrun)
@@ -65,7 +69,7 @@ public class Search {
             return false;
         }
 
-        for (int move = 0; move < 10; move++) {
+        for (int move : G2_MOVESET) {
             if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
                 continue;
             }
@@ -88,7 +92,7 @@ public class Search {
         return false;
     }
 
-    public void g1Search(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates){
+    private void g1Search(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates){
 
         int prun = FtoCoord.g1Prun(edge, tri);
 
@@ -104,7 +108,7 @@ public class Search {
             return;
         }
 
-        for (int move = 0; move < 16; move++) {
+        for (int move : G1_MOVESET) {
 
             if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
                 continue;
@@ -118,7 +122,7 @@ public class Search {
         }
     }
 
-    public ArrayList<int[]> g1Iterate(FtoCubie cubie){
+    private ArrayList<int[]> g1Iterate(FtoCubie cubie){
 
         ArrayList<int[]> candidates = new ArrayList<>();
 
@@ -139,7 +143,7 @@ public class Search {
         for (int i = 0; i < candidates.size(); i++) {
             int[] moves = candidates.get(i);
 
-            FtoCubie candidateCubie = fto.applyMoves(moves);
+            FtoCubie candidateCubie = fto.fromMoves(moves);
 
             states[i][0] = candidateCubie.g2PackEdges();
             states[i][1] = candidateCubie.g2PackTris();
@@ -160,7 +164,7 @@ public class Search {
         return lengths;
     }
 
-    public int[] g2Iterate(FtoCubie cubie, ArrayList<int[]> candidates){
+    private int[] g2Iterate(FtoCubie cubie, ArrayList<int[]> candidates){
         int[][] states = buildStatesFromCandidates(cubie, candidates);
         int[] lengths = buildLengthFromCandidates(candidates);
 
@@ -186,13 +190,12 @@ public class Search {
         throw new RuntimeException("Could not find Phase 2 solution");
     }
 
-    private boolean g3Search(int depth, int maxl, int edge, int corners){
-
+    private boolean g3Search(int depth, int maxl, int edges, int corners){
         int cornerPrun = FtoCoord.g3PrunCorners(corners);
         if (depth < cornerPrun) return false;
 
-        if (isSolvedG3Corners(corners) &&
-            isSolvedG3Edges(edge)){
+        if (corners == SOLVED_G3_CORNERS &&
+            edges == SOLVED_G3_EDGES){
 
             return true;
         }
@@ -201,10 +204,7 @@ public class Search {
             return false;
         }
 
-        for (int move = 0; move < 10; move++) {
-            if (move == FtoCubie.U || move == FtoCubie.UP)
-                continue;
-
+        for (int move : G3_MOVESET) {
             if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
                 continue;
             }
@@ -212,7 +212,7 @@ public class Search {
             moves[maxl] = move;
 
             boolean res = g3Search(depth-1, maxl+1,
-                g3TurnEdges(edge, move),
+                g3TurnEdges(edges, move),
                 g3TurnCorners(corners, move));
 
             if (res)
@@ -222,7 +222,7 @@ public class Search {
         return false;
     }
 
-    public int[] g3Iterate(FtoCubie cubie){
+    private int[] g3Iterate(FtoCubie cubie){
         int edges = cubie.g3PackEdges();
         int corners = cubie.g3PackCorners();
 

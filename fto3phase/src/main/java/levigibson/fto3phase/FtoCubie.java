@@ -49,7 +49,7 @@ public class FtoCubie {
 
     public static FtoCubie randomCube(Random r){
         FtoCubie fto = new FtoCubie();
-        fto.setAllEdges(r.nextInt(239500800)); //8481 12! / 2
+        fto.setAllEdges(r.nextInt(239500800)); // 12! / 2
         fto.setAllCornerOrientation(r.nextInt(32)); // 2 ^ 5
         fto.setAllCornerPermutation(r.nextInt(360)); // 6! / 2
         fto.setAllTriangles(r.nextInt(369600), 0); // C(12,3) * C(9,3) * C(6,3)
@@ -57,7 +57,10 @@ public class FtoCubie {
         return fto;
     }
 
-    public FtoCubie applyMoves(int[] moves){
+    public FtoCubie fromMoves(int[] moves){
+        if (moves.length == 0)
+            return new FtoCubie();
+
         FtoCubie[] ftos = new FtoCubie[2];
         ftos[0] = new FtoCubie(this);
         ftos[1] = new FtoCubie();
@@ -442,7 +445,6 @@ public class FtoCubie {
         int[] loc1 = new int[3];
         unpackSubset(loc0, idx / nCr(6, 3));
         unpackSubset(loc1, idx % nCr(6, 3));
-        Arrays.sort(loc1);
 
         Arrays.fill(triangles2, 0, 9, 2);
         for (int v : loc0) triangles2[v] = 0;

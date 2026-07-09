@@ -82,20 +82,12 @@ class FtoCoord {
 
     //-------------- Solve Check Functions --------------//
 
-    private static final int SOLVED_G3_EDGES;
-    private static final int SOLVED_G3_CORNERS;
+    public static final int SOLVED_G3_EDGES;
+    public static final int SOLVED_G3_CORNERS;
 
     static {
         SOLVED_G3_EDGES = new FtoCubie().g3PackEdges();
         SOLVED_G3_CORNERS = new FtoCubie().g3PackCorners();
-    }
-
-    public static boolean isSolvedG3Edges(int idx){
-        return (idx == SOLVED_G3_EDGES);
-    }
-
-    public static boolean isSolvedG3Corners(int idx){
-        return (idx == SOLVED_G3_CORNERS);
     }
 
     //-------------- Pruning Table Generation --------------//
@@ -435,7 +427,7 @@ class FtoCoord {
 
     public static synchronized void init(){
         if (initialized) {
-            throw new RuntimeException("init() called twice");
+            return;
         }
 
         long start = System.currentTimeMillis();
