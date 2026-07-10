@@ -312,7 +312,7 @@ public class FtoCubie {
     public int g2PackEdges(){
         int used = 0;
         int loc = 0;
-        int[][] perm = new int[2][3];
+        int perm = 0;
         int parity = 0;
 
         for (int xo = 0; xo < 2; xo++) {
@@ -324,7 +324,7 @@ public class FtoCubie {
                 }
 
                 if (G2_EDGE_COLORS[edges[i]] == xo){
-                    perm[xo][found] = G2_EDGE_NORM[edges[i]];
+                    perm |= G2_EDGE_NORM[edges[i]] << (12 * xo + 4 * found);
                     loc |= passed << (12 * xo + 4 * found++);
                     used |= 1 << i;
                     passed++;
@@ -338,7 +338,7 @@ public class FtoCubie {
         }
 
         for (int i = 0; i < 2; i++) {
-            parity |= (isParity(perm[i]) ? 1 : 0) << i;
+            parity |= (isParity((perm >> 12 * i) & 0b111111111111, 3) ? 1 : 0) << i;
         }
 
         int subsetIndex = packSubset(loc >> 12, 3) +
