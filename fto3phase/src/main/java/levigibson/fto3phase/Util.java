@@ -173,6 +173,23 @@ class Util {
         return index;
     }
 
+    public static int packSubset(int packedArr, int length){
+        int mask = 0b1111;
+
+        for (int i = 0; i < length-1; i++) {
+            if (((packedArr >> (4 * i)) & mask) >=
+                ((packedArr >> (4 * (i+1))) & mask)){
+                throw new IllegalArgumentException("idx must be in ascending order");
+            }
+        }
+
+        int index = 0;
+        for (int i = length-1; i >= 0; i--) {
+            index += nCr(((packedArr >> (4 * i)) & mask), i+1);
+        }
+        return index;
+    }
+
     /**
      * Turn a packed subset index back into the indices!
      * {@snippet :

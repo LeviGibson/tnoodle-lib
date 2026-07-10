@@ -17,10 +17,10 @@ public class Search {
         if (!FtoCoord.getInitialized())
             FtoCoord.init();
 
-        ArrayList<int[]> candidates = g1Iterate(RANDOM_STATE);
+        ArrayList<int[]> g1Candidates = g1Iterate(RANDOM_STATE);
         FtoCubie fto = new FtoCubie(RANDOM_STATE);
 
-        int[] g2sol = g2Iterate(fto, candidates);
+        int[] g2sol = g2Iterate(fto, g1Candidates);
         fto = fto.fromMoves(g2sol);
         int[] g3sol = g3Iterate(fto);
 

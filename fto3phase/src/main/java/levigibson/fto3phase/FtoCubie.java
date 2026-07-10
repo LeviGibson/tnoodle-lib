@@ -310,10 +310,10 @@ public class FtoCubie {
     };
 
     public int g2PackEdges(){
-        boolean[] used = new boolean[9];
-        int[][] loc = new int[2][3];
+        int used = 0;
+        int loc = 0;
         int[][] perm = new int[2][3];
-        int[] parity = new int[2];
+        int parity = 0;
 
         for (int xo = 0; xo < 2; xo++) {
             int found = 0;
@@ -325,10 +325,10 @@ public class FtoCubie {
 
                 if (G2_EDGE_COLORS[edges[i]] == xo){
                     perm[xo][found] = G2_EDGE_NORM[edges[i]];
-                    loc[xo][found++] = passed;
-                    used[i] = true;
+                    loc |= passed << (12 * xo + 4 * found++);
+                    used |= 1 << i;
                     passed++;
-                } else if (!used[i]){
+                } else if ((used >> i & 1) != 1){
                     passed++;
                 }
             }
@@ -338,15 +338,13 @@ public class FtoCubie {
         }
 
         for (int i = 0; i < 2; i++) {
-            parity[i] = isParity(perm[i]) ? 1 : 0;
+            parity |= (isParity(perm[i]) ? 1 : 0) << i;
         }
 
-        int subsetIndex = packSubset(loc[1]) +
-            packSubset(loc[0]) * nCr(6, 3);
+        int subsetIndex = packSubset(loc >> 12, 3) +
+            packSubset(loc & 0b111111111111, 3) * nCr(6, 3);
 
-        int parityIndex = parity[1] * 2 + parity[0];
-
-        return (subsetIndex * 4) + parityIndex;
+        return (subsetIndex * 4) + parity;
     }
 
     public void g2SetEdges(int idx){
@@ -414,18 +412,18 @@ public class FtoCubie {
                 throw new IllegalStateException("Tris must be in phase 1");
         }
 
-        boolean[] used = new boolean[9];
-        int[][] loc = new int[2][3];
+        int used = 0;
+        int loc = 0;
 
         for (int xo = 0; xo < 2; xo++) {
             int found = 0;
             int passed = 0;
             for (int i = 0; i < 9; i++) {
                 if (triangles2[i] == xo){
-                    loc[xo][found++] = passed;
-                    used[i] = true;
+                    loc |= passed << (xo * 12 + found++ * 4);
+                    used |= 1 << i;
                     passed++;
-                } else if (!used[i]){
+                } else if (((used >> i) & 1) == 0){
                     passed++;
                 }
             }
@@ -433,8 +431,8 @@ public class FtoCubie {
             if (found != 3)
                 throw new IllegalStateException("Expected found=3. Instead, found=" + found);
         }
-        return packSubset(loc[1]) +
-            packSubset(loc[0]) * nCr(6, 3);
+        return packSubset(loc >> 12, 3) +
+            packSubset(loc & 0b111111111111, 3) * nCr(6, 3);
     }
 
     public void g2SetTriangles(int idx){
@@ -489,7 +487,7 @@ public class FtoCubie {
 
     //[0, 159]
     private int g2PackTripleCorners(int color){
-        int[] idx = new int[3];
+        int idx = 0;
         int orientation = 0;
 
         int found = 0;
@@ -503,7 +501,7 @@ public class FtoCubie {
 
             if (parity != -1){
                 orientation |= (parity ^ ori) << found;
-                idx[found++] = i;
+                idx |= i << (4 * found++);
             }
         }
 
@@ -513,20 +511,20 @@ public class FtoCubie {
 
         assert (orientation < 8);
 
-        return packSubset(idx) * 8 + orientation;
+        return packSubset(idx, 3) * 8 + orientation;
     }
 
     private int g2PackTripleTris(int color){
-        int[] idx = new int[3];
+        int idx = 0;
 
         int found = 0;
         for (int i = 0; i < 12; i++) {
             if (triangles1[i] == color){
-                idx[found++] = i;
+                idx |= i << (4 * found++);
             }
         }
 
-        return packSubset(idx);
+        return packSubset(idx,3);
     }
 
     private void g2SetTripleTris(int idx, int color){
