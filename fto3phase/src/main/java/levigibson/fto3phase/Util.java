@@ -3,6 +3,7 @@ package levigibson.fto3phase;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 class Util {
 
@@ -19,6 +20,15 @@ class Util {
      */
     public static int nCr(int n, int k) {
         return Cnk[n][k];
+    }
+
+    /**
+     * factorial!
+     * @param n integer
+     * @return n!
+     */
+    public static int fact(int n) {
+        return FACTORIAL[n];
     }
 
     /**
@@ -280,6 +290,10 @@ class Util {
      * @return FtoCubie
      */
     public static FtoCubie fromAlg(String alg) {
+        if (Objects.equals(alg, "")){
+            return new FtoCubie();
+        }
+
         FtoCubie fto = new FtoCubie();
         for (String token : alg.trim().split("\\s+")) {
             fto.turn(parseMove(token));
@@ -320,6 +334,21 @@ class Util {
             c *= a;
         }
         return c;
+    }
+
+    /**
+     * Checks if array contains a value
+     * @param array array to check
+     * @param key value
+     * @return does array contain key?
+     */
+    public static boolean contains(final int[] array, final int key) {
+        for (final int i : array) {
+            if (i == key) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int choose(int n, int k){

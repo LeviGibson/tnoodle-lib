@@ -8,40 +8,51 @@ import static levigibson.fto3phase.FtoCoord.*;
 
 public class Search {
 
-    public boolean validateSolution(String moves, FtoCubie RANDOM_STATE){
+    public boolean validateSolution(String moves, FtoCubie randomState){
         FtoCubie test = Util.fromAlg(moves);
-        return (RANDOM_STATE.equals(test));
+        return (randomState.equals(test));
     }
 
-    public synchronized String solution(FtoCubie RANDOM_STATE){
+    /**
+     * Main search function! This search algorithm will produce a human-readable string that
+     * when applied to a solved FTO, will match the FTO provided.
+     * @param randomState random state to solve to
+     * @return human-readable scramble
+     */
+    public synchronized String solution(FtoCubie randomState){
         if (!FtoCoord.getInitialized())
             FtoCoord.init();
 
-        ArrayList<int[]> g1Candidates = g1Iterate(RANDOM_STATE);
-        FtoCubie fto = new FtoCubie(RANDOM_STATE);
+        ArrayList<int[]> g1Candidates = g1Iterate(randomState);
 
-        int[] g2sol = g2Iterate(fto, g1Candidates);
-        fto = fto.applyMoves(g2sol);
-        int[] g3sol = g3Iterate(fto);
+        int[] g1AndG2Solution = g2Iterate(randomState, g1Candidates);
 
-        int[] fullSolution = IntStream.concat(Arrays.stream(g2sol), Arrays.stream(g3sol)).toArray();
+        FtoCubie g2Fto = new FtoCubie();
+        randomState.applyMovesInto(g1AndG2Solution, g2Fto);
+
+        int[] g3Solution = g3Iterate(g2Fto);
+
+        int[] fullSolution = IntStream.concat(Arrays.stream(g1AndG2Solution), Arrays.stream(g3Solution)).toArray();
         String fullSolutionStr = Util.moveArrayToInvertedString(fullSolution);
 
-        if (!validateSolution(fullSolutionStr, RANDOM_STATE)){
+        if (!validateSolution(fullSolutionStr, randomState)){
             throw new RuntimeException("CRITICAL: Found solution does not match random state");
         }
 
         return fullSolutionStr;
     }
 
-    private static final int[] G1_MOVESET = {FtoCubie.R, FtoCubie.RP,
+    //After each phase, the moveset required to solve the FTO is reduced
+    //See Kociemba's Algorithm
+    public static final int[] G1_MOVESET = {FtoCubie.R, FtoCubie.RP,
         FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,
         FtoCubie.U, FtoCubie.UP, FtoCubie.D, FtoCubie.DP,
-        FtoCubie.F, FtoCubie.FP, FtoCubie.BR, FtoCubie.BRP};
-    private static final int[] G2_MOVESET = {FtoCubie.R, FtoCubie.RP,
+        FtoCubie.F, FtoCubie.FP, FtoCubie.BR, FtoCubie.BRP,
+        FtoCubie.BL, FtoCubie.BLP};
+    public static final int[] G2_MOVESET = {FtoCubie.R, FtoCubie.RP,
         FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,
         FtoCubie.U, FtoCubie.UP, FtoCubie.D, FtoCubie.DP};
-    private static final int[] G3_MOVESET = {FtoCubie.R, FtoCubie.RP,
+    public static final int[] G3_MOVESET = {FtoCubie.R, FtoCubie.RP,
         FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,FtoCubie.D, FtoCubie.DP};
 
     public Search(){
@@ -99,7 +110,7 @@ public class Search {
         if (depth < prun)
             return;
 
-        if (prun == 0){
+        if (prun == 0 && depth == 0){
             candidates.add(Arrays.copyOf(moves, maxl));
             return;
         }
@@ -263,5 +274,15 @@ public class Search {
 
     static {
         invalidMoves = initInvalidMoveTable();
+    }
+
+    public static void main(String[] args) {
+        FtoCubie fto = new FtoCubie();
+        fto.turn(FtoCubie.F);
+        fto.turn(FtoCubie.R);
+        fto.turn(FtoCubie.FP);
+        Search search = new Search();
+        String solution = search.solution(fto);
+        System.out.println(solution);
     }
 }

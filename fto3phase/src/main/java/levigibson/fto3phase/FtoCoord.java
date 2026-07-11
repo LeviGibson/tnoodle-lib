@@ -1,6 +1,7 @@
 package levigibson.fto3phase;
 
 import java.util.*;
+import java.util.function.IntPredicate;
 
 class FtoCoord {
     private static boolean initialized;
@@ -30,31 +31,52 @@ class FtoCoord {
     //-------------- Public Turn Functions --------------//
 
     public static int g1TurnEdges(int idx, int move){
+        if (!Util.contains(Search.G1_MOVESET, move)){
+            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g1 moveset");
+        }
         return G1_EDGE_MOVES[idx][move];
     }
 
     public static int g1TurnTris(int idx, int move){
+        if (!Util.contains(Search.G1_MOVESET, move)){
+            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g1 moveset");
+        }
         return G1_TRIANGLE_MOVES[idx][move];
     }
 
-    public static int g3TurnEdges(int idx, int move){
-        return G3_EDGE_MOVES[idx][move];
-    }
-
-    public static int g3TurnCorners(int idx, int move){
-        return G3_CORNER_MOVES[idx][move];
-    }
-
     public static int g2TurnTriples(int idx, int move){
+        if (!Util.contains(Search.G2_MOVESET, move)){
+            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g2 moveset");
+        }
         return G2_TRIPLE_MOVES[idx][move];
     }
 
     public static int g2TurnEdges(int idx, int move){
+        if (!Util.contains(Search.G2_MOVESET, move)){
+            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g2 moveset");
+        }
         return G2_EDGE_MOVES[idx][move];
     }
 
     public static int g2TurnTris(int idx, int move){
+        if (!Util.contains(Search.G2_MOVESET, move)){
+            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g2 moveset");
+        }
         return G2_TRIANGLE_MOVES[idx][move];
+    }
+
+    public static int g3TurnEdges(int idx, int move){
+        if (!Util.contains(Search.G3_MOVESET, move)){
+            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g3 moveset");
+        }
+        return G3_EDGE_MOVES[idx][move];
+    }
+
+    public static int g3TurnCorners(int idx, int move){
+        if (!Util.contains(Search.G3_MOVESET, move)){
+            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g3 moveset");
+        }
+        return G3_CORNER_MOVES[idx][move];
     }
 
     //-------------- Public Pruning Functions --------------//
@@ -220,7 +242,7 @@ class FtoCoord {
 
     private static byte[] g2GenerateTxEPrun(){
         final int size = 11_289_600;
-        final int maxFrontierWidth = 4194993;
+        final int maxFrontierWidth = 4_194_993;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);

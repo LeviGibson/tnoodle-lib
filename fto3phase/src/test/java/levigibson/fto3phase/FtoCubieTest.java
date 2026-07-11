@@ -271,10 +271,9 @@ class FtoCubieTest {
         }
     }
 
-    @Disabled("Don't include in the test suite")
     @Test
     void performanceTest(){
-        int n = 500;
+        int n = 100;
 
         Random r = new Random(42);
         long start = System.currentTimeMillis();
