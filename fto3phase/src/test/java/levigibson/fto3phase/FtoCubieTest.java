@@ -1,6 +1,5 @@
 package levigibson.fto3phase;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -74,7 +73,7 @@ class FtoCubieTest {
 
             testCube.setAllTriangles(idx, 0);
             assertEquals(idx, testCube.packAllTriangles(0));
-            assertArrayEquals(ftoCubie.getTriangles1(), testCube.getTriangles1());
+            assertArrayEquals(ftoCubie.getTrianglesUFBrBl(), testCube.getTrianglesUFBrBl());
         }
     }
 
@@ -171,9 +170,9 @@ class FtoCubieTest {
                     "trial " + trial + " move " + cw + "+" + ccw + ": co mismatch");
                 assertArrayEquals(state.getEdges(), result.getEdges(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": edges mismatch");
-                assertArrayEquals(state.getTriangles1(), result.getTriangles1(),
+                assertArrayEquals(state.getTrianglesUFBrBl(), result.getTrianglesUFBrBl(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": centers1 mismatch");
-                assertArrayEquals(state.getTriangles2(), result.getTriangles2(),
+                assertArrayEquals(state.getTrianglesRLBD(), result.getTrianglesRLBD(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": centers2 mismatch");
 
                 // CCW then CW should also return to original state
@@ -186,9 +185,9 @@ class FtoCubieTest {
                     "trial " + trial + " move " + ccw + "+" + cw + ": co mismatch");
                 assertArrayEquals(state.getEdges(), result.getEdges(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": edges mismatch");
-                assertArrayEquals(state.getTriangles1(), result.getTriangles1(),
+                assertArrayEquals(state.getTrianglesUFBrBl(), result.getTrianglesUFBrBl(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": centers1 mismatch");
-                assertArrayEquals(state.getTriangles2(), result.getTriangles2(),
+                assertArrayEquals(state.getTrianglesRLBD(), result.getTrianglesRLBD(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": centers2 mismatch");
             }
         }
@@ -209,7 +208,7 @@ class FtoCubieTest {
 
             testCube.g2SetTriangles(idx);
             assertEquals(idx, testCube.g2PackTris());
-            assertArrayEquals(ftoCubie.getTriangles2(), testCube.getTriangles2());
+            assertArrayEquals(ftoCubie.getTrianglesRLBD(), testCube.getTrianglesRLBD());
         }
     }
 
