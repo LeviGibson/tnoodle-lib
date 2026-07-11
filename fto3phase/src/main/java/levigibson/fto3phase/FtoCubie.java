@@ -57,25 +57,27 @@ public class FtoCubie {
         return fto;
     }
 
-    public FtoCubie fromMoves(int[] moves){
-        if (moves.length == 0)
-            return new FtoCubie();
+    void copyFrom(FtoCubie c) {
+        System.arraycopy(c.cornerPerm, 0, this.cornerPerm, 0, 6);
+        System.arraycopy(c.cornerOri, 0, this.cornerOri, 0, 6);
+        System.arraycopy(c.edges, 0, this.edges, 0, 12);
+        System.arraycopy(c.triangles1, 0, this.triangles1, 0, 12);
+        System.arraycopy(c.triangles2, 0, this.triangles2, 0, 12);
+    }
 
-        FtoCubie[] ftos = new FtoCubie[2];
-        ftos[0] = new FtoCubie(this);
-        ftos[1] = new FtoCubie();
-
-        FtoCubie source;
-        FtoCubie target = ftos[1]; // makes the compiler happy
-
-        for (int i = 0; i < moves.length; i++) {
-            source = ftos[i % 2];
-            target = ftos[(i+1) % 2];
-
-            source.turn(moves[i], target);
+    public FtoCubie applyMoves(int[] moves){
+        FtoCubie result = new FtoCubie(this);
+        for (int move : moves) {
+            result.turn(move);
         }
+        return result;
+    }
 
-        return target;
+    void applyMovesInto(int[] moves, FtoCubie cubie){
+        cubie.copyFrom(this);
+        for (int move : moves) {
+            cubie.turn(move);
+        }
     }
 
     //-------------- Move & Cubie Definitions --------------//
@@ -649,25 +651,30 @@ public class FtoCubie {
     }
 
     /**
-     * Turn the FTO!
-     * This function does not mutate the internal state.
-     * It takes the internal state, turns it, then assigns
-     * the internal state of "out" to the result
+     * Turn the FTO! Mutates the internal state.
+     * @param move the move to apply
+     */
+    public void turn(int move){
+        if (temps == null) temps = new FtoCubie();
+        turnInto(move, temps);
+        copyFrom(temps);
+    }
+
+    /**
+     * Turn the FTO! Writes result to out without mutating this.
      * @param move the move to apply
      * @param out output of the move
      */
-    public void turn(int move, FtoCubie out){
+    void turnInto(int move, FtoCubie out){
         if (out == this) throw new IllegalArgumentException("out can not be this");
 
         MoveEffect cycles = moveEffects[move];
 
-        //Corners
         for (int i = 0; i < 6; i++) {
             out.cornerPerm[i] = this.cornerPerm[cycles.cp[i]];
             out.cornerOri[i] = this.cornerOri[cycles.cp[i]] ^ cycles.co[i];
         }
 
-        //Edges + Triangles
         for (int i = 0; i < 12; i++) {
             out.edges[i] = this.edges[cycles.ep[i]];
             out.triangles1[i] = this.triangles1[cycles.xp1[i]];
@@ -675,11 +682,7 @@ public class FtoCubie {
         }
     }
 
-    public FtoCubie turn(int move){
-        FtoCubie fto = new FtoCubie();
-        this.turn(move, fto);
-        return fto;
-    }
+    private FtoCubie temps = null;
 
     @Override
     public boolean equals(Object obj) {

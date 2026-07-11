@@ -9,7 +9,7 @@ import static levigibson.fto3phase.FtoCoord.*;
 public class Search {
 
     public boolean validateSolution(String moves, FtoCubie RANDOM_STATE){
-        FtoCubie test = Util.applyAlg(moves);
+        FtoCubie test = Util.fromAlg(moves);
         return (RANDOM_STATE.equals(test));
     }
 
@@ -21,7 +21,7 @@ public class Search {
         FtoCubie fto = new FtoCubie(RANDOM_STATE);
 
         int[] g2sol = g2Iterate(fto, g1Candidates);
-        fto = fto.fromMoves(g2sol);
+        fto = fto.applyMoves(g2sol);
         int[] g3sol = g3Iterate(fto);
 
         int[] fullSolution = IntStream.concat(Arrays.stream(g2sol), Arrays.stream(g3sol)).toArray();
@@ -138,12 +138,12 @@ public class Search {
 
     private static int[][] buildStatesFromCandidates(FtoCubie cubie, ArrayList<int[]> candidates){
         int[][] states = new int[candidates.size()][6];
-        FtoCubie fto = new FtoCubie(cubie);
+        FtoCubie candidateCubie = new FtoCubie();
 
         for (int i = 0; i < candidates.size(); i++) {
             int[] moves = candidates.get(i);
 
-            FtoCubie candidateCubie = fto.fromMoves(moves);
+            cubie.applyMovesInto(moves, candidateCubie);
 
             states[i][0] = candidateCubie.g2PackEdges();
             states[i][1] = candidateCubie.g2PackTris();
@@ -251,8 +251,8 @@ public class Search {
         for (int a1 = 0; a1 < numAxes; a1++) {
             invalid[a1] = 1 << a1;
             for (int a2 = 0; a2 < a1; a2++) {
-                FtoCubie fto1 = new FtoCubie().turn(a1 * 2).turn(a2 * 2);
-                FtoCubie fto2 = new FtoCubie().turn(a2 * 2).turn(a1 * 2);
+                FtoCubie fto1 = new FtoCubie(); fto1.turn(a1 * 2); fto1.turn(a2 * 2);
+                FtoCubie fto2 = new FtoCubie(); fto2.turn(a2 * 2); fto2.turn(a1 * 2);
                 if (fto1.equals(fto2)) {
                     invalid[a1] |= 1 << a2;
                 }

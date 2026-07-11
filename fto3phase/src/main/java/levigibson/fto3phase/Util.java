@@ -279,16 +279,12 @@ class Util {
      * @param alg move string
      * @return FtoCubie
      */
-    public static FtoCubie applyAlg(String alg) {
-        FtoCubie a = new FtoCubie();   // solved state
-        FtoCubie b = new FtoCubie();   // temp buffer
+    public static FtoCubie fromAlg(String alg) {
+        FtoCubie fto = new FtoCubie();
         for (String token : alg.trim().split("\\s+")) {
-            a.turn(parseMove(token), b);
-            FtoCubie tmp = a;
-            a = b;
-            b = tmp;
+            fto.turn(parseMove(token));
         }
-        return a;
+        return fto;
     }
 
     private static final String[] INVERSE_MOVE_NAMES = {"R'", "R", "L'", "L", "B'", "B", "U'", "U", "D'", "D", "F'", "F", "BR'", "BR", "BL'", "BL"};

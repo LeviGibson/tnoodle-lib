@@ -305,7 +305,7 @@ class FtoCoord {
                 int[] locMoves = G1_EDGE_MOVES[idx];
 
                 for (int move = 0; move < 16; move++) {
-                    fto.turn(move, turned);
+                    fto.turnInto(move, turned);
                     locMoves[move] = turned.g1PackEdges();
                 }
         }
@@ -321,7 +321,7 @@ class FtoCoord {
             int[] moves = G1_TRIANGLE_MOVES[idx];
 
             for (int move = 0; move < 16; move++) {
-                fto.turn(move, turned);
+                fto.turnInto(move, turned);
                 moves[move] = turned.g1PackTriangles();
             }
         }
@@ -337,7 +337,7 @@ class FtoCoord {
             int[] moves = G2_TRIANGLE_MOVES[idx];
 
             for (int move = 0; move < 10; move++) {
-                fto.turn(move, turned);
+                fto.turnInto(move, turned);
                 moves[move] = turned.g2PackTris();
             }
         }
@@ -353,7 +353,7 @@ class FtoCoord {
             int[] moves = G2_EDGE_MOVES[idx];
 
             for (int move = 0; move < 10; move++) {
-                fto.turn(move, turned);
+                fto.turnInto(move, turned);
                 moves[move] = turned.g2PackEdges();
             }
         }
@@ -369,7 +369,7 @@ class FtoCoord {
             int[] moves = G2_TRIPLE_MOVES[idx];
 
             for (int move = 0; move < 10; move++) {
-                fto.turn(move, turned);
+                fto.turnInto(move, turned);
                 moves[move] = turned.g2PackTriples(0);
             }
         }
@@ -391,7 +391,7 @@ class FtoCoord {
                     continue;
                 }
 
-                fto.turn(move, turned);
+                fto.turnInto(move, turned);
                 moves[move] = turned.g3PackEdges();
             }
         }
@@ -413,7 +413,7 @@ class FtoCoord {
                     continue;
                 }
 
-                fto.turn(move, turned);
+                fto.turnInto(move, turned);
                 moves[move] = turned.g3PackCorners();
             }
         }

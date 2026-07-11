@@ -25,11 +25,9 @@ class FtoCubieTest {
     void testAllMoves3ReturnToSolved() {
         for (int i = 0; i < CW_MOVES.length; i++) {
             FtoCubie cube = new FtoCubie();
-            FtoCubie tmp1 = new FtoCubie();
-            FtoCubie tmp2 = new FtoCubie();
-            cube.turn(CW_MOVES[i], tmp1);
-            tmp1.turn(CW_MOVES[i], tmp2);
-            tmp2.turn(CW_MOVES[i], cube);
+            cube.turn(CW_MOVES[i]);
+            cube.turn(CW_MOVES[i]);
+            cube.turn(CW_MOVES[i]);
             assertTrue(cube.isSolved(), NAMES[i] + "^3 should return to solved");
         }
     }
@@ -38,9 +36,8 @@ class FtoCubieTest {
     void testAllMovesFollowedByInverseReturnToSolved() {
         for (int i = 0; i < CW_MOVES.length; i++) {
             FtoCubie cube = new FtoCubie();
-            FtoCubie mid = new FtoCubie();
-            cube.turn(CW_MOVES[i], mid);
-            mid.turn(CCW_MOVES[i], cube);
+            cube.turn(CW_MOVES[i]);
+            cube.turn(CCW_MOVES[i]);
             assertTrue(cube.isSolved(), NAMES[i] + " followed by " + NAMES[i] + "' should return to solved");
         }
     }
@@ -51,9 +48,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(r.nextInt(16), out);
-                ftoCubie = out;
+                ftoCubie.turn(r.nextInt(16));
             }
 
             int idx = ftoCubie.packAllEdges();
@@ -71,9 +66,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(r.nextInt(16), out);
-                ftoCubie = out;
+                ftoCubie.turn(r.nextInt(16));
             }
 
             int idx = ftoCubie.packAllTriangles(0);
@@ -91,9 +84,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(r.nextInt(16), out);
-                ftoCubie = out;
+                ftoCubie.turn(r.nextInt(16));
             }
 
             int idx = ftoCubie.packAllCornerPermutation();
@@ -111,9 +102,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(r.nextInt(16), out);
-                ftoCubie = out;
+                ftoCubie.turn(r.nextInt(16));
             }
 
             int idx = ftoCubie.packAllCornerOrientation();
@@ -131,9 +120,7 @@ class FtoCubieTest {
         for (int i = 0; i < 100000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(r.nextInt(16), out);
-                ftoCubie = out;
+                ftoCubie.turn(r.nextInt(16));
             }
 
             int idx = ftoCubie.g1PackEdges();
@@ -150,9 +137,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(r.nextInt(16), out);
-                ftoCubie = out;
+                ftoCubie.turn(r.nextInt(16));
             }
 
             int idx = ftoCubie.g1PackTriangles();
@@ -166,27 +151,20 @@ class FtoCubieTest {
     @Test
     void testEveryMoveHasCorrectInverse() {
         for (int trial = 0; trial < 50; trial++) {
-            // Generate a random non-solved state by applying 50 random moves
             FtoCubie state = new FtoCubie();
-            FtoCubie tmp = new FtoCubie();
             Random r = new Random(trial);
             for (int i = 0; i < 50; i++) {
-                state.turn(r.nextInt(16), tmp);
-                FtoCubie swap = state;
-                state = tmp;
-                tmp = swap;
+                state.turn(r.nextInt(16));
             }
-
-            FtoCubie afterFirst = new FtoCubie();
-            FtoCubie result = new FtoCubie();
 
             for (int move = 0; move < 16; move += 2) {
                 int cw = move;
                 int ccw = move + 1;
 
                 // CW then CCW should return to original state
-                state.turn(cw, afterFirst);
-                afterFirst.turn(ccw, result);
+                FtoCubie result = new FtoCubie(state);
+                result.turn(cw);
+                result.turn(ccw);
                 assertArrayEquals(state.getCornerPerm(), result.getCornerPerm(),
                     "trial " + trial + " move " + cw + "+" + ccw + ": cp mismatch");
                 assertArrayEquals(state.getCornerOri(), result.getCornerOri(),
@@ -199,8 +177,9 @@ class FtoCubieTest {
                     "trial " + trial + " move " + cw + "+" + ccw + ": centers2 mismatch");
 
                 // CCW then CW should also return to original state
-                state.turn(ccw, afterFirst);
-                afterFirst.turn(cw, result);
+                result = new FtoCubie(state);
+                result.turn(ccw);
+                result.turn(cw);
                 assertArrayEquals(state.getCornerPerm(), result.getCornerPerm(),
                     "trial " + trial + " move " + ccw + "+" + cw + ": cp mismatch");
                 assertArrayEquals(state.getCornerOri(), result.getCornerOri(),
@@ -222,9 +201,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
-                ftoCubie = out;
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
             }
 
             int idx = ftoCubie.g2PackTris();
@@ -243,9 +220,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
-                ftoCubie = out;
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
             }
 
             int idx = ftoCubie.g2PackEdges();
@@ -253,7 +228,6 @@ class FtoCubieTest {
 
             testCube.g2SetEdges(idx);
             assertEquals(idx, testCube.g2PackEdges());
-//            assertArrayEquals(Arrays.copyOf(ftoCubie.edges, 9), Arrays.copyOf(testCube.edges, 9));
         }
     }
 
@@ -264,9 +238,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
-                ftoCubie = out;
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
             }
 
             for (int color = 0; color < 4; color++) {
@@ -287,9 +259,7 @@ class FtoCubieTest {
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                FtoCubie out = new FtoCubie();
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)], out);
-                ftoCubie = out;
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
             }
 
             int idx = ftoCubie.g3PackCorners();
