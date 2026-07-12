@@ -5,6 +5,157 @@ import java.util.Random;
 
 import static levigibson.fto3phase.Util.*;
 
+/**
+ * <h1>FtoCubie</h1>
+ * <h2>Purpose</h2>
+ * <p>
+ * FtoCubie is an array-based representation of the FTO. It is
+ * a little bit slow and therefore not used for the search.
+ *</p>
+ * <h2>Turning / General Use</h2>
+ * FtoCubie provides two public APIs for turning the cube.
+ * FtoCubie::turn() mutates the internal state.
+ * FtoCubie::turnInto() leaves the internal state untouched.
+ * Instead, you pass your own FtoCubie as an output buffer.
+ * <pre>{@code
+ *     FtoCubie fto = new FtoCubie(); // Initialize to the solved state
+ *     fto.turn(R); // Mutate the internal state
+ *     fto.turn(RP); // Undo
+ *     assert(fto.equals(new FtoCubie())); // Assert the FTO is solved
+ *
+ *     FtoCubie turnedFto = new FtoCubie(); // Allocate a new FTO
+ *     fto.turnInto(move, turnedFto); // Turn fto, copy the state into turnedFto
+ *     assert(fto.equals(new FtoCubie())); // the state of fto is untouched by turnInto()
+ * }</pre>
+ *
+ * <h2>Index Packing / Unpacking</h2>
+ * <p>
+ * The search uses a more optimized state representation
+ * where each piece type is stored in an integer, and the
+ * moves are performed with lookup tables. These integers
+ * will always have a bijection with possible states relevant
+ * to the specific phase. The main purpose of this class
+ * is to provide easy conversion from these packed integers
+ * to state and back again. See FtoCoord for further details.
+ *</p>
+ * <h3>Phase 1 (G1)</h3>
+ * <p>
+ * Phase 1 solves the yellow triangles (a.k.a centers) and
+ * the yellow edges. The edges do not need to be completely
+ * solved, they just need to be a D / D' away from solved.
+ * Solving these pieces reduce the moveset required to solve
+ * the puzzle, similar to Edge Orientation on 3x3.
+ *</p>
+ * {R L B D U F BR BL} -> {R L B D U}
+ *<p>
+ * The locations of the yellow triangles are restricted to
+ * a single orbit (12 spots). The locations of these are
+ * stored in a single integer between 0 and C(12,3)-1.
+ *</p>
+ * <p>
+ * The locations of the yellow edges are also stored
+ * with a integer between 0 and C(12,3)-1, but with
+ * one extra bit for the parity of the three edges.
+ *</p>
+ * {@link  FtoCubie#g1PackEdges()  g1PackEdges}
+ * {@link  FtoCubie#g1SetEdges(int)  g1SetEdges}
+ * {@link  FtoCubie#g1PackTriangles()  g1PackTriangles}
+ * {@link  FtoCubie#g1SetTriangles(int)  g1SetTriangles}
+ *
+ * <h3>Phase 2 (G2)</h3>
+ * <p>
+ * Phase 2 is the biggest search of the lot. It further
+ * reduces the moveset needed to solve the Fto. This step
+ * is also known as Octaminx Reduction. In order to solve
+ * this, you need to solve three different sets of pieces.
+ * Each piece type has a separate pruning table.
+ * </p>
+ * {R L B D U} -> {R L B D}
+ * <h4>G2 Edges</h4>
+ * <p>
+ * In g2, all the red, purple, and blue edges are
+ * on their respective faces. They have some freedom of
+ * movement. Much like G1, you can do R, L, B moves without
+ * breaking G2. The same way you can cycle the yellow edges
+ * in G1 with D moves without breaking G1.
+ * </p>
+ * <p>
+ * Another way to think of this is that the sequences "U"
+ * and "R U" when applied to a solved cube should produce
+ * the same index. They both are solvable to G2 with "U",
+ * even though the permutation of the edges is different.
+ * </p>
+ * <p>
+ * This is accomplished the same way as g1. The locations
+ * of the edges are stored, with an extra bit for parity.
+ * </p>
+ * {@link  FtoCubie#g2PackEdges()  g2PackEdges}
+ * {@link  FtoCubie#g2SetEdges(int)  g2SetEdges}
+ *
+ * <h4>G2 Triangles</h4>
+ * <p>
+ * Triangles are pretty simple in g2. The red, purple,
+ * and blue triangles must all be solved. Note that this
+ * section only refers to the triangles on the RLBD orbit.
+ * The other orbit also has triangles that need to be solved.
+ * </p>
+ * <p>
+ * The locations of the red and purple triangles are packed into
+ * a single index. The locations of the blue triangles are implied.
+ * This state space is C(9,3) * C(6,3).
+ * </p>
+ * {@link  FtoCubie#g2PackTris()  g2PackTris}
+ * {@link  FtoCubie#g2SetTriangles(int)  g2SetTriangles}
+ *
+ * <h4>G2 Triples</h4>
+ * <p>
+ * In g2, all the triples must be solved on the UFBrBl orbit. The
+ * state space for the triples is much too large to store in a single
+ * pruning table, so we have to compromise here.
+ * </p>
+ * <p>
+ * Instead of storing the entire state space in a single compact index,
+ * we split it into four different compact indices. One for each color
+ * on the orbit (White, Green, Gray, Orange). Each compact index stores
+ * the position and orientation of 3 corners, and the location of 3 triangles.
+ * </p>
+ * <p>
+ * Storing the individual colors has a lot of advantages. Firstly, you don't
+ * need to generate a pruning table for each color. Instead, you can
+ * just generate a single pruning table for an arbitrary color, and use it for
+ * the rest, as all the colors behave identically. Secondly, this gets
+ * around a lot of weirdness with the triples. The triples have multiple solved
+ * states, and these multiple solved states are not trivial like with the other
+ * phases. Each corner can pair with two triangles, and each of these two triangles
+ * has a bunch of options for which one. Plus, the corner can end up anywhere on
+ * the cube.
+ * </p>
+ * <p>
+ * Packing the individual colors works because you KNOW that each triangle
+ * of a specific color will have to be paired up with a corner of that same
+ * color. There's no wishy-washy nonsense with choices of what triangle to
+ * pair with.
+ * </p>
+ * {@link  FtoCubie#g2PackTriples(int)  g2PackTriples}
+ * {@link  FtoCubie#g2SetTriples(int, int)  g2SetTriples}
+ * {@link  FtoCubie#g2PackTripleTris(int)  g2PackTripleTris}
+ * {@link  FtoCubie#g2SetTripleTris(int, int)  g2SetTripleTris}
+ * {@link  FtoCubie#g2PackTripleCorners(int)  g2PackTripleCorners}
+ * {@link  FtoCubie#g2SetTripleCorners(int, int)  g2SetTripleCorners}
+ *
+ * <h3>Phase 3 (G3)</h3>
+ * <p>
+ * Phase 3 is trivial. So trivial that a straight search with no pruning
+ * runs decently fast on its own. Nonetheless, we do have an index packing
+ * system and a pruning table for the sake of consistency. The corners and
+ * edges are packed into two different indices.
+ * </p>
+ * {@link  FtoCubie#g3PackCorners()  g3PackCorners}
+ * {@link  FtoCubie#g3SetCorners(int)  g3SetCorners}
+ * {@link  FtoCubie#g3PackEdges()  g3PackEdges}
+ * {@link  FtoCubie#g3SetEdges(int)  g3SetEdges}
+ *
+ */
 public class FtoCubie {
 
     //-------------- State --------------//
@@ -56,6 +207,40 @@ public class FtoCubie {
         this.trianglesRLBD = other.trianglesRLBD.clone();
     }
 
+    //-------------- Turning Functions --------------//
+
+    /**
+     * Turn the FTO! Mutates the internal state.
+     * @param move the move to apply
+     */
+    public void turn(int move){
+        if (temps == null) temps = new FtoCubie();
+        turnInto(move, temps);
+        temps.copyInto(this);
+    }
+
+    /**
+     * Turn the FTO! Writes result to out without mutating this.
+     * @param move the move to apply
+     * @param out output of the move
+     */
+    public void turnInto(int move, FtoCubie out){
+        if (out == this) throw new IllegalArgumentException("out can not be this");
+
+        MoveEffect cycles = moveEffects[move];
+
+        for (int i = 0; i < 6; i++) {
+            out.cornerPerm[i] = this.cornerPerm[cycles.cp[i]];
+            out.cornerOri[i] = this.cornerOri[cycles.cp[i]] ^ cycles.co[i];
+        }
+
+        for (int i = 0; i < 12; i++) {
+            out.edges[i] = this.edges[cycles.ep[i]];
+            out.trianglesUFBrBl[i] = this.trianglesUFBrBl[cycles.tpU[i]];
+            out.trianglesRLBD[i] = this.trianglesRLBD[cycles.tpR[i]];
+        }
+    }
+
     //-------------- Constants --------------//
     private static final int EDGE_PERM_SIZE = Util.fact(12) / 2;
     private static final int CORNER_ORIENTATION_SIZE = Util.pow(2,5);
@@ -104,42 +289,6 @@ public class FtoCubie {
             out.turn(move);
         }
     }
-
-    //-------------- Move & Cubie Definitions --------------//
-
-    //Moves
-    public static final int
-        R = 0, RP = 1, L = 2, LP = 3,
-        B = 4, BP = 5, U = 6, UP = 7,
-        D = 8, DP = 9, F = 10, FP = 11,
-        BR = 12, BRP = 13, BL = 14, BLP = 15;
-
-    //Triangle Ordinals
-    //Represents the colors of the triangles
-    public static final int
-        TOU = 0, TOF = 1, TOBR = 2, TOBL = 3,
-        TOR = 0, TOL = 1, TOB = 2, TOD = 3;
-
-    //Triangle Indices
-    //Represents the index of a specific triangle
-    public static final int
-        TIUBL = 0, TIUBR = 1, TIUF = 2, TIFU = 3,
-        TIFBR = 4, TIFBL = 5, TIBRU = 6, TIBRBL = 7,
-        TIBRF = 8, TIBLU = 9, TIBLF = 10, TIBLBR = 11,
-        TIRL = 0,  TIRB = 1,  TIRD = 2,  TILB = 3,
-        TILR = 4,  TILD = 5,  TIBR = 6,  TIBL = 7,
-        TIBD = 8,  TIDR = 9,  TIDL = 10, TIDB = 11;
-
-    //Edges
-    public static final int
-        EUB = 0, EUR = 1, EUL = 2, EFL = 3,
-        EFR = 4, ERBR = 5, EBRB = 6, EBLB = 7,
-        ELBL = 8, EDF = 9, EDBR = 10, EDBL = 11;
-
-    //Corners
-    public static final int
-        CUF = 0, CUBR = 1, CUBL = 2,
-        CDL = 3, CDR = 4, CDB = 5;
 
     //-------------- Lehmer Indexing Functions --------------//
 
@@ -419,14 +568,6 @@ public class FtoCubie {
         }
     }
 
-    private static final int[] G2_EDGE_COLORS = {TOB, TOR, TOL, TOL, TOR, TOR, TOB, TOB, TOL};
-    private static final int[] G2_EDGE_NORM = {0, 0, 0, 1, 1, 2, 1, 2, 2};
-    private static final int[][] G2_EDGE_NORM_INV = {
-        {EUR, EFR, ERBR},
-        {EUL, EFL, ELBL},
-        {EUB, EBRB, EBLB},
-    };
-
     /**
      * Pack the relevant information about the edges for g2 in a single compact index.
      * This index is computed with:
@@ -439,18 +580,16 @@ public class FtoCubie {
      *
      * The blue edges are also relevant to g2, but packing the red and purple edges imply the
      * locations of the blue edges, so we don't consider the blue edges.
-     *
      * Index Range:
      * [0, C(9,3) * C(6,3) * 2^2]
      * [0, 6719]
-     *
      * Why so complicated? G2 has this weird thing where each face of edges (R, L, B) can be in
      * one of three states, and it's still in G2. Take a solved FTO, perform an R move, and it's
      * still in G2. But if you took the raw permutation of the edges it would produce two different
      * indices. This wouldn't be a truly compact index. Instead, we just store the locations of the
      * relevant edges, as well as a single bit for parity. Boom! Compact Index!
      *
-     * @return
+     * @return compact index
      */
     public int g2PackEdges(){
         //What edges have we already packed?
@@ -910,61 +1049,12 @@ public class FtoCubie {
 
     }
 
-
-    public boolean isSolved(){
-        for (int i = 0; i < 6; i++) {
-            if (cornerOri[i] != 0)
-                return false;
-            if (cornerPerm[i] != i)
-                return false;
-        }
-
-        for (int i = 0; i < 12; i++) {
-            if (trianglesUFBrBl[i] != i / 3)
-                return false;
-            if (trianglesRLBD[i] != i / 3)
-                return false;
-            if (edges[i] != i){
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /**
-     * Turn the FTO! Mutates the internal state.
-     * @param move the move to apply
+     * equals compares the internal state and returns true
+     * if all the pieces are in the same places
+     * @param obj   the reference object with which to compare.
+     * @return true / false
      */
-    public void turn(int move){
-        if (temps == null) temps = new FtoCubie();
-        turnInto(move, temps);
-        temps.copyInto(this);
-    }
-
-    /**
-     * Turn the FTO! Writes result to out without mutating this.
-     * @param move the move to apply
-     * @param out output of the move
-     */
-    void turnInto(int move, FtoCubie out){
-        if (out == this) throw new IllegalArgumentException("out can not be this");
-
-        MoveEffect cycles = moveEffects[move];
-
-        for (int i = 0; i < 6; i++) {
-            out.cornerPerm[i] = this.cornerPerm[cycles.cp[i]];
-            out.cornerOri[i] = this.cornerOri[cycles.cp[i]] ^ cycles.co[i];
-        }
-
-        for (int i = 0; i < 12; i++) {
-            out.edges[i] = this.edges[cycles.ep[i]];
-            out.trianglesUFBrBl[i] = this.trianglesUFBrBl[cycles.xpU[i]];
-            out.trianglesRLBD[i] = this.trianglesRLBD[cycles.xpR[i]];
-        }
-    }
-
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -992,17 +1082,62 @@ public class FtoCubie {
             Arrays.hashCode(this.cornerPerm);
     }
 
+    //Getter functions used by tests
     public int[] getCornerPerm(){ return cornerPerm.clone(); }
     public int[] getCornerOri(){ return cornerOri.clone(); }
     public int[] getEdges(){ return edges.clone(); }
     public int[] getTrianglesUFBrBl(){ return trianglesUFBrBl.clone(); }
     public int[] getTrianglesRLBD(){ return trianglesRLBD.clone(); }
 
+    //-------------- Move & Cubie Definitions --------------//
+
+    //Moves
+    public static final int
+        R = 0, RP = 1, L = 2, LP = 3,
+        B = 4, BP = 5, U = 6, UP = 7,
+        D = 8, DP = 9, F = 10, FP = 11,
+        BR = 12, BRP = 13, BL = 14, BLP = 15;
+
+    //Triangle Ordinals
+    //Represents the colors of the triangles
+    public static final int
+        TOU = 0, TOF = 1, TOBR = 2, TOBL = 3,
+        TOR = 0, TOL = 1, TOB = 2, TOD = 3;
+
+    //Triangle Indices
+    //Represents the index of a specific triangle
+    public static final int
+        TIUBL = 0, TIUBR = 1, TIUF = 2, TIFU = 3,
+        TIFBR = 4, TIFBL = 5, TIBRU = 6, TIBRBL = 7,
+        TIBRF = 8, TIBLU = 9, TIBLF = 10, TIBLBR = 11,
+        TIRL = 0,  TIRB = 1,  TIRD = 2,  TILB = 3,
+        TILR = 4,  TILD = 5,  TIBR = 6,  TIBL = 7,
+        TIBD = 8,  TIDR = 9,  TIDL = 10, TIDB = 11;
+
+    //Edges
+    public static final int
+        EUB = 0, EUR = 1, EUL = 2, EFL = 3,
+        EFR = 4, ERBR = 5, EBRB = 6, EBLB = 7,
+        ELBL = 8, EDF = 9, EDBR = 10, EDBL = 11;
+
+    //Corners
+    public static final int
+        CUF = 0, CUBR = 1, CUBL = 2,
+        CDL = 3, CDR = 4, CDB = 5;
+
+    private static final int[] G2_EDGE_COLORS = {TOB, TOR, TOL, TOL, TOR, TOR, TOB, TOB, TOL};
+    private static final int[] G2_EDGE_NORM = {0, 0, 0, 1, 1, 2, 1, 2, 2};
+    private static final int[][] G2_EDGE_NORM_INV = {
+        {EUR, EFR, ERBR},
+        {EUL, EFL, ELBL},
+        {EUB, EBRB, EBLB},
+    };
+
     private static class MoveEffect{
         public int[] co;
         public int[] cp;
-        public int[] xpU;
-        public int[] xpR;
+        public int[] tpU;
+        public int[] tpR;
         public int[] ep;
     }
 
@@ -1025,50 +1160,50 @@ public class FtoCubie {
         moveEffects[R].cp = new int[]{CDR, CUF, CUBL, CDL, CUBR, CDB};
         moveEffects[R].co = new int[]{1, 1, 0, 0, 0, 0};
         moveEffects[R].ep = new int[]{EUB, EFR, EUL, EFL, ERBR, EUR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[R].xpU = new int[]{TIUBL, TIFU, TIFBR, TIBRF, TIBRU, TIFBL, TIUF, TIBRBL, TIUBR, TIBLU, TIBLF, TIBLBR};
-        moveEffects[R].xpR = new int[]{TIRD, TIRL, TIRB, TILB, TILR, TILD, TIBR, TIBL, TIBD, TIDR, TIDL, TIDB};
+        moveEffects[R].tpU = new int[]{TIUBL, TIFU, TIFBR, TIBRF, TIBRU, TIFBL, TIUF, TIBRBL, TIUBR, TIBLU, TIBLF, TIBLBR};
+        moveEffects[R].tpR = new int[]{TIRD, TIRL, TIRB, TILB, TILR, TILD, TIBR, TIBL, TIBD, TIDR, TIDL, TIDB};
         //L
         moveEffects[L].cp = new int[]{CUBL,  CUBR, CDL, CUF, CDR, CDB};
         moveEffects[L].co = new int[]{1, 0, 1, 0, 0, 0};
         moveEffects[L].ep = new int[]{EUB, EUR, ELBL, EUL, EFR, ERBR, EBRB, EBLB, EFL, EDF, EDBR, EDBL};
-        moveEffects[L].xpU = new int[]{TIBLF, TIUBR, TIBLU, TIUBL, TIFBR, TIUF, TIBRU, TIBRBL, TIBRF, TIFBL, TIFU, TIBLBR};
-        moveEffects[L].xpR = new int[]{TIRL, TIRB, TIRD, TILD, TILB, TILR, TIBR, TIBL, TIBD, TIDR, TIDL, TIDB};
+        moveEffects[L].tpU = new int[]{TIBLF, TIUBR, TIBLU, TIUBL, TIFBR, TIUF, TIBRU, TIBRBL, TIBRF, TIFBL, TIFU, TIBLBR};
+        moveEffects[L].tpR = new int[]{TIRL, TIRB, TIRD, TILD, TILB, TILR, TIBR, TIBL, TIBD, TIDR, TIDL, TIDB};
         //B
         moveEffects[B].cp = new int[]{CUF, CDB, CUBR, CDL, CDR, CUBL};
         moveEffects[B].co = new int[]{0, 1, 1, 0, 0, 0};
         moveEffects[B].ep = new int[]{EBRB, EUR, EUL, EFL, EFR, ERBR, EBLB, EUB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[B].xpU = new int[]{TIBRU, TIBRBL, TIUF, TIFU, TIFBR, TIFBL, TIBLBR, TIBLU, TIBRF, TIUBR, TIBLF, TIUBL};
-        moveEffects[B].xpR = new int[]{TIRL, TIRB, TIRD, TILB, TILR, TILD, TIBD, TIBR, TIBL, TIDR, TIDL, TIDB};
+        moveEffects[B].tpU = new int[]{TIBRU, TIBRBL, TIUF, TIFU, TIFBR, TIFBL, TIBLBR, TIBLU, TIBRF, TIUBR, TIBLF, TIUBL};
+        moveEffects[B].tpR = new int[]{TIRL, TIRB, TIRD, TILB, TILR, TILD, TIBD, TIBR, TIBL, TIDR, TIDL, TIDB};
         //D
         moveEffects[D].cp = new int[]{CUF, CUBR, CUBL, CDB, CDL, CDR};
         moveEffects[D].co = new int[]{0, 0, 0, 0, 0, 0};
         moveEffects[D].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDBL, EDF, EDBR};
-        moveEffects[D].xpU = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIBLF, TIBLBR, TIBRU, TIFBR, TIFBL, TIBLU, TIBRBL, TIBRF};
-        moveEffects[D].xpR = new int[]{TIRL, TIRB, TIRD, TILB, TILR, TILD, TIBR, TIBL, TIBD, TIDL, TIDB, TIDR};
+        moveEffects[D].tpU = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIBLF, TIBLBR, TIBRU, TIFBR, TIFBL, TIBLU, TIBRBL, TIBRF};
+        moveEffects[D].tpR = new int[]{TIRL, TIRB, TIRD, TILB, TILR, TILD, TIBR, TIBL, TIBD, TIDL, TIDB, TIDR};
         //U
         moveEffects[U].cp = new int[]{CUBR, CUBL, CUF, CDL, CDR, CDB};
         moveEffects[U].co = new int[]{0, 0, 0, 0, 0, 0};
         moveEffects[U].ep = new int[]{EUL, EUB, EUR, EFL, EFR, ERBR, EBRB, EBLB, ELBL, EDF, EDBR, EDBL};
-        moveEffects[U].xpU = new int[]{TIUF, TIUBL, TIUBR, TIFU, TIFBR, TIFBL, TIBRU, TIBRBL, TIBRF, TIBLU, TIBLF, TIBLBR};
-        moveEffects[U].xpR = new int[]{TIBR, TIBL, TIRD, TIRL, TIRB, TILD, TILB, TILR, TIBD, TIDR, TIDL, TIDB};
+        moveEffects[U].tpU = new int[]{TIUF, TIUBL, TIUBR, TIFU, TIFBR, TIFBL, TIBRU, TIBRBL, TIBRF, TIBLU, TIBLF, TIBLBR};
+        moveEffects[U].tpR = new int[]{TIBR, TIBL, TIRD, TIRL, TIRB, TILD, TILB, TILR, TIBD, TIDR, TIDL, TIDB};
         //F
         moveEffects[F].cp = new int[]{CDL, CUBR, CUBL, CDR, CUF, CDB};
         moveEffects[F].co = new int[]{1, 0, 0, 1, 0, 0};
         moveEffects[F].ep = new int[]{EUB, EUR, EUL, EDF, EFL, ERBR, EBRB, EBLB, ELBL, EFR, EDBR, EDBL};
-        moveEffects[F].xpU = new int[]{TIUBL, TIUBR, TIUF, TIFBL, TIFU, TIFBR, TIBRU, TIBRBL, TIBRF, TIBLU, TIBLF, TIBLBR};
-        moveEffects[F].xpR = new int[]{TILD, TIRB, TILR, TILB, TIDL, TIDR, TIBR, TIBL, TIBD, TIRL, TIRD, TIDB};
+        moveEffects[F].tpU = new int[]{TIUBL, TIUBR, TIUF, TIFBL, TIFU, TIFBR, TIBRU, TIBRBL, TIBRF, TIBLU, TIBLF, TIBLBR};
+        moveEffects[F].tpR = new int[]{TILD, TIRB, TILR, TILB, TIDL, TIDR, TIBR, TIBL, TIBD, TIRL, TIRD, TIDB};
         //BR
         moveEffects[BR].cp = new int[]{CUF, CDR, CUBL, CDL, CDB, CUBR};
         moveEffects[BR].co = new int[]{0, 1, 0, 0, 1, 0};
         moveEffects[BR].ep = new int[]{EUB, EUR, EUL, EFL, EFR, EDBR, ERBR, EBLB, ELBL, EDF, EBRB, EDBL};
-        moveEffects[BR].xpU = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIFBR, TIFBL, TIBRF, TIBRU, TIBRBL, TIBLU, TIBLF, TIBLBR};
-        moveEffects[BR].xpR = new int[]{TIRL, TIDR, TIDB, TILB, TILR, TILD, TIRD, TIBL, TIRB, TIBD, TIDL, TIBR};
+        moveEffects[BR].tpU = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIFBR, TIFBL, TIBRF, TIBRU, TIBRBL, TIBLU, TIBLF, TIBLBR};
+        moveEffects[BR].tpR = new int[]{TIRL, TIDR, TIDB, TILB, TILR, TILD, TIRD, TIBL, TIRB, TIBD, TIDL, TIBR};
         //BL
         moveEffects[BL].cp = new int[]{CUF, CUBR, CDB, CUBL, CDR, CDL};
         moveEffects[BL].co = new int[]{0, 0, 1, 0, 0, 1};
         moveEffects[BL].ep = new int[]{EUB, EUR, EUL, EFL, EFR, ERBR, EBRB, EDBL, EBLB, EDF, EDBR, ELBL};
-        moveEffects[BL].xpU = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIFBR, TIFBL, TIBRU, TIBRBL, TIBRF, TIBLBR, TIBLU, TIBLF};
-        moveEffects[BL].xpR = new int[]{TIRL, TIRB, TIRD, TIBD, TILR, TIBL, TIBR, TIDB, TIDL, TIDR, TILB, TILD};
+        moveEffects[BL].tpU = new int[]{TIUBL, TIUBR, TIUF, TIFU, TIFBR, TIFBL, TIBRU, TIBRBL, TIBRF, TIBLBR, TIBLU, TIBLF};
+        moveEffects[BL].tpR = new int[]{TIRL, TIRB, TIRD, TIBD, TILR, TIBL, TIBR, TIDB, TIDL, TIDR, TILB, TILD};
 
         //No need to hard code the inverse moves
         //You can just invert the cycles
@@ -1079,8 +1214,8 @@ public class FtoCubie {
             inverse.co = new int[6];
             inverse.cp = new int[6];
             inverse.ep = new int[12];
-            inverse.xpU = new int[12];
-            inverse.xpR = new int[12];
+            inverse.tpU = new int[12];
+            inverse.tpR = new int[12];
 
             for (int i = 0; i < 6; i++) {
                 inverse.cp[normal.cp[i]] = i;
@@ -1090,11 +1225,9 @@ public class FtoCubie {
             }
             for (int i = 0; i < 12; i++) {
                 inverse.ep[normal.ep[i]] = i;
-                inverse.xpU[normal.xpU[i]] = i;
-                inverse.xpR[normal.xpR[i]] = i;
+                inverse.tpU[normal.tpU[i]] = i;
+                inverse.tpR[normal.tpR[i]] = i;
             }
         }
     }
-
-
 }

@@ -27,7 +27,7 @@ class FtoCubieTest {
             cube.turn(CW_MOVES[i]);
             cube.turn(CW_MOVES[i]);
             cube.turn(CW_MOVES[i]);
-            assertTrue(cube.isSolved(), NAMES[i] + "^3 should return to solved");
+            assertEquals(new FtoCubie(), cube, NAMES[i] + "^3 should return to solved");
         }
     }
 
@@ -37,7 +37,7 @@ class FtoCubieTest {
             FtoCubie cube = new FtoCubie();
             cube.turn(CW_MOVES[i]);
             cube.turn(CCW_MOVES[i]);
-            assertTrue(cube.isSolved(), NAMES[i] + " followed by " + NAMES[i] + "' should return to solved");
+            assertEquals(new FtoCubie(), cube, NAMES[i] + " followed by " + NAMES[i] + "' should return to solved");
         }
     }
 

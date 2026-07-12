@@ -275,14 +275,4 @@ public class Search {
     static {
         invalidMoves = initInvalidMoveTable();
     }
-
-    public static void main(String[] args) {
-        FtoCubie fto = new FtoCubie();
-        fto.turn(FtoCubie.F);
-        fto.turn(FtoCubie.R);
-        fto.turn(FtoCubie.FP);
-        Search search = new Search();
-        String solution = search.solution(fto);
-        System.out.println(solution);
-    }
 }
