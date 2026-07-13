@@ -65,29 +65,6 @@ class Util {
     }
 
     /**
-     * Computes the parity of a permutation
-     * @param perm shuffle of {0, 1, 2, 3 ...}
-     * @return 0 or 1
-     */
-    public static boolean isParity(int perm, int length) {
-
-        int swaps = 0;
-        for (int i = 0; i < length; i++) {
-            while (((perm >> (4 * i)) & 0b1111) != i) {
-                int target = ((perm >> (4 * i)) & 0b1111);
-                perm = swapNibbles(perm, i, target);
-                swaps++;
-            }
-        }
-
-        for (int i = 0; i < length; i++) {
-            if (((perm >> (4 * i)) & 0b1111) != i) throw new IllegalArgumentException("perm is not a sequential array" + perm);
-        }
-
-        return swaps % 2 == 1;
-    }
-
-    /**
      * Pack the permutation of an array into a single integer
      * This creates a bijection!
      * <a href="https://medium.com/@benjamin.botto/sequentially-indexing-permutations-a-linear-algorithm-for-computing-lexicographic-rank-a22220ffd6e3">Link to article explaining the algorithm</a>
@@ -203,35 +180,6 @@ class Util {
         int index = 0;
         for (int i = idx.length-1; i >= 0; i--) {
             index += nCr(idx[i], i+1);
-        }
-        return index;
-    }
-
-    private static int swapNibbles(int x, int i0, int i1){
-        int n0 = (x >> (4 * i0)) & 0b1111;
-        int n1 = (x >> (4 * i1)) & 0b1111;
-
-        int mask = ~((0b1111 << (4 * i0)) | (0b1111 << (4 * i1)));
-        x &= mask;
-        x |= n0 << (4 * i1);
-        x |= n1 << (4 * i0);
-
-        return x;
-    }
-
-    public static int packSubset(int packedArr, int length){
-        int mask = 0b1111;
-
-        for (int i = 0; i < length-1; i++) {
-            if (((packedArr >> (4 * i)) & mask) >=
-                ((packedArr >> (4 * (i+1))) & mask)){
-                throw new IllegalArgumentException("idx must be in ascending order");
-            }
-        }
-
-        int index = 0;
-        for (int i = length-1; i >= 0; i--) {
-            index += nCr(((packedArr >> (4 * i)) & mask), i+1);
         }
         return index;
     }
