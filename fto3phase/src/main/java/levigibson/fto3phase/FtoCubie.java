@@ -1,6 +1,7 @@
 package levigibson.fto3phase;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 import static levigibson.fto3phase.Util.*;
@@ -1075,11 +1076,11 @@ public class FtoCubie {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(this.edges) ^
-            Arrays.hashCode(this.trianglesUFBrBl) ^
-            Arrays.hashCode(this.trianglesRLBD) ^
-            Arrays.hashCode(this.cornerOri) ^
-            Arrays.hashCode(this.cornerPerm);
+        return Objects.hash((Object) this.edges) ^
+            Objects.hash((Object) this.trianglesUFBrBl) ^
+            Objects.hash((Object) this.trianglesRLBD) ^
+            Objects.hash((Object) this.cornerOri) ^
+            Objects.hash((Object) this.cornerPerm);
     }
 
     //Getter functions used by tests
@@ -1100,13 +1101,13 @@ public class FtoCubie {
 
     //Triangle Ordinals
     //Represents the colors of the triangles
-    public static final int
+    private static final int
         TOU = 0, TOF = 1, TOBR = 2, TOBL = 3,
         TOR = 0, TOL = 1, TOB = 2, TOD = 3;
 
     //Triangle Indices
     //Represents the index of a specific triangle
-    public static final int
+    private static final int
         TIUBL = 0, TIUBR = 1, TIUF = 2, TIFU = 3,
         TIFBR = 4, TIFBL = 5, TIBRU = 6, TIBRBL = 7,
         TIBRF = 8, TIBLU = 9, TIBLF = 10, TIBLBR = 11,
@@ -1115,13 +1116,13 @@ public class FtoCubie {
         TIBD = 8,  TIDR = 9,  TIDL = 10, TIDB = 11;
 
     //Edges
-    public static final int
+    private static final int
         EUB = 0, EUR = 1, EUL = 2, EFL = 3,
         EFR = 4, ERBR = 5, EBRB = 6, EBLB = 7,
         ELBL = 8, EDF = 9, EDBR = 10, EDBL = 11;
 
     //Corners
-    public static final int
+    private static final int
         CUF = 0, CUBR = 1, CUBL = 2,
         CDL = 3, CDR = 4, CDB = 5;
 

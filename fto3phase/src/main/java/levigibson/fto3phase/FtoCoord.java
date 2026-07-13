@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.function.IntPredicate;
 
 class FtoCoord {
-    private static boolean initialized;
+    private static volatile boolean initialized;
 
     //-------------- Move Tables --------------//
 
@@ -134,14 +134,14 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        LinkedList<Integer> frontier = new LinkedList<>();
         FtoCubie solved = new FtoCubie();
         frontier.add(packG1(solved.g1PackEdges(), solved.g1PackTriangles()));
         prun[frontier.get(0)] = 0;
 
         int depth = 0;
         while (!frontier.isEmpty()) {
-            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+            LinkedList<Integer> next = new LinkedList<>();
 
             for (int idx : frontier) {
                 for (int m = 0; m < 16; m++) {
@@ -291,13 +291,13 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        java.util.LinkedList<Integer> frontier = new java.util.LinkedList<>();
+        LinkedList<Integer> frontier = new LinkedList<>();
         frontier.add(new FtoCubie().g3PackCorners());
         prun[frontier.get(0)] = 0;
 
         int depth = 0;
         while (!frontier.isEmpty()) {
-            java.util.LinkedList<Integer> next = new java.util.LinkedList<>();
+            LinkedList<Integer> next = new LinkedList<>();
 
             for (int idx : frontier) {
                 for (int move : moves) {
