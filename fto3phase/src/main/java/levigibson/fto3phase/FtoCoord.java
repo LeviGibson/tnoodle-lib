@@ -2,6 +2,8 @@ package levigibson.fto3phase;
 
 import java.util.*;
 
+import static levigibson.fto3phase.Util.*;
+
 class FtoCoord {
     private static volatile boolean initialized;
 
@@ -26,6 +28,13 @@ class FtoCoord {
 
     private static byte[] g3CornerPrun;
 
+    private static final int G1_TRIANGLES_SIZE = nCr(12,3);
+    private static final int G1_EDGES_SIZE = nCr(12,3) * 2;
+    private static final int G2_TRIANGLES_SIZE = nCr(9,3) * nCr(6,3);
+    private static final int G2_EDGES_SIZE = nCr(9,3) * nCr(6,3) * 2 * 2;
+    private static final int G2_TRIPLE_SIZE = nCr(12,3) * nCr(6,3) * pow(2,3);
+    private static final int G3_CORNERS_SIZE = (fact(6)/2) * pow(2,5);
+    private static final int G3_EDGE_SIZE = pow(3,4);
 
     //-------------- Public Turn Functions --------------//
 
@@ -115,12 +124,12 @@ class FtoCoord {
     //-------------- Pruning Table Generation --------------//
 
     private static int packG1(int edge, int tris){
-        return edge * 220 + tris;
+        return edge * G1_TRIANGLES_SIZE + tris;
     }
 
     private static int turnG1(int idx, int move){
-        int edge = idx / 220;
-        int tri = idx % 220;
+        int edge = idx / G1_TRIANGLES_SIZE;
+        int tri = idx % G1_TRIANGLES_SIZE;
 
         edge = g1TurnEdges(edge, move);
         tri = g1TurnTris(tri, move);
@@ -129,7 +138,7 @@ class FtoCoord {
     }
 
     static byte[] g1GeneratePrun() {
-        final int size = 96800;
+        final int size = G1_EDGES_SIZE * G1_TRIANGLES_SIZE;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
@@ -167,9 +176,7 @@ class FtoCoord {
     }
 
     private static IntArray g2GenerateTripleFrontier(){
-        final int size = 35200;
-
-        byte[] prun = new byte[size];
+        byte[] prun = new byte[G2_TRIPLE_SIZE];
         Arrays.fill(prun, (byte) -1);
 
         IntArray all = new IntArray(161);
@@ -204,9 +211,7 @@ class FtoCoord {
     }
 
     private static byte[] g2GenerateTriplePrun() {
-        final int size = 35200;
-
-        byte[] prun = new byte[size];
+        byte[] prun = new byte[G2_TRIPLE_SIZE];
         Arrays.fill(prun, (byte) -1);
 
         IntArray frontier = g2GenerateTripleFrontier();
@@ -236,12 +241,12 @@ class FtoCoord {
     }
 
     private static int packTxE(int edge, int tri){
-        return edge * 1680 + tri;
+        return edge * G2_TRIANGLES_SIZE + tri;
     }
 
     private static int turnTxE(int idx, int move){
-        int edge = idx / 1680;
-        int tri = idx % 1680;
+        int edge = idx / G2_TRIANGLES_SIZE;
+        int tri = idx % G2_TRIANGLES_SIZE;
 
         edge = g2TurnEdges(edge, move);
         tri = g2TurnTris(tri, move);
@@ -250,7 +255,7 @@ class FtoCoord {
     }
 
     private static byte[] g2GenerateTxEPrun(){
-        final int size = 11_289_600;
+        final int size = G2_EDGES_SIZE * G2_TRIANGLES_SIZE;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
@@ -288,9 +293,7 @@ class FtoCoord {
     }
 
     private static byte[] g3GenerateCornerPrun(){
-        final int size = 11520;
-
-        byte[] prun = new byte[size];
+        byte[] prun = new byte[G3_CORNERS_SIZE];
         Arrays.fill(prun, (byte) -1);
 
         IntArray frontier = new IntArray(5405);
@@ -324,11 +327,11 @@ class FtoCoord {
     //-------------- Move Table Generation --------------//
 
     private static void g1InitEdges(){
-        G1_EDGE_MOVES = new int[440][16];
+        G1_EDGE_MOVES = new int[G1_EDGES_SIZE][16];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 440; idx++) {
+        for (int idx = 0; idx < G1_EDGES_SIZE; idx++) {
                 fto.g1SetEdges(idx);
                 int[] locMoves = G1_EDGE_MOVES[idx];
 
@@ -340,11 +343,11 @@ class FtoCoord {
     }
 
     private static void g1InitTriangles(){
-        G1_TRIANGLE_MOVES = new int[220][16];
+        G1_TRIANGLE_MOVES = new int[G1_TRIANGLES_SIZE][16];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 220; idx++) {
+        for (int idx = 0; idx < G1_TRIANGLES_SIZE; idx++) {
             fto.g1SetTriangles(idx);
             int[] moves = G1_TRIANGLE_MOVES[idx];
 
@@ -356,11 +359,11 @@ class FtoCoord {
     }
 
     private static void g2InitTris(){
-        G2_TRIANGLE_MOVES = new int[1680][10];
+        G2_TRIANGLE_MOVES = new int[G2_TRIANGLES_SIZE][10];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 1680; idx++) {
+        for (int idx = 0; idx < G2_TRIANGLES_SIZE; idx++) {
             fto.g2SetTriangles(idx);
             int[] moves = G2_TRIANGLE_MOVES[idx];
 
@@ -372,11 +375,11 @@ class FtoCoord {
     }
 
     private static void g2InitEdges(){
-        G2_EDGE_MOVES = new int[6720][10];
+        G2_EDGE_MOVES = new int[G2_EDGES_SIZE][10];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 6720; idx++) {
+        for (int idx = 0; idx < G2_EDGES_SIZE; idx++) {
             fto.g2SetEdges(idx);
             int[] moves = G2_EDGE_MOVES[idx];
 
@@ -388,11 +391,11 @@ class FtoCoord {
     }
 
     private static void g2InitTriples(){
-        G2_TRIPLE_MOVES = new int[35200][10];
+        G2_TRIPLE_MOVES = new int[G2_TRIPLE_SIZE][10];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 35200; idx++) {
+        for (int idx = 0; idx < G2_TRIPLE_SIZE; idx++) {
             fto.g2SetTriples(idx, 0);
             int[] moves = G2_TRIPLE_MOVES[idx];
 
@@ -404,12 +407,12 @@ class FtoCoord {
     }
 
     private static void g3InitEdges(){
-        G3_EDGE_MOVES = new int[81][10];
+        G3_EDGE_MOVES = new int[G3_EDGE_SIZE][10];
 
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 81; idx++) {
+        for (int idx = 0; idx < G3_EDGE_SIZE; idx++) {
             fto.g3SetEdges(idx);
             int[] moves = G3_EDGE_MOVES[idx];
 
@@ -421,12 +424,12 @@ class FtoCoord {
     }
 
     private static void g3InitCorners(){
-        G3_CORNER_MOVES = new int[11520][10];
+        G3_CORNER_MOVES = new int[G3_CORNERS_SIZE][10];
 
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();
 
-        for (int idx = 0; idx < 11520; idx++) {
+        for (int idx = 0; idx < G3_CORNERS_SIZE; idx++) {
             fto.g3SetCorners(idx);
             int[] moves = G3_CORNER_MOVES[idx];
 
@@ -449,8 +452,6 @@ class FtoCoord {
             return;
         }
 
-        long start = System.currentTimeMillis();
-
         g1InitEdges();
         g1InitTriangles();
         g1Prun = g1GeneratePrun();
@@ -466,8 +467,5 @@ class FtoCoord {
         g3CornerPrun = g3GenerateCornerPrun();
 
         initialized = true;
-
-        System.out.println("Time to initialize: " + (System.currentTimeMillis() - start));
     }
-
 }

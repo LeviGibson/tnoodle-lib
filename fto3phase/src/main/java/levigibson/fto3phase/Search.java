@@ -7,11 +7,6 @@ import static levigibson.fto3phase.FtoCoord.*;
 
 public class Search {
 
-    public boolean validateSolution(String moves, FtoCubie randomState){
-        FtoCubie test = Util.fromAlg(moves);
-        return (randomState.equals(test));
-    }
-
     /**
      * Main search function! This search algorithm will produce a human-readable string that
      * when applied to a solved FTO, will match the FTO provided.
@@ -41,6 +36,11 @@ public class Search {
         return fullSolutionStr;
     }
 
+    public boolean validateSolution(String moves, FtoCubie randomState){
+        FtoCubie test = Util.fromAlg(moves);
+        return (randomState.equals(test));
+    }
+
     //After each phase, the moveset required to solve the FTO is reduced
     //See Kociemba's Algorithm
     public static final List<Integer> G1_MOVESET = List.of(FtoCubie.R, FtoCubie.RP,
@@ -56,7 +56,94 @@ public class Search {
 
     private static final int MIN_G1_CANDIDATES = 500;
 
-    public Search(){
+    private ArrayList<int[]> g1Iterate(FtoCubie cubie){
+
+        ArrayList<int[]> candidates = new ArrayList<>();
+        ArrayDeque<Integer> moves = new ArrayDeque<>();
+
+        int edge = cubie.g1PackEdges();
+        int tri = cubie.g1PackTriangles();
+        for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
+            g1Search(depth, 0, edge, tri, candidates, moves);
+            if (candidates.size() >= MIN_G1_CANDIDATES) break;
+        }
+
+        return candidates;
+    }
+
+    private int[] g2Iterate(FtoCubie cubie, ArrayList<int[]> candidates){
+        int[][] states = buildStatesFromCandidates(cubie, candidates);
+        int[] lengths = buildLengthFromCandidates(candidates);
+
+        ArrayDeque<Integer> moves = new ArrayDeque<>();
+
+        for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
+            for (int c = 0; c < states.length; c++) {
+
+                int searchDepth = depth - lengths[c];
+                if (searchDepth < 0) continue;
+
+                int[] s = states[c];
+
+                int[] res = g2Search(searchDepth, 0, s[0], s[1], s[2], s[3], s[4], s[5], moves);
+                if (res != null){
+                    int[] g1sol = candidates.get(c);
+                    int[] g2sol = res;
+
+                    return IntStream.concat(Arrays.stream(g1sol), Arrays.stream(g2sol)).toArray();
+                }
+            }
+
+        }
+
+        throw new RuntimeException("Could not find Phase 2 solution");
+    }
+
+    private int[] g3Iterate(FtoCubie cubie){
+        int edges = cubie.g3PackEdges();
+        int corners = cubie.g3PackCorners();
+
+        ArrayDeque<Integer> moves = new ArrayDeque<>();
+
+        for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
+            int[] res = g3Search(depth, 0, edges, corners, moves);
+            if (res != null){
+                return res;
+            }
+        }
+
+        throw new RuntimeException();
+    }
+
+    private void g1Search(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates, ArrayDeque<Integer> moves){
+
+        int prun = FtoCoord.g1Prun(edge, tri);
+
+        if (depth < prun)
+            return;
+
+        if (prun == 0 && depth == 0){
+            candidates.add(Arrays.copyOf(moves.stream().mapToInt(Integer::intValue).toArray(), maxl));
+            return;
+        }
+
+        if (depth <= 0){
+            return;
+        }
+
+        for (int move : G1_MOVESET) {
+
+            if (maxl > 0 && !isValidMove(moves.getLast(), move)) {
+                continue;
+            }
+
+            moves.addLast(move);
+
+            g1Search(depth-1, maxl+1,
+                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTris(tri, move), candidates, moves);
+
+            moves.removeLast();
+        }
     }
 
     private int[] g2Search(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3, ArrayDeque<Integer> moves){
@@ -104,108 +191,6 @@ public class Search {
         return null;
     }
 
-    private void g1Search(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates, ArrayDeque<Integer> moves){
-
-        int prun = FtoCoord.g1Prun(edge, tri);
-
-        if (depth < prun)
-            return;
-
-        if (prun == 0 && depth == 0){
-            candidates.add(Arrays.copyOf(moves.stream().mapToInt(Integer::intValue).toArray(), maxl));
-            return;
-        }
-
-        if (depth <= 0){
-            return;
-        }
-
-        for (int move : G1_MOVESET) {
-
-            if (maxl > 0 && !isValidMove(moves.getLast(), move)) {
-                continue;
-            }
-
-            moves.addLast(move);
-
-            g1Search(depth-1, maxl+1,
-                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTris(tri, move), candidates, moves);
-
-            moves.removeLast();
-        }
-    }
-
-    private ArrayList<int[]> g1Iterate(FtoCubie cubie){
-
-        ArrayList<int[]> candidates = new ArrayList<>();
-        ArrayDeque<Integer> moves = new ArrayDeque<>();
-
-        int edge = cubie.g1PackEdges();
-        int tri = cubie.g1PackTriangles();
-        for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
-            g1Search(depth, 0, edge, tri, candidates, moves);
-            if (candidates.size() >= MIN_G1_CANDIDATES) break;
-        }
-
-        return candidates;
-    }
-
-    private static int[][] buildStatesFromCandidates(FtoCubie cubie, ArrayList<int[]> candidates){
-        int[][] states = new int[candidates.size()][6];
-        FtoCubie candidateCubie = new FtoCubie();
-
-        for (int i = 0; i < candidates.size(); i++) {
-            int[] moves = candidates.get(i);
-
-            cubie.applyMovesInto(moves, candidateCubie);
-
-            states[i][0] = candidateCubie.g2PackEdges();
-            states[i][1] = candidateCubie.g2PackTris();
-            states[i][2] = candidateCubie.g2PackTriples(0);
-            states[i][3] = candidateCubie.g2PackTriples(1);
-            states[i][4] = candidateCubie.g2PackTriples(2);
-            states[i][5] = candidateCubie.g2PackTriples(3);
-        }
-
-        return states;
-    }
-
-    private static int[] buildLengthFromCandidates(ArrayList<int[]> candidates){
-        int[] lengths = new int[candidates.size()];
-        for (int i = 0; i < candidates.size(); i++) {
-            lengths[i] = candidates.get(i).length;
-        }
-        return lengths;
-    }
-
-    private int[] g2Iterate(FtoCubie cubie, ArrayList<int[]> candidates){
-        int[][] states = buildStatesFromCandidates(cubie, candidates);
-        int[] lengths = buildLengthFromCandidates(candidates);
-
-        ArrayDeque<Integer> moves = new ArrayDeque<>();
-
-        for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
-            for (int c = 0; c < states.length; c++) {
-
-                int searchDepth = depth - lengths[c];
-                if (searchDepth < 0) continue;
-
-                int[] s = states[c];
-
-                int[] res = g2Search(searchDepth, 0, s[0], s[1], s[2], s[3], s[4], s[5], moves);
-                if (res != null){
-                    int[] g1sol = candidates.get(c);
-                    int[] g2sol = res;
-
-                    return IntStream.concat(Arrays.stream(g1sol), Arrays.stream(g2sol)).toArray();
-                }
-            }
-
-        }
-
-        throw new RuntimeException("Could not find Phase 2 solution");
-    }
-
     private int[] g3Search(int depth, int maxl, int edges, int corners, ArrayDeque<Integer> moves){
         int cornerPrun = FtoCoord.g3PrunCorners(corners);
         if (depth < cornerPrun) return null;
@@ -240,20 +225,32 @@ public class Search {
         return null;
     }
 
-    private int[] g3Iterate(FtoCubie cubie){
-        int edges = cubie.g3PackEdges();
-        int corners = cubie.g3PackCorners();
+    private static int[][] buildStatesFromCandidates(FtoCubie cubie, ArrayList<int[]> candidates){
+        int[][] states = new int[candidates.size()][6];
+        FtoCubie candidateCubie = new FtoCubie();
 
-        ArrayDeque<Integer> moves = new ArrayDeque<>();
+        for (int i = 0; i < candidates.size(); i++) {
+            int[] moves = candidates.get(i);
 
-        for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
-            int[] res = g3Search(depth, 0, edges, corners, moves);
-            if (res != null){
-                return res;
-            }
+            cubie.applyMovesInto(moves, candidateCubie);
+
+            states[i][0] = candidateCubie.g2PackEdges();
+            states[i][1] = candidateCubie.g2PackTris();
+            states[i][2] = candidateCubie.g2PackTriples(0);
+            states[i][3] = candidateCubie.g2PackTriples(1);
+            states[i][4] = candidateCubie.g2PackTriples(2);
+            states[i][5] = candidateCubie.g2PackTriples(3);
         }
 
-        throw new RuntimeException();
+        return states;
+    }
+
+    private static int[] buildLengthFromCandidates(ArrayList<int[]> candidates){
+        int[] lengths = new int[candidates.size()];
+        for (int i = 0; i < candidates.size(); i++) {
+            lengths[i] = candidates.get(i).length;
+        }
+        return lengths;
     }
 
     private static boolean isValidMove(int lastMove, int move){
