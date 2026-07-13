@@ -1,15 +1,11 @@
 package levigibson.fto3phase;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 class Util {
 
     private static final int[] FACTORIAL = new int[] {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600};
-
-    private static int[][] Cnk;
+    private static final int[][] Cnk = computeChooseTable();
 
     /**
      * n choose k combinatorics function
@@ -60,6 +56,11 @@ class Util {
                 swaps++;
             }
         }
+
+        for (int i = 0; i < perm.length; i++) {
+            if (perm[i] != i) throw new IllegalArgumentException("perm is not a sequential array" + Arrays.toString(perm));
+        }
+
         return swaps % 2 == 1;
     }
 
@@ -78,6 +79,11 @@ class Util {
                 swaps++;
             }
         }
+
+        for (int i = 0; i < length; i++) {
+            if (((perm >> (4 * i)) & 0b1111) != i) throw new IllegalArgumentException("perm is not a sequential array" + perm);
+        }
+
         return swaps % 2 == 1;
     }
 
@@ -351,6 +357,18 @@ class Util {
         return false;
     }
 
+    private static synchronized int[][] computeChooseTable(){
+        int[][] table = new int[13][13];
+
+        for (int n = 0; n < 13; n++) {
+            for (int k = 0; k < 13; k++) {
+                table[n][k] = choose(n, k);
+            }
+        }
+
+        return table;
+    }
+
     private static int choose(int n, int k){
         if (k < 0 || k > n) return 0;
         if (k == 0 || k == n) return 1;
@@ -364,16 +382,4 @@ class Util {
             : "choose(" + n + ", " + k + ") = " + result + " overflows int";
         return (int) result;
     }
-
-    private static void computeChooseTable(){
-        Cnk = new int[13][13];
-
-        for (int n = 0; n < 13; n++) {
-            for (int k = 0; k < 13; k++) {
-                Cnk[n][k] = choose(n, k);
-            }
-        }
-    }
-
-    static {computeChooseTable();}
 }

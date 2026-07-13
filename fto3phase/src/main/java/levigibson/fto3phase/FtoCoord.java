@@ -31,51 +31,30 @@ class FtoCoord {
     //-------------- Public Turn Functions --------------//
 
     public static int g1TurnEdges(int idx, int move){
-        if (!Util.contains(Search.G1_MOVESET, move)){
-            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g1 moveset");
-        }
         return G1_EDGE_MOVES[idx][move];
     }
 
     public static int g1TurnTris(int idx, int move){
-        if (!Util.contains(Search.G1_MOVESET, move)){
-            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g1 moveset");
-        }
         return G1_TRIANGLE_MOVES[idx][move];
     }
 
     public static int g2TurnTriples(int idx, int move){
-        if (!Util.contains(Search.G2_MOVESET, move)){
-            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g2 moveset");
-        }
         return G2_TRIPLE_MOVES[idx][move];
     }
 
     public static int g2TurnEdges(int idx, int move){
-        if (!Util.contains(Search.G2_MOVESET, move)){
-            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g2 moveset");
-        }
         return G2_EDGE_MOVES[idx][move];
     }
 
     public static int g2TurnTris(int idx, int move){
-        if (!Util.contains(Search.G2_MOVESET, move)){
-            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g2 moveset");
-        }
         return G2_TRIANGLE_MOVES[idx][move];
     }
 
     public static int g3TurnEdges(int idx, int move){
-        if (!Util.contains(Search.G3_MOVESET, move)){
-            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g3 moveset");
-        }
         return G3_EDGE_MOVES[idx][move];
     }
 
     public static int g3TurnCorners(int idx, int move){
-        if (!Util.contains(Search.G3_MOVESET, move)){
-            throw new IllegalArgumentException("Provided move (" + move + ") is not in the g3 moveset");
-        }
         return G3_CORNER_MOVES[idx][move];
     }
 
@@ -144,8 +123,8 @@ class FtoCoord {
             LinkedList<Integer> next = new LinkedList<>();
 
             for (int idx : frontier) {
-                for (int m = 0; m < 16; m++) {
-                    int nextIdx = turnG1(idx, m);
+                for (int move : Search.G1_MOVESET) {
+                    int nextIdx = turnG1(idx, move);
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
                         next.add(nextIdx);
@@ -163,8 +142,6 @@ class FtoCoord {
         final int size = 35200;
         LinkedList<Integer> all = new LinkedList<>();
 
-        final int[] g3Moves = {FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.D, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP, FtoCubie.DP};
-
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
@@ -177,7 +154,7 @@ class FtoCoord {
             LinkedList<Integer> next = new LinkedList<>();
 
             for (int idx : frontier) {
-                for (int move : g3Moves) {
+                for (int move : Search.G3_MOVESET) {
                     int nextIdx = G2_TRIPLE_MOVES[idx][move];
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
@@ -196,8 +173,6 @@ class FtoCoord {
     private static byte[] g2GenerateTriplePrun() {
         final int size = 35200;
 
-        final int[] moves = {FtoCubie.D, FtoCubie.DP, FtoCubie.U, FtoCubie.UP, FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.RP, FtoCubie.LP, FtoCubie.BP};
-
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
@@ -211,7 +186,7 @@ class FtoCoord {
             LinkedList<Integer> next = new LinkedList<>();
 
             for (int idx : frontier) {
-                for (int move : moves) {
+                for (int move : Search.G2_MOVESET) {
                     int nextIdx = G2_TRIPLE_MOVES[idx][move];
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
@@ -262,8 +237,8 @@ class FtoCoord {
             for (int i = 0; i < fs; i++) {
                 int idx = frontier[i];
 
-                for (int m = 0; m < 10; m++) {
-                    int nextIdx = turnTxE(idx, m);
+                for (int move : Search.G2_MOVESET) {
+                    int nextIdx = turnTxE(idx, move);
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
                         next[ns++] = nextIdx;
@@ -286,8 +261,6 @@ class FtoCoord {
     private static byte[] g3GenerateCornerPrun(){
         final int size = 11520;
 
-        final int[] moves = {FtoCubie.R, FtoCubie.RP, FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP, FtoCubie.D, FtoCubie.DP};
-
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
@@ -300,7 +273,7 @@ class FtoCoord {
             LinkedList<Integer> next = new LinkedList<>();
 
             for (int idx : frontier) {
-                for (int move : moves) {
+                for (int move : Search.G3_MOVESET) {
                     int nextIdx = g3TurnCorners(idx, move);
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
@@ -326,7 +299,7 @@ class FtoCoord {
                 fto.g1SetEdges(idx);
                 int[] locMoves = G1_EDGE_MOVES[idx];
 
-                for (int move = 0; move < 16; move++) {
+                for (int move : Search.G1_MOVESET) {
                     fto.turnInto(move, turned);
                     locMoves[move] = turned.g1PackEdges();
                 }
@@ -342,7 +315,7 @@ class FtoCoord {
             fto.g1SetTriangles(idx);
             int[] moves = G1_TRIANGLE_MOVES[idx];
 
-            for (int move = 0; move < 16; move++) {
+            for (int move : Search.G1_MOVESET) {
                 fto.turnInto(move, turned);
                 moves[move] = turned.g1PackTriangles();
             }
@@ -358,7 +331,7 @@ class FtoCoord {
             fto.g2SetTriangles(idx);
             int[] moves = G2_TRIANGLE_MOVES[idx];
 
-            for (int move = 0; move < 10; move++) {
+            for (int move : Search.G2_MOVESET) {
                 fto.turnInto(move, turned);
                 moves[move] = turned.g2PackTris();
             }
@@ -374,7 +347,7 @@ class FtoCoord {
             fto.g2SetEdges(idx);
             int[] moves = G2_EDGE_MOVES[idx];
 
-            for (int move = 0; move < 10; move++) {
+            for (int move : Search.G2_MOVESET) {
                 fto.turnInto(move, turned);
                 moves[move] = turned.g2PackEdges();
             }
@@ -390,7 +363,7 @@ class FtoCoord {
             fto.g2SetTriples(idx, 0);
             int[] moves = G2_TRIPLE_MOVES[idx];
 
-            for (int move = 0; move < 10; move++) {
+            for (int move : Search.G2_MOVESET) {
                 fto.turnInto(move, turned);
                 moves[move] = turned.g2PackTriples(0);
             }
@@ -407,12 +380,7 @@ class FtoCoord {
             fto.g3SetEdges(idx);
             int[] moves = G3_EDGE_MOVES[idx];
 
-            for (int move = 0; move < 10; move++) {
-                if (move == FtoCubie.U || move == FtoCubie.UP){
-                    moves[move] = -1;
-                    continue;
-                }
-
+            for (int move : Search.G3_MOVESET) {
                 fto.turnInto(move, turned);
                 moves[move] = turned.g3PackEdges();
             }
@@ -429,11 +397,7 @@ class FtoCoord {
             fto.g3SetCorners(idx);
             int[] moves = G3_CORNER_MOVES[idx];
 
-            for (int move = 0; move < 10; move++) {
-                if (move == FtoCubie.U || move == FtoCubie.UP){
-                    moves[move] = -1;
-                    continue;
-                }
+            for (int move : Search.G3_MOVESET) {
 
                 fto.turnInto(move, turned);
                 moves[move] = turned.g3PackCorners();

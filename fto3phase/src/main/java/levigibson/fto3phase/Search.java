@@ -1,7 +1,6 @@
 package levigibson.fto3phase;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static levigibson.fto3phase.FtoCoord.*;
