@@ -113,14 +113,14 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        LinkedList<Integer> frontier = new LinkedList<>();
+        ArrayDeque<Integer> frontier = new ArrayDeque<>();
         FtoCubie solved = new FtoCubie();
         frontier.add(packG1(solved.g1PackEdges(), solved.g1PackTriangles()));
-        prun[frontier.get(0)] = 0;
+        prun[frontier.getFirst()] = 0;
 
         int depth = 0;
         while (!frontier.isEmpty()) {
-            LinkedList<Integer> next = new LinkedList<>();
+            ArrayDeque<Integer> next = new ArrayDeque<>();
 
             for (int idx : frontier) {
                 for (int move : Search.G1_MOVESET) {
@@ -138,20 +138,20 @@ class FtoCoord {
         return prun;
     }
 
-    private static LinkedList<Integer> g2GenerateTripleFrontier(){
+    private static ArrayDeque<Integer> g2GenerateTripleFrontier(){
         final int size = 35200;
-        LinkedList<Integer> all = new LinkedList<>();
+        ArrayDeque<Integer> all = new ArrayDeque<>();
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        LinkedList<Integer> frontier = new LinkedList<>();
+        ArrayDeque<Integer> frontier = new ArrayDeque<>();
         frontier.add(new FtoCubie().g2PackTriples(0));
 
         int depth = 0;
         while (!frontier.isEmpty()) {
             all.addAll(frontier);
-            LinkedList<Integer> next = new LinkedList<>();
+            ArrayDeque<Integer> next = new ArrayDeque<>();
 
             for (int idx : frontier) {
                 for (int move : Search.G3_MOVESET) {
@@ -176,14 +176,14 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        LinkedList<Integer> frontier = g2GenerateTripleFrontier();
+        ArrayDeque<Integer> frontier = g2GenerateTripleFrontier();
         for (Integer i : frontier) {
             prun[i] = 0;
         }
 
         int depth = 0;
         while (!frontier.isEmpty()) {
-            LinkedList<Integer> next = new LinkedList<>();
+            ArrayDeque<Integer> next = new ArrayDeque<>();
 
             for (int idx : frontier) {
                 for (int move : Search.G2_MOVESET) {
@@ -264,13 +264,13 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        LinkedList<Integer> frontier = new LinkedList<>();
+        ArrayDeque<Integer> frontier = new ArrayDeque<>();
         frontier.add(new FtoCubie().g3PackCorners());
-        prun[frontier.get(0)] = 0;
+        prun[frontier.getFirst()] = 0;
 
         int depth = 0;
         while (!frontier.isEmpty()) {
-            LinkedList<Integer> next = new LinkedList<>();
+            ArrayDeque<Integer> next = new ArrayDeque<>();
 
             for (int idx : frontier) {
                 for (int move : Search.G3_MOVESET) {

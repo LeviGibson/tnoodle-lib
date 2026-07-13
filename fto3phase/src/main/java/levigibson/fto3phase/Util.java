@@ -24,6 +24,7 @@ class Util {
      * @return n!
      */
     public static int fact(int n) {
+        if (n > 12) throw new IllegalArgumentException("fto3phase's internal factorial's max is n=12. Provided n: " + n);
         return FACTORIAL[n];
     }
 
@@ -326,8 +327,8 @@ class Util {
         for (int i = 1; i <= k; i++) {
             result = result * (n - k + i) / i;
         }
-        assert result <= Integer.MAX_VALUE
-            : "choose(" + n + ", " + k + ") = " + result + " overflows int";
+        if (result > Integer.MAX_VALUE)
+            throw new IllegalArgumentException("choose(" + n + ", " + k + ") = " + result + " overflows int");
         return (int) result;
     }
 }
