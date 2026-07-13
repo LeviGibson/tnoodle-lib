@@ -54,55 +54,57 @@ public class Search {
     public static final int[] G3_MOVESET = {FtoCubie.R, FtoCubie.RP,
         FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,FtoCubie.D, FtoCubie.DP};
 
+    private static final int MIN_G1_CANDIDATES = 500;
+
     public Search(){
-        moves = new int[64];
     }
 
-    private final int[] moves;
-
-    private boolean g2Search(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3){
+    private int[] g2Search(int depth, int maxl, int edge, int tri, int tp0, int tp1, int tp2, int tp3, ArrayDeque<Integer> moves){
 
         int triplePrun = FtoCoord.g2PrunTriple(tp0, tp1, tp2, tp3);
         if (depth < triplePrun)
-            return false;
+            return null;
 
         int txEPrun = FtoCoord.g2PrunTxE(edge, tri);
         if (depth < txEPrun){
-            return false;
+            return null;
         }
 
         if (triplePrun == 0 && txEPrun == 0){
-            return true;
+            return moves.stream().mapToInt(Integer::intValue).toArray();
         }
 
         if (depth == 0){
-            return false;
+            return null;
         }
 
         for (int move : G2_MOVESET) {
-            if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
+            if (maxl > 0 && !isValidMove(moves.getLast(), move)) {
                 continue;
             }
 
-            moves[maxl] = move;
+            moves.addLast(move);
 
-            boolean res = g2Search(depth-1, maxl+1,
+            int[] res = g2Search(depth-1, maxl+1,
                 g2TurnEdges(edge, move),
                 g2TurnTris(tri, move),
                 g2TurnTriples(tp0, move),
                 g2TurnTriples(tp1, move),
                 g2TurnTriples(tp2, move),
-                g2TurnTriples(tp3, move)
+                g2TurnTriples(tp3, move),
+                moves
             );
 
-            if (res)
-                return true;
+            moves.removeLast();
+
+            if (res != null)
+                return res;
         }
 
-        return false;
+        return null;
     }
 
-    private void g1Search(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates){
+    private void g1Search(int depth, int maxl, int edge, int tri, ArrayList<int[]> candidates, ArrayDeque<Integer> moves){
 
         int prun = FtoCoord.g1Prun(edge, tri);
 
@@ -110,7 +112,7 @@ public class Search {
             return;
 
         if (prun == 0 && depth == 0){
-            candidates.add(Arrays.copyOf(moves, maxl));
+            candidates.add(Arrays.copyOf(moves.stream().mapToInt(Integer::intValue).toArray(), maxl));
             return;
         }
 
@@ -120,27 +122,29 @@ public class Search {
 
         for (int move : G1_MOVESET) {
 
-            if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
+            if (maxl > 0 && !isValidMove(moves.getLast(), move)) {
                 continue;
             }
 
-            moves[maxl] = move;
+            moves.addLast(move);
 
             g1Search(depth-1, maxl+1,
-                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTris(tri, move), candidates);
+                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTris(tri, move), candidates, moves);
 
+            moves.removeLast();
         }
     }
 
     private ArrayList<int[]> g1Iterate(FtoCubie cubie){
 
         ArrayList<int[]> candidates = new ArrayList<>();
+        ArrayDeque<Integer> moves = new ArrayDeque<>();
 
         int edge = cubie.g1PackEdges();
         int tri = cubie.g1PackTriangles();
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
-            g1Search(depth, 0, edge, tri, candidates);
-            if (candidates.size() >= 500) break;
+            g1Search(depth, 0, edge, tri, candidates, moves);
+            if (candidates.size() >= MIN_G1_CANDIDATES) break;
         }
 
         return candidates;
@@ -178,6 +182,8 @@ public class Search {
         int[][] states = buildStatesFromCandidates(cubie, candidates);
         int[] lengths = buildLengthFromCandidates(candidates);
 
+        ArrayDeque<Integer> moves = new ArrayDeque<>();
+
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
             for (int c = 0; c < states.length; c++) {
 
@@ -186,10 +192,10 @@ public class Search {
 
                 int[] s = states[c];
 
-                boolean res = g2Search(searchDepth, 0, s[0], s[1], s[2], s[3], s[4], s[5]);
-                if (res){
+                int[] res = g2Search(searchDepth, 0, s[0], s[1], s[2], s[3], s[4], s[5], moves);
+                if (res != null){
                     int[] g1sol = candidates.get(c);
-                    int[] g2sol = Arrays.copyOf(moves, searchDepth);
+                    int[] g2sol = res;
 
                     return IntStream.concat(Arrays.stream(g1sol), Arrays.stream(g2sol)).toArray();
                 }
@@ -200,46 +206,50 @@ public class Search {
         throw new RuntimeException("Could not find Phase 2 solution");
     }
 
-    private boolean g3Search(int depth, int maxl, int edges, int corners){
+    private int[] g3Search(int depth, int maxl, int edges, int corners, ArrayDeque<Integer> moves){
         int cornerPrun = FtoCoord.g3PrunCorners(corners);
-        if (depth < cornerPrun) return false;
+        if (depth < cornerPrun) return null;
 
         if (corners == SOLVED_G3_CORNERS &&
             edges == SOLVED_G3_EDGES){
 
-            return true;
+            return moves.stream().mapToInt(Integer::intValue).toArray();
         }
 
         if (depth == 0){
-            return false;
+            return null;
         }
 
         for (int move : G3_MOVESET) {
-            if (maxl > 0 && !isValidMove(moves[maxl-1], move)) {
+            if (maxl > 0 && !isValidMove(moves.getLast(), move)) {
                 continue;
             }
 
-            moves[maxl] = move;
+            moves.addLast(move);
 
-            boolean res = g3Search(depth-1, maxl+1,
+            int[] res = g3Search(depth-1, maxl+1,
                 g3TurnEdges(edges, move),
-                g3TurnCorners(corners, move));
+                g3TurnCorners(corners, move), moves);
 
-            if (res)
-                return true;
+            moves.removeLast();
+
+            if (res != null)
+                return res;
         }
 
-        return false;
+        return null;
     }
 
     private int[] g3Iterate(FtoCubie cubie){
         int edges = cubie.g3PackEdges();
         int corners = cubie.g3PackCorners();
 
+        ArrayDeque<Integer> moves = new ArrayDeque<>();
+
         for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
-            boolean res = g3Search(depth, 0, edges, corners);
-            if (res){
-                return Arrays.copyOf(moves, depth);
+            int[] res = g3Search(depth, 0, edges, corners, moves);
+            if (res != null){
+                return res;
             }
         }
 
