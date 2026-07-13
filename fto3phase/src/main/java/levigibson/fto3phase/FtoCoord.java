@@ -91,6 +91,28 @@ class FtoCoord {
         SOLVED_G3_CORNERS = new FtoCubie().g3PackCorners();
     }
 
+    //-------------- Growable Primitive Int Array --------------//
+
+    private static class IntArray {
+        int[] data;
+        int size;
+
+        IntArray(int capacity) {
+            this.data = new int[capacity];
+        }
+
+        void add(int v) {
+            if (size == data.length) {
+                data = Arrays.copyOf(data, data.length * 2);
+            }
+            data[size++] = v;
+        }
+
+        void clear() {
+            size = 0;
+        }
+    }
+
     //-------------- Pruning Table Generation --------------//
 
     private static int packG1(int edge, int tris){
@@ -113,16 +135,18 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        ArrayDeque<Integer> frontier = new ArrayDeque<>();
+        IntArray frontier = new IntArray(52063);
+        IntArray next = new IntArray(52063);
+
         FtoCubie solved = new FtoCubie();
         frontier.add(packG1(solved.g1PackEdges(), solved.g1PackTriangles()));
-        prun[frontier.getFirst()] = 0;
+        prun[frontier.data[0]] = 0;
 
         int depth = 0;
-        while (!frontier.isEmpty()) {
-            ArrayDeque<Integer> next = new ArrayDeque<>();
+        while (frontier.size > 0) {
 
-            for (int idx : frontier) {
+            for (int i = 0; i < frontier.size; i++) {
+                int idx = frontier.data[i];
                 for (int move : Search.G1_MOVESET) {
                     int nextIdx = turnG1(idx, move);
                     if (prun[nextIdx] == -1) {
@@ -131,29 +155,38 @@ class FtoCoord {
                     }
                 }
             }
+
+            IntArray tmp = frontier;
             frontier = next;
+            next = tmp;
+            next.clear();
+
             depth++;
         }
 
         return prun;
     }
 
-    private static ArrayDeque<Integer> g2GenerateTripleFrontier(){
+    private static IntArray g2GenerateTripleFrontier(){
         final int size = 35200;
-        ArrayDeque<Integer> all = new ArrayDeque<>();
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        ArrayDeque<Integer> frontier = new ArrayDeque<>();
+        IntArray all = new IntArray(161);
+        IntArray next = new IntArray(100);
+        IntArray frontier = new IntArray(100);
+
         frontier.add(new FtoCubie().g2PackTriples(0));
 
         int depth = 0;
-        while (!frontier.isEmpty()) {
-            all.addAll(frontier);
-            ArrayDeque<Integer> next = new ArrayDeque<>();
+        while (frontier.size > 0) {
+            for (int i = 0; i < frontier.size; i++) {
+                all.add(frontier.data[i]);
+            }
 
-            for (int idx : frontier) {
+            for (int i = 0; i < frontier.size; i++) {
+                int idx = frontier.data[i];
                 for (int move : Search.G3_MOVESET) {
                     int nextIdx = G2_TRIPLE_MOVES[idx][move];
                     if (prun[nextIdx] == -1) {
@@ -163,7 +196,11 @@ class FtoCoord {
                 }
             }
 
+            IntArray tmp = frontier;
             frontier = next;
+            next = tmp;
+            next.clear();
+
             depth++;
         }
 
@@ -176,16 +213,17 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        ArrayDeque<Integer> frontier = g2GenerateTripleFrontier();
-        for (Integer i : frontier) {
-            prun[i] = 0;
+        IntArray frontier = g2GenerateTripleFrontier();
+        for (int i = 0; i < frontier.size; i++) {
+            prun[frontier.data[i]] = 0;
         }
 
         int depth = 0;
-        while (!frontier.isEmpty()) {
-            ArrayDeque<Integer> next = new ArrayDeque<>();
+        while (frontier.size > 0) {
+            IntArray next = new IntArray(11484);
 
-            for (int idx : frontier) {
+            for (int i = 0; i < frontier.size; i++) {
+                int idx = frontier.data[i];
                 for (int move : Search.G2_MOVESET) {
                     int nextIdx = G2_TRIPLE_MOVES[idx][move];
                     if (prun[nextIdx] == -1) {
@@ -217,40 +255,35 @@ class FtoCoord {
 
     private static byte[] g2GenerateTxEPrun(){
         final int size = 11_289_600;
-        final int maxFrontierWidth = 4_194_993;
 
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        int[] frontier = new int[maxFrontierWidth];
-        int fs = 1;
-
-        int[] next = new int[maxFrontierWidth];
-        int ns = 0;
+        IntArray frontier = new IntArray(4_194_993);
+        IntArray next = new IntArray(4_194_993);
 
         FtoCubie solved = new FtoCubie();
-        frontier[0] = (packTxE(solved.g2PackEdges(), solved.g2PackTris()));
-        prun[frontier[0]] = 0;
+        frontier.add(packTxE(solved.g2PackEdges(), solved.g2PackTris()));
+        prun[frontier.data[0]] = 0;
 
         int depth = 0;
-        while (fs > 0) {
-            for (int i = 0; i < fs; i++) {
-                int idx = frontier[i];
+        while (frontier.size > 0) {
+            for (int i = 0; i < frontier.size; i++) {
+                int idx = frontier.data[i];
 
                 for (int move : Search.G2_MOVESET) {
                     int nextIdx = turnTxE(idx, move);
                     if (prun[nextIdx] == -1) {
                         prun[nextIdx] = (byte) (depth + 1);
-                        next[ns++] = nextIdx;
+                        next.add(nextIdx);
                     }
                 }
             }
 
-            int[] tmp = frontier;
+            IntArray tmp = frontier;
             frontier = next;
             next = tmp;
-            fs = ns;
-            ns = 0;
+            next.clear();
 
             depth++;
         }
@@ -264,15 +297,15 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
-        ArrayDeque<Integer> frontier = new ArrayDeque<>();
+        IntArray frontier = new IntArray(5405);
+        IntArray next = new IntArray(5405);
         frontier.add(new FtoCubie().g3PackCorners());
-        prun[frontier.getFirst()] = 0;
+        prun[frontier.data[0]] = 0;
 
         int depth = 0;
-        while (!frontier.isEmpty()) {
-            ArrayDeque<Integer> next = new ArrayDeque<>();
-
-            for (int idx : frontier) {
+        while (frontier.size != 0) {
+            for (int i = 0; i < frontier.size; i++) {
+                int idx = frontier.data[i];
                 for (int move : Search.G3_MOVESET) {
                     int nextIdx = g3TurnCorners(idx, move);
                     if (prun[nextIdx] == -1) {
@@ -281,7 +314,11 @@ class FtoCoord {
                     }
                 }
             }
+            IntArray tmp = frontier;
             frontier = next;
+            next = tmp;
+            next.clear();
+
             depth++;
         }
 
