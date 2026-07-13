@@ -1,7 +1,6 @@
 package levigibson.fto3phase;
 
 import java.util.*;
-import java.util.function.IntPredicate;
 
 class FtoCoord {
     private static volatile boolean initialized;
@@ -179,7 +178,6 @@ class FtoCoord {
 
         frontier.add(new FtoCubie().g2PackTriples(0));
 
-        int depth = 0;
         while (frontier.size > 0) {
             for (int i = 0; i < frontier.size; i++) {
                 all.add(frontier.data[i]);
@@ -190,7 +188,7 @@ class FtoCoord {
                 for (int move : Search.G3_MOVESET) {
                     int nextIdx = G2_TRIPLE_MOVES[idx][move];
                     if (prun[nextIdx] == -1) {
-                        prun[nextIdx] = (byte) (depth + 1);
+                        prun[nextIdx] = (byte) (1);
                         next.add(nextIdx);
                     }
                 }
@@ -200,8 +198,6 @@ class FtoCoord {
             frontier = next;
             next = tmp;
             next.clear();
-
-            depth++;
         }
 
         return all;
@@ -391,7 +387,7 @@ class FtoCoord {
         }
     }
 
-    public static void g2InitTriples(){
+    private static void g2InitTriples(){
         G2_TRIPLE_MOVES = new int[35200][10];
         FtoCubie fto = new FtoCubie();
         FtoCubie turned = new FtoCubie();

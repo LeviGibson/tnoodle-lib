@@ -245,7 +245,7 @@ class Util {
      * @return FtoCubie
      */
     public static FtoCubie fromAlg(String alg) {
-        if (Objects.equals(alg, "")){
+        if (alg.isEmpty()){
             return new FtoCubie();
         }
 
@@ -289,21 +289,6 @@ class Util {
             c *= a;
         }
         return c;
-    }
-
-    /**
-     * Checks if array contains a value
-     * @param array array to check
-     * @param key value
-     * @return does array contain key?
-     */
-    public static boolean contains(final int[] array, final int key) {
-        for (final int i : array) {
-            if (i == key) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static synchronized int[][] computeChooseTable(){

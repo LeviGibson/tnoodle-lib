@@ -43,16 +43,16 @@ public class Search {
 
     //After each phase, the moveset required to solve the FTO is reduced
     //See Kociemba's Algorithm
-    public static final int[] G1_MOVESET = {FtoCubie.R, FtoCubie.RP,
+    public static final List<Integer> G1_MOVESET = List.of(FtoCubie.R, FtoCubie.RP,
         FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,
         FtoCubie.U, FtoCubie.UP, FtoCubie.D, FtoCubie.DP,
         FtoCubie.F, FtoCubie.FP, FtoCubie.BR, FtoCubie.BRP,
-        FtoCubie.BL, FtoCubie.BLP};
-    public static final int[] G2_MOVESET = {FtoCubie.R, FtoCubie.RP,
+        FtoCubie.BL, FtoCubie.BLP);
+    public static final List<Integer> G2_MOVESET = List.of(FtoCubie.R, FtoCubie.RP,
         FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,
-        FtoCubie.U, FtoCubie.UP, FtoCubie.D, FtoCubie.DP};
-    public static final int[] G3_MOVESET = {FtoCubie.R, FtoCubie.RP,
-        FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,FtoCubie.D, FtoCubie.DP};
+        FtoCubie.U, FtoCubie.UP, FtoCubie.D, FtoCubie.DP);
+    public static final List<Integer> G3_MOVESET = List.of(FtoCubie.R, FtoCubie.RP,
+        FtoCubie.L, FtoCubie.LP, FtoCubie.B, FtoCubie.BP,FtoCubie.D, FtoCubie.DP);
 
     private static final int MIN_G1_CANDIDATES = 500;
 

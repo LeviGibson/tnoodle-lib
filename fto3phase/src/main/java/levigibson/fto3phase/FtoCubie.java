@@ -1053,11 +1053,11 @@ public class FtoCubie {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(this.edges) ^
-            Arrays.hashCode(this.trianglesUFBrBl) ^
-            Arrays.hashCode(this.trianglesRLBD) ^
-            Arrays.hashCode(this.cornerOri) ^
-            Arrays.hashCode(this.cornerPerm);
+        return Objects.hash(Arrays.hashCode(this.edges),
+            Arrays.hashCode(this.trianglesUFBrBl),
+            Arrays.hashCode(this.trianglesRLBD),
+            Arrays.hashCode(this.cornerOri),
+            Arrays.hashCode(this.cornerPerm));
     }
 
     //Getter functions used by tests

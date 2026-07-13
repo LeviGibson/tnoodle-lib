@@ -2,6 +2,7 @@ package levigibson.fto3phase;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -254,11 +255,11 @@ class FtoCubieTest {
     @Test
     void testPhaseThreeCorners(){
         Random r = new Random(42);
-        int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7}; // R,RP,L,LP,B,BP,D,DP,U,UP
+        List<Integer> safeMoves = Search.G3_MOVESET;
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
+                ftoCubie.turn(safeMoves.get(r.nextInt(safeMoves.size())));
             }
 
             int idx = ftoCubie.g3PackCorners();
