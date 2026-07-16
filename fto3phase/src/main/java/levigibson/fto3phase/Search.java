@@ -226,6 +226,7 @@ public class Search {
     }
 
     private static int[][] buildStatesFromCandidates(FtoCubie cubie, ArrayList<int[]> candidates){
+        //6 = number of indices used to represent the g1->g2 fto
         int[][] states = new int[candidates.size()][6];
         FtoCubie candidateCubie = new FtoCubie();
 

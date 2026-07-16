@@ -242,13 +242,6 @@ public class FtoCubie {
         }
     }
 
-    //-------------- Constants --------------//
-    private static final int EDGE_PERM_SIZE = Util.fact(12) / 2;
-    private static final int CORNER_ORIENTATION_SIZE = Util.pow(2,5);
-    private static final int CORNER_PERMUTATION_SIZE = Util.fact(6) / 2;
-    private static final int TRIANGLE_PERMUTATION_SIZE = nCr(12,3) * nCr(9,3) * nCr(6,3);
-
-
     //-------------- Handy Public Stuff --------------//
 
     /**
@@ -259,11 +252,11 @@ public class FtoCubie {
      */
     public static FtoCubie randomCube(Random r){
         FtoCubie fto = new FtoCubie();
-        fto.setAllEdges(r.nextInt(EDGE_PERM_SIZE)); // 12! / 2
-        fto.setAllCornerOrientation(r.nextInt(CORNER_ORIENTATION_SIZE)); // 2 ^ 5
-        fto.setAllCornerPermutation(r.nextInt(CORNER_PERMUTATION_SIZE)); // 6! / 2
-        fto.setAllTriangles(r.nextInt(TRIANGLE_PERMUTATION_SIZE), 0); // C(12,3) * C(9,3) * C(6,3)
-        fto.setAllTriangles(r.nextInt(TRIANGLE_PERMUTATION_SIZE), 1); // C(12,3) * C(9,3) * C(6,3)
+        fto.setAllEdges(r.nextInt(FtoCoord.ALL_EDGES_SIZE)); // 12! / 2
+        fto.setAllCornerOrientation(r.nextInt(FtoCoord.ALL_CORNER_ORIENTATION_SIZE)); // 2 ^ 5
+        fto.setAllCornerPermutation(r.nextInt(FtoCoord.ALL_CORNER_PERMUTATION_SIZE)); // 6! / 2
+        fto.setAllTriangles(r.nextInt(FtoCoord.ALL_TRIANGLE_SIZE), 0); // C(12,3) * C(9,3) * C(6,3)
+        fto.setAllTriangles(r.nextInt(FtoCoord.ALL_TRIANGLE_SIZE), 1); // C(12,3) * C(9,3) * C(6,3)
         return fto;
     }
 
@@ -284,7 +277,7 @@ public class FtoCubie {
      * @param moves sequence of moves to apply
      * @param out output buffer
      */
-    void applyMovesInto(int[] moves, FtoCubie out){
+    public void applyMovesInto(int[] moves, FtoCubie out){
         this.copyInto(out);
         for (int move : moves) {
             out.turn(move);
@@ -947,7 +940,7 @@ public class FtoCubie {
      * @return compact index
      */
     public int g3PackCorners(){
-        return (packAllCornerPermutation() * 32) + packAllCornerOrientation();
+        return (packAllCornerPermutation() * FtoCoord.ALL_CORNER_ORIENTATION_SIZE) + packAllCornerOrientation();
     }
 
     /**
@@ -961,8 +954,8 @@ public class FtoCubie {
         if (idx < 0 || idx >= FtoCoord.ALL_CORNER_ORIENTATION_SIZE * FtoCoord.ALL_CORNER_PERMUTATION_SIZE)
             throw new IllegalArgumentException("Index " + idx + " out of range");
 
-        setAllCornerPermutation(idx/32);
-        setAllCornerOrientation(idx%32);
+        setAllCornerPermutation(idx/FtoCoord.ALL_CORNER_ORIENTATION_SIZE);
+        setAllCornerOrientation(idx%FtoCoord.ALL_CORNER_ORIENTATION_SIZE);
     }
 
     /**
