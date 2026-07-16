@@ -140,7 +140,7 @@ public class Search {
             moves.addLast(move);
 
             g1Search(depth-1, maxl+1,
-                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTris(tri, move), candidates, moves);
+                FtoCoord.g1TurnEdges(edge, move), FtoCoord.g1TurnTriangles(tri, move), candidates, moves);
 
             moves.removeLast();
         }
@@ -235,7 +235,7 @@ public class Search {
             cubie.applyMovesInto(moves, candidateCubie);
 
             states[i][0] = candidateCubie.g2PackEdges();
-            states[i][1] = candidateCubie.g2PackTris();
+            states[i][1] = candidateCubie.g2PackTriangles();
             states[i][2] = candidateCubie.g2PackTriples(0);
             states[i][3] = candidateCubie.g2PackTriples(1);
             states[i][4] = candidateCubie.g2PackTriples(2);

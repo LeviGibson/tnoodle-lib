@@ -204,11 +204,11 @@ class FtoCubieTest {
                 ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
             }
 
-            int idx = ftoCubie.g2PackTris();
+            int idx = ftoCubie.g2PackTriangles();
             FtoCubie testCube = new FtoCubie();
 
             testCube.g2SetTriangles(idx);
-            assertEquals(idx, testCube.g2PackTris());
+            assertEquals(idx, testCube.g2PackTriangles());
             assertArrayEquals(ftoCubie.getTrianglesRLBD(), testCube.getTrianglesRLBD());
         }
     }
