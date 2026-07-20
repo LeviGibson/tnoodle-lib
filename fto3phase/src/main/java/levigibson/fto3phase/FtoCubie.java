@@ -47,7 +47,7 @@ import static levigibson.fto3phase.Util.*;
  * Solving these pieces reduce the moveset required to solve
  * the puzzle, similar to Edge Orientation on 3x3.
  *</p>
- * {R L B D U F BR BL} -> {R L B D U}
+ * {R L B D U F BR BL} to {R L B D U}
  *<p>
  * The locations of the yellow triangles are restricted to
  * a single orbit (12 spots). The locations of these are
@@ -71,7 +71,7 @@ import static levigibson.fto3phase.Util.*;
  * this, you need to solve three different sets of pieces.
  * Each piece type has a separate pruning table.
  * </p>
- * {R L B D U} -> {R L B D}
+ * {R L B D U} to {R L B D}
  * <h4>G2 Edges</h4>
  * <p>
  * In g2, all the red, purple, and blue edges are
