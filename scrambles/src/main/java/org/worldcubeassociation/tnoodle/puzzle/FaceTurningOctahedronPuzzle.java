@@ -31,7 +31,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         int lastFace = -1;
 
         for (int i = 0; i < this.getRandomMoveCount(); i++) {
-            if (i > 0) sb.append(" ");
+            if (i > 0) {
+                sb.append(" ");
+            }
 
             int face;
             do {
@@ -140,7 +142,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         }
 
         private double[] rotatePoint(double[] point, double[] center){
-            if (point.length != 2) throw new IllegalArgumentException("Invalid point length");
+            if (point.length != 2) {
+                throw new IllegalArgumentException("Invalid point length");
+            }
             double x = point[0];
             double y = point[1];
             double h = center[0];
@@ -291,9 +295,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
                 case 6: return 3;
                 //BL
                 case 7: return 1;
-            }
 
-            throw new IllegalArgumentException("Invalid face");
+                default: throw new IllegalArgumentException("Invalid face");
+            }
         }
 
         private boolean isFaceRenderedOnRightSide(int face) {
@@ -314,9 +318,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
                 case 6: return true;
                 //BL
                 case 7: return true;
-            }
 
-            throw new IllegalArgumentException("Invalid face");
+                default: throw new IllegalArgumentException("Invalid face");
+            }
         }
 
         private void threeCycleStickers(int f1, int s1, int f2, int s2, int f3, int s3, int[][] image) {
