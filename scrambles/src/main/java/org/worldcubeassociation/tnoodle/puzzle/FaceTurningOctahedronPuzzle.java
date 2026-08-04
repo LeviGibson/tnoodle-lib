@@ -24,32 +24,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         return "Face Turning Octahedron";
     }
 
-
-    private static final int STICKER_SIZE = 30;
-    private static final int CENTER_GAP_SIZE = 12;
-    private static final int FACE_GAP_SIZE = 3;
-    private static final int MARGIN = 5;
-
-    private static final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
-
-    @Override
-    public Map<String, Color> getDefaultColorScheme() {
-        return new HashMap<>(defaultColorScheme);
-    }
-
-    private static final Map<String, Color> defaultColorScheme = new HashMap<>();
-
-    static {
-        defaultColorScheme.put("B", Color.BLUE);
-        defaultColorScheme.put("D", Color.YELLOW);
-        defaultColorScheme.put("F", Color.GREEN);
-        defaultColorScheme.put("L", new Color(124, 2, 158)); // Purple
-        defaultColorScheme.put("R", Color.RED);
-        defaultColorScheme.put("U", Color.WHITE);
-        defaultColorScheme.put("BL", new Color(255, 128, 0)); // Orange
-        defaultColorScheme.put("BR", Color.GRAY);
-    }
-
     //Placeholder function
     //Do not use in production plz :)
     private String generateRandomMoveScramble(Random r){
@@ -85,6 +59,31 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         }
         return new PuzzleStateAndGenerator(state, scramble);
     }
+
+    @Override
+    public Map<String, Color> getDefaultColorScheme() {
+        return new HashMap<>(defaultColorScheme);
+    }
+
+    private static final Map<String, Color> defaultColorScheme = new HashMap<>();
+
+    static {
+        defaultColorScheme.put("B", Color.BLUE);
+        defaultColorScheme.put("D", Color.YELLOW);
+        defaultColorScheme.put("F", Color.GREEN);
+        defaultColorScheme.put("L", new Color(124, 2, 158)); // Purple
+        defaultColorScheme.put("R", Color.RED);
+        defaultColorScheme.put("U", Color.WHITE);
+        defaultColorScheme.put("BL", new Color(255, 128, 0)); // Orange
+        defaultColorScheme.put("BR", Color.GRAY);
+    }
+
+    private static final int STICKER_SIZE = 30;
+    private static final int CENTER_GAP_SIZE = 12;
+    private static final int FACE_GAP_SIZE = 3;
+    private static final int MARGIN = 5;
+
+    private static final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
 
     public class FaceTurningOctahedronState extends PuzzleState {
 
@@ -150,7 +149,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             return new double[]{h - (y - k), k + (x-h)};
         }
 
-        private double[] translate_right(double[] point){
+        private double[] translatePointRight(double[] point){
             if (point.length != 2) throw new IllegalArgumentException("Invalid point length");
             return new double[]{point[0] + STICKER_SIZE * 3 + CENTER_GAP_SIZE, point[1]};
         }
@@ -199,9 +198,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
                 c = rotatePoint(c, center);
             }
             if (rightSide) {
-                a = translate_right(a);
-                b = translate_right(b);
-                c = translate_right(c);
+                a = translatePointRight(a);
+                b = translatePointRight(b);
+                c = translatePointRight(c);
             }
 
             //Draw outline of face
@@ -268,13 +267,13 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             for (int face = 0; face < 8; face++) {
                 drawFace(svg, scheme, image[face],
                     isFaceRenderedOnRightSide(face),
-                    getFaceRotation(face));
+                    getDrawScrambleFaceRotation(face));
             }
 
             return svg;
         }
 
-        private int getFaceRotation(int face){
+        private int getDrawScrambleFaceRotation(int face){
             switch (face) {
                 //R
                 case 0: return 1;
@@ -320,7 +319,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
             throw new IllegalArgumentException("Invalid face");
         }
 
-        private void threeCycle(int f1, int s1, int f2, int s2, int f3, int s3, int[][] image) {
+        private void threeCycleStickers(int f1, int s1, int f2, int s2, int f3, int s3, int[][] image) {
             int temp = image[f3][s3];
             image[f3][s3] = image[f2][s2];
             image[f2][s2] = image[f1][s1];
@@ -337,92 +336,92 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         private void turn(int side) {
             switch (side) {
                 case 0: // R
-                    threeCycle(0, 0, 0, 5, 0, 2, image);
-                    threeCycle(0, 3, 0, 6, 0, 7, image);
-                    threeCycle(0, 1, 0, 8, 0, 4, image);
-                    threeCycle(4, 6, 2, 3, 6, 7, image);
-                    threeCycle(4, 1, 2, 4, 6, 8, image);
-                    threeCycle(2, 1, 6, 4, 4, 8, image);
-                    threeCycle(2, 0, 6, 2, 4, 5, image);
-                    threeCycle(4, 0, 2, 2, 6, 5, image);
-                    threeCycle(1, 1, 5, 8, 3, 4, image);
+                    threeCycleStickers(0, 0, 0, 5, 0, 2, image);
+                    threeCycleStickers(0, 3, 0, 6, 0, 7, image);
+                    threeCycleStickers(0, 1, 0, 8, 0, 4, image);
+                    threeCycleStickers(4, 6, 2, 3, 6, 7, image);
+                    threeCycleStickers(4, 1, 2, 4, 6, 8, image);
+                    threeCycleStickers(2, 1, 6, 4, 4, 8, image);
+                    threeCycleStickers(2, 0, 6, 2, 4, 5, image);
+                    threeCycleStickers(4, 0, 2, 2, 6, 5, image);
+                    threeCycleStickers(1, 1, 5, 8, 3, 4, image);
                     break;
                 case 1: // L
-                    threeCycle(1, 3, 1, 6, 1, 7, image);
-                    threeCycle(1, 2, 1, 0, 1, 5, image);
-                    threeCycle(1, 4, 1, 1, 1, 8, image);
-                    threeCycle(2, 6, 4, 3, 7, 7, image);
-                    threeCycle(2, 8, 4, 1, 7, 4, image);
-                    threeCycle(2, 1, 4, 4, 7, 8, image);
-                    threeCycle(0, 1, 3, 8, 5, 4, image);
-                    threeCycle(2, 5, 4, 0, 7, 2, image);
-                    threeCycle(2, 0, 4, 2, 7, 5, image);
+                    threeCycleStickers(1, 3, 1, 6, 1, 7, image);
+                    threeCycleStickers(1, 2, 1, 0, 1, 5, image);
+                    threeCycleStickers(1, 4, 1, 1, 1, 8, image);
+                    threeCycleStickers(2, 6, 4, 3, 7, 7, image);
+                    threeCycleStickers(2, 8, 4, 1, 7, 4, image);
+                    threeCycleStickers(2, 1, 4, 4, 7, 8, image);
+                    threeCycleStickers(0, 1, 3, 8, 5, 4, image);
+                    threeCycleStickers(2, 5, 4, 0, 7, 2, image);
+                    threeCycleStickers(2, 0, 4, 2, 7, 5, image);
                     break;
                 case 2: // U
-                    threeCycle(2, 0, 2, 5, 2, 2, image);
-                    threeCycle(2, 6, 2, 7, 2, 3, image);
-                    threeCycle(2, 1, 2, 8, 2, 4, image);
-                    threeCycle(4, 1, 7, 8, 6, 4, image);
-                    threeCycle(0, 1, 1, 4, 5, 8, image);
-                    threeCycle(0, 8, 1, 1, 5, 4, image);
-                    threeCycle(0, 6, 1, 3, 5, 7, image);
-                    threeCycle(0, 0, 1, 2, 5, 5, image);
-                    threeCycle(0, 5, 1, 0, 5, 2, image);
+                    threeCycleStickers(2, 0, 2, 5, 2, 2, image);
+                    threeCycleStickers(2, 6, 2, 7, 2, 3, image);
+                    threeCycleStickers(2, 1, 2, 8, 2, 4, image);
+                    threeCycleStickers(4, 1, 7, 8, 6, 4, image);
+                    threeCycleStickers(0, 1, 1, 4, 5, 8, image);
+                    threeCycleStickers(0, 8, 1, 1, 5, 4, image);
+                    threeCycleStickers(0, 6, 1, 3, 5, 7, image);
+                    threeCycleStickers(0, 0, 1, 2, 5, 5, image);
+                    threeCycleStickers(0, 5, 1, 0, 5, 2, image);
                     break;
                 case 3: // D
-                    threeCycle(3, 0, 3, 5, 3, 2, image);
-                    threeCycle(3, 3, 3, 6, 3, 7, image);
-                    threeCycle(3, 1, 3, 8, 3, 4, image);
-                    threeCycle(6, 6, 7, 3, 4, 7, image);
-                    threeCycle(6, 0, 7, 2, 4, 5, image);
-                    threeCycle(6, 1, 7, 4, 4, 8, image);
-                    threeCycle(6, 5, 7, 0, 4, 2, image);
-                    threeCycle(6, 8, 7, 1, 4, 4, image);
-                    threeCycle(0, 4, 5, 1, 1, 8, image);
+                    threeCycleStickers(3, 0, 3, 5, 3, 2, image);
+                    threeCycleStickers(3, 3, 3, 6, 3, 7, image);
+                    threeCycleStickers(3, 1, 3, 8, 3, 4, image);
+                    threeCycleStickers(6, 6, 7, 3, 4, 7, image);
+                    threeCycleStickers(6, 0, 7, 2, 4, 5, image);
+                    threeCycleStickers(6, 1, 7, 4, 4, 8, image);
+                    threeCycleStickers(6, 5, 7, 0, 4, 2, image);
+                    threeCycleStickers(6, 8, 7, 1, 4, 4, image);
+                    threeCycleStickers(0, 4, 5, 1, 1, 8, image);
                     break;
                 case 4: // F
-                    threeCycle(4, 2, 4, 0, 4, 5, image);
-                    threeCycle(4, 3, 4, 6, 4, 7, image);
-                    threeCycle(4, 1, 4, 8, 4, 4, image);
-                    threeCycle(1, 6, 0, 3, 3, 7, image);
-                    threeCycle(1, 0, 0, 2, 3, 5, image);
-                    threeCycle(1, 1, 0, 4, 3, 8, image);
-                    threeCycle(1, 5, 0, 0, 3, 2, image);
-                    threeCycle(1, 8, 0, 1, 3, 4, image);
-                    threeCycle(2, 1, 6, 8, 7, 4, image);
+                    threeCycleStickers(4, 2, 4, 0, 4, 5, image);
+                    threeCycleStickers(4, 3, 4, 6, 4, 7, image);
+                    threeCycleStickers(4, 1, 4, 8, 4, 4, image);
+                    threeCycleStickers(1, 6, 0, 3, 3, 7, image);
+                    threeCycleStickers(1, 0, 0, 2, 3, 5, image);
+                    threeCycleStickers(1, 1, 0, 4, 3, 8, image);
+                    threeCycleStickers(1, 5, 0, 0, 3, 2, image);
+                    threeCycleStickers(1, 8, 0, 1, 3, 4, image);
+                    threeCycleStickers(2, 1, 6, 8, 7, 4, image);
                     break;
                 case 5: // B
-                    threeCycle(5, 0, 5, 5, 5, 2, image);
-                    threeCycle(5, 6, 5, 7, 5, 3, image);
-                    threeCycle(5, 1, 5, 8, 5, 4, image);
-                    threeCycle(7, 6, 6, 3, 2, 7, image);
-                    threeCycle(7, 5, 6, 0, 2, 2, image);
-                    threeCycle(7, 8, 6, 1, 2, 4, image);
-                    threeCycle(7, 0, 6, 2, 2, 5, image);
-                    threeCycle(7, 1, 6, 4, 2, 8, image);
-                    threeCycle(3, 1, 0, 8, 1, 4, image);
+                    threeCycleStickers(5, 0, 5, 5, 5, 2, image);
+                    threeCycleStickers(5, 6, 5, 7, 5, 3, image);
+                    threeCycleStickers(5, 1, 5, 8, 5, 4, image);
+                    threeCycleStickers(7, 6, 6, 3, 2, 7, image);
+                    threeCycleStickers(7, 5, 6, 0, 2, 2, image);
+                    threeCycleStickers(7, 8, 6, 1, 2, 4, image);
+                    threeCycleStickers(7, 0, 6, 2, 2, 5, image);
+                    threeCycleStickers(7, 1, 6, 4, 2, 8, image);
+                    threeCycleStickers(3, 1, 0, 8, 1, 4, image);
                     break;
                 case 6: // BR
-                    threeCycle(6, 2, 6, 0, 6, 5, image);
-                    threeCycle(6, 3, 6, 6, 6, 7, image);
-                    threeCycle(6, 4, 6, 1, 6, 8, image);
-                    threeCycle(5, 6, 3, 3, 0, 7, image);
-                    threeCycle(5, 5, 3, 0, 0, 2, image);
-                    threeCycle(5, 8, 3, 1, 0, 4, image);
-                    threeCycle(0, 5, 5, 0, 3, 2, image);
-                    threeCycle(0, 8, 5, 1, 3, 4, image);
-                    threeCycle(4, 8, 2, 4, 7, 1, image);
+                    threeCycleStickers(6, 2, 6, 0, 6, 5, image);
+                    threeCycleStickers(6, 3, 6, 6, 6, 7, image);
+                    threeCycleStickers(6, 4, 6, 1, 6, 8, image);
+                    threeCycleStickers(5, 6, 3, 3, 0, 7, image);
+                    threeCycleStickers(5, 5, 3, 0, 0, 2, image);
+                    threeCycleStickers(5, 8, 3, 1, 0, 4, image);
+                    threeCycleStickers(0, 5, 5, 0, 3, 2, image);
+                    threeCycleStickers(0, 8, 5, 1, 3, 4, image);
+                    threeCycleStickers(4, 8, 2, 4, 7, 1, image);
                     break;
                 case 7: // BL
-                    threeCycle(7, 0, 7, 5, 7, 2, image);
-                    threeCycle(7, 6, 7, 7, 7, 3, image);
-                    threeCycle(7, 1, 7, 8, 7, 4, image);
-                    threeCycle(3, 6, 5, 3, 1, 7, image);
-                    threeCycle(3, 5, 5, 0, 1, 2, image);
-                    threeCycle(3, 8, 5, 1, 1, 4, image);
-                    threeCycle(3, 0, 5, 2, 1, 5, image);
-                    threeCycle(3, 1, 5, 4, 1, 8, image);
-                    threeCycle(6, 1, 2, 8, 4, 4, image);
+                    threeCycleStickers(7, 0, 7, 5, 7, 2, image);
+                    threeCycleStickers(7, 6, 7, 7, 7, 3, image);
+                    threeCycleStickers(7, 1, 7, 8, 7, 4, image);
+                    threeCycleStickers(3, 6, 5, 3, 1, 7, image);
+                    threeCycleStickers(3, 5, 5, 0, 1, 2, image);
+                    threeCycleStickers(3, 8, 5, 1, 1, 4, image);
+                    threeCycleStickers(3, 0, 5, 2, 1, 5, image);
+                    threeCycleStickers(3, 1, 5, 4, 1, 8, image);
+                    threeCycleStickers(6, 1, 2, 8, 4, 4, image);
                     break;
                 default:
                     assert false;
@@ -435,7 +434,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
     }
 
     private int getPreferredHeight(){
-        return( 3 * STICKER_SIZE) + (2 * MARGIN);
+        return (3 * STICKER_SIZE) + (2 * MARGIN);
     }
 
     @Override
