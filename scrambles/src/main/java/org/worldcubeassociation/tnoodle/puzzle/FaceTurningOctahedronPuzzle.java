@@ -154,7 +154,9 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         }
 
         private double[] translatePointRight(double[] point){
-            if (point.length != 2) throw new IllegalArgumentException("Invalid point length");
+            if (point.length != 2) {
+                throw new IllegalArgumentException("Invalid point length");
+            }
             return new double[]{point[0] + STICKER_SIZE * 3 + CENTER_GAP_SIZE, point[1]};
         }
 
