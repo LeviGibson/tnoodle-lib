@@ -24,44 +24,6 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         return "Face Turning Octahedron";
     }
 
-    //Placeholder function
-    //Do not use in production plz :)
-    private String generateRandomMoveScramble(Random r){
-        StringBuilder sb = new StringBuilder();
-        int lastFace = -1;
-
-        for (int i = 0; i < this.getRandomMoveCount(); i++) {
-            if (i > 0) {
-                sb.append(" ");
-            }
-
-            int face;
-            do {
-                face = r.nextInt(8);
-            } while (lastFace == face);
-
-            int dir = r.nextInt(2) + 1;
-            sb.append(MOVE_NAMES[(dir-1) * 8 + face]);
-
-            lastFace = face;
-        }
-
-        return sb.toString();
-    }
-
-    @Override
-    public PuzzleStateAndGenerator generateRandomMoves(Random r) {
-
-        String scramble = this.generateRandomMoveScramble(r);
-        PuzzleState state;
-        try {
-            state = getSolvedState().applyAlgorithm(scramble);
-        } catch (InvalidScrambleException e) {
-            throw new RuntimeException(e);
-        }
-        return new PuzzleStateAndGenerator(state, scramble);
-    }
-
     @Override
     public Map<String, Color> getDefaultColorScheme() {
         return new HashMap<>(defaultColorScheme);
