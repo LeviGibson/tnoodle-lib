@@ -1,15 +1,12 @@
 package org.worldcubeassociation.tnoodle.puzzle;
 
 import org.timepedia.exporter.client.Export;
-import org.worldcubeassociation.tnoodle.scrambles.InvalidScrambleException;
 import org.worldcubeassociation.tnoodle.scrambles.Puzzle;
-import org.worldcubeassociation.tnoodle.scrambles.PuzzleStateAndGenerator;
 import org.worldcubeassociation.tnoodle.svglite.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 @Export
 public class FaceTurningOctahedronPuzzle extends Puzzle {
