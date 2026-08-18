@@ -255,11 +255,11 @@ class FtoCubieTest {
     @Test
     void testPhaseThreeCorners(){
         Random r = new Random(42);
-        List<Integer> safeMoves = Search.G3_MOVESET;
+        int[] safeMoves = Search.G3_MOVESET;
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(safeMoves.get(r.nextInt(safeMoves.size())));
+                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
             }
 
             int idx = ftoCubie.g3PackCorners();
