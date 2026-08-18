@@ -44,7 +44,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
     private static final int FACE_GAP_SIZE = 3;
     private static final int MARGIN = 5;
 
-    private static final String[] MOVE_NAMES = {"R", "L", "U", "D", "F", "B", "BR", "BL", "R'", "L'", "U'", "D'", "F'", "B'", "BR'", "BL'"};
+    private static final String[] MOVE_NAMES = {"U", "R", "F", "L", "B", "BL", "D", "BR", "U'", "R'", "F'", "L'", "B'", "BL'", "D'", "BR'"};
 
     public class FaceTurningOctahedronState extends PuzzleState {
 
@@ -239,49 +239,11 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         }
 
         private int getDrawScrambleFaceRotation(int face){
-            switch (face) {
-                //R
-                case 0: return 1;
-                //L
-                case 1: return 3;
-                //U
-                case 2: return 0;
-                //D
-                case 3: return 2;
-                //F
-                case 4: return 2;
-                //B
-                case 5: return 0;
-                //BR
-                case 6: return 3;
-                //BL
-                case 7: return 1;
-
-                default: throw new IllegalArgumentException("Invalid face");
-            }
+            return face % 4;
         }
 
         private boolean isFaceRenderedOnRightSide(int face) {
-            switch (face) {
-                //R
-                case 0: return false;
-                //L
-                case 1: return false;
-                //U
-                case 2: return false;
-                //D
-                case 3: return true;
-                //F
-                case 4: return false;
-                //B
-                case 5: return true;
-                //BR
-                case 6: return true;
-                //BL
-                case 7: return true;
-
-                default: throw new IllegalArgumentException("Invalid face");
-            }
+            return face > 3;
         }
 
         private void threeCycleStickers(int f1, int s1, int f2, int s2, int f3, int s3, int[][] image) {
@@ -300,93 +262,93 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
 
         private void turn(int side) {
             switch (side) {
-                case 0: // R
+                case 0: // U
                     threeCycleStickers(0, 0, 0, 5, 0, 2, image);
-                    threeCycleStickers(0, 3, 0, 6, 0, 7, image);
+                    threeCycleStickers(0, 6, 0, 7, 0, 3, image);
                     threeCycleStickers(0, 1, 0, 8, 0, 4, image);
-                    threeCycleStickers(4, 6, 2, 3, 6, 7, image);
-                    threeCycleStickers(4, 1, 2, 4, 6, 8, image);
-                    threeCycleStickers(2, 1, 6, 4, 4, 8, image);
-                    threeCycleStickers(2, 0, 6, 2, 4, 5, image);
-                    threeCycleStickers(4, 0, 2, 2, 6, 5, image);
-                    threeCycleStickers(1, 1, 5, 8, 3, 4, image);
+                    threeCycleStickers(2, 1, 5, 8, 7, 4, image);
+                    threeCycleStickers(1, 1, 3, 4, 4, 8, image);
+                    threeCycleStickers(1, 8, 3, 1, 4, 4, image);
+                    threeCycleStickers(1, 6, 3, 3, 4, 7, image);
+                    threeCycleStickers(1, 0, 3, 2, 4, 5, image);
+                    threeCycleStickers(1, 5, 3, 0, 4, 2, image);
                     break;
-                case 1: // L
+                case 1: // R
+                    threeCycleStickers(1, 0, 1, 5, 1, 2, image);
                     threeCycleStickers(1, 3, 1, 6, 1, 7, image);
-                    threeCycleStickers(1, 2, 1, 0, 1, 5, image);
-                    threeCycleStickers(1, 4, 1, 1, 1, 8, image);
-                    threeCycleStickers(2, 6, 4, 3, 7, 7, image);
-                    threeCycleStickers(2, 8, 4, 1, 7, 4, image);
-                    threeCycleStickers(2, 1, 4, 4, 7, 8, image);
-                    threeCycleStickers(0, 1, 3, 8, 5, 4, image);
-                    threeCycleStickers(2, 5, 4, 0, 7, 2, image);
-                    threeCycleStickers(2, 0, 4, 2, 7, 5, image);
+                    threeCycleStickers(1, 1, 1, 8, 1, 4, image);
+                    threeCycleStickers(2, 6, 0, 3, 7, 7, image);
+                    threeCycleStickers(2, 1, 0, 4, 7, 8, image);
+                    threeCycleStickers(0, 1, 7, 4, 2, 8, image);
+                    threeCycleStickers(0, 0, 7, 2, 2, 5, image);
+                    threeCycleStickers(2, 0, 0, 2, 7, 5, image);
+                    threeCycleStickers(3, 1, 4, 8, 6, 4, image);
                     break;
-                case 2: // U
-                    threeCycleStickers(2, 0, 2, 5, 2, 2, image);
-                    threeCycleStickers(2, 6, 2, 7, 2, 3, image);
+                case 2: // F
+                    threeCycleStickers(2, 2, 2, 0, 2, 5, image);
+                    threeCycleStickers(2, 3, 2, 6, 2, 7, image);
                     threeCycleStickers(2, 1, 2, 8, 2, 4, image);
-                    threeCycleStickers(4, 1, 7, 8, 6, 4, image);
-                    threeCycleStickers(0, 1, 1, 4, 5, 8, image);
-                    threeCycleStickers(0, 8, 1, 1, 5, 4, image);
-                    threeCycleStickers(0, 6, 1, 3, 5, 7, image);
-                    threeCycleStickers(0, 0, 1, 2, 5, 5, image);
-                    threeCycleStickers(0, 5, 1, 0, 5, 2, image);
+                    threeCycleStickers(3, 6, 1, 3, 6, 7, image);
+                    threeCycleStickers(3, 0, 1, 2, 6, 5, image);
+                    threeCycleStickers(3, 1, 1, 4, 6, 8, image);
+                    threeCycleStickers(3, 5, 1, 0, 6, 2, image);
+                    threeCycleStickers(3, 8, 1, 1, 6, 4, image);
+                    threeCycleStickers(0, 1, 7, 8, 5, 4, image);
                     break;
-                case 3: // D
-                    threeCycleStickers(3, 0, 3, 5, 3, 2, image);
+                case 3: // L
                     threeCycleStickers(3, 3, 3, 6, 3, 7, image);
-                    threeCycleStickers(3, 1, 3, 8, 3, 4, image);
-                    threeCycleStickers(6, 6, 7, 3, 4, 7, image);
-                    threeCycleStickers(6, 0, 7, 2, 4, 5, image);
-                    threeCycleStickers(6, 1, 7, 4, 4, 8, image);
-                    threeCycleStickers(6, 5, 7, 0, 4, 2, image);
-                    threeCycleStickers(6, 8, 7, 1, 4, 4, image);
-                    threeCycleStickers(0, 4, 5, 1, 1, 8, image);
+                    threeCycleStickers(3, 2, 3, 0, 3, 5, image);
+                    threeCycleStickers(3, 4, 3, 1, 3, 8, image);
+                    threeCycleStickers(0, 6, 2, 3, 5, 7, image);
+                    threeCycleStickers(0, 8, 2, 1, 5, 4, image);
+                    threeCycleStickers(0, 1, 2, 4, 5, 8, image);
+                    threeCycleStickers(1, 1, 6, 8, 4, 4, image);
+                    threeCycleStickers(0, 5, 2, 0, 5, 2, image);
+                    threeCycleStickers(0, 0, 2, 2, 5, 5, image);
                     break;
-                case 4: // F
-                    threeCycleStickers(4, 2, 4, 0, 4, 5, image);
-                    threeCycleStickers(4, 3, 4, 6, 4, 7, image);
+                case 4: // B
+                    threeCycleStickers(4, 0, 4, 5, 4, 2, image);
+                    threeCycleStickers(4, 6, 4, 7, 4, 3, image);
                     threeCycleStickers(4, 1, 4, 8, 4, 4, image);
-                    threeCycleStickers(1, 6, 0, 3, 3, 7, image);
-                    threeCycleStickers(1, 0, 0, 2, 3, 5, image);
-                    threeCycleStickers(1, 1, 0, 4, 3, 8, image);
-                    threeCycleStickers(1, 5, 0, 0, 3, 2, image);
-                    threeCycleStickers(1, 8, 0, 1, 3, 4, image);
-                    threeCycleStickers(2, 1, 6, 8, 7, 4, image);
+                    threeCycleStickers(5, 6, 7, 3, 0, 7, image);
+                    threeCycleStickers(5, 5, 7, 0, 0, 2, image);
+                    threeCycleStickers(5, 8, 7, 1, 0, 4, image);
+                    threeCycleStickers(5, 0, 7, 2, 0, 5, image);
+                    threeCycleStickers(5, 1, 7, 4, 0, 8, image);
+                    threeCycleStickers(6, 1, 1, 8, 3, 4, image);
                     break;
-                case 5: // B
+                case 5: // BL
                     threeCycleStickers(5, 0, 5, 5, 5, 2, image);
                     threeCycleStickers(5, 6, 5, 7, 5, 3, image);
                     threeCycleStickers(5, 1, 5, 8, 5, 4, image);
-                    threeCycleStickers(7, 6, 6, 3, 2, 7, image);
-                    threeCycleStickers(7, 5, 6, 0, 2, 2, image);
-                    threeCycleStickers(7, 8, 6, 1, 2, 4, image);
-                    threeCycleStickers(7, 0, 6, 2, 2, 5, image);
-                    threeCycleStickers(7, 1, 6, 4, 2, 8, image);
-                    threeCycleStickers(3, 1, 0, 8, 1, 4, image);
+                    threeCycleStickers(6, 6, 4, 3, 3, 7, image);
+                    threeCycleStickers(6, 5, 4, 0, 3, 2, image);
+                    threeCycleStickers(6, 8, 4, 1, 3, 4, image);
+                    threeCycleStickers(6, 0, 4, 2, 3, 5, image);
+                    threeCycleStickers(6, 1, 4, 4, 3, 8, image);
+                    threeCycleStickers(7, 1, 0, 8, 2, 4, image);
                     break;
-                case 6: // BR
-                    threeCycleStickers(6, 2, 6, 0, 6, 5, image);
+                case 6: // D
+                    threeCycleStickers(6, 0, 6, 5, 6, 2, image);
                     threeCycleStickers(6, 3, 6, 6, 6, 7, image);
-                    threeCycleStickers(6, 4, 6, 1, 6, 8, image);
-                    threeCycleStickers(5, 6, 3, 3, 0, 7, image);
-                    threeCycleStickers(5, 5, 3, 0, 0, 2, image);
-                    threeCycleStickers(5, 8, 3, 1, 0, 4, image);
-                    threeCycleStickers(0, 5, 5, 0, 3, 2, image);
-                    threeCycleStickers(0, 8, 5, 1, 3, 4, image);
-                    threeCycleStickers(4, 8, 2, 4, 7, 1, image);
+                    threeCycleStickers(6, 1, 6, 8, 6, 4, image);
+                    threeCycleStickers(7, 6, 5, 3, 2, 7, image);
+                    threeCycleStickers(7, 0, 5, 2, 2, 5, image);
+                    threeCycleStickers(7, 1, 5, 4, 2, 8, image);
+                    threeCycleStickers(7, 5, 5, 0, 2, 2, image);
+                    threeCycleStickers(7, 8, 5, 1, 2, 4, image);
+                    threeCycleStickers(1, 4, 4, 1, 3, 8, image);
                     break;
-                case 7: // BL
-                    threeCycleStickers(7, 0, 7, 5, 7, 2, image);
-                    threeCycleStickers(7, 6, 7, 7, 7, 3, image);
-                    threeCycleStickers(7, 1, 7, 8, 7, 4, image);
-                    threeCycleStickers(3, 6, 5, 3, 1, 7, image);
-                    threeCycleStickers(3, 5, 5, 0, 1, 2, image);
-                    threeCycleStickers(3, 8, 5, 1, 1, 4, image);
-                    threeCycleStickers(3, 0, 5, 2, 1, 5, image);
-                    threeCycleStickers(3, 1, 5, 4, 1, 8, image);
-                    threeCycleStickers(6, 1, 2, 8, 4, 4, image);
+                case 7: // BR
+                    threeCycleStickers(7, 2, 7, 0, 7, 5, image);
+                    threeCycleStickers(7, 3, 7, 6, 7, 7, image);
+                    threeCycleStickers(7, 4, 7, 1, 7, 8, image);
+                    threeCycleStickers(4, 6, 6, 3, 1, 7, image);
+                    threeCycleStickers(4, 5, 6, 0, 1, 2, image);
+                    threeCycleStickers(4, 8, 6, 1, 1, 4, image);
+                    threeCycleStickers(1, 5, 4, 0, 6, 2, image);
+                    threeCycleStickers(1, 8, 4, 1, 6, 4, image);
+                    threeCycleStickers(2, 8, 0, 4, 5, 1, image);
                     break;
                 default:
                     assert false;
