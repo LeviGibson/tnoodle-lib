@@ -272,6 +272,20 @@ class FtoCubieTest {
     }
 
     @Test
+    void testSolvedStartingStates(){
+        FtoCubie solvedG1 = Util.fromAlg("R U L D B U B L D B R L B D");
+        FtoCubie solvedG2 = Util.fromAlg("R L D B U B L B R L B");
+        FtoCubie solvedG3 = Util.fromAlg("");
+
+
+        Search search = new Search();
+        //solution() will panic if it doesn't work
+        search.solution(solvedG1);
+        search.solution(solvedG2);
+        search.solution(solvedG3);
+    }
+
+    @Test
     void performanceTest(){
         int n = 100;
 
