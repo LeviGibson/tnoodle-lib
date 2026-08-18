@@ -7,13 +7,13 @@ import java.util.Random;
 import static levigibson.fto3phase.Util.*;
 
 /**
- * <h1>FtoCubie</h1>
- * <h2>Purpose</h2>
+ * <h2>FtoCubie</h2>
+ * <h3>Purpose</h3>
  * <p>
  * FtoCubie is an array-based representation of the FTO. It is
  * a little bit slow and therefore not used for the search.
  *</p>
- * <h2>Turning / General Use</h2>
+ * <h3>Turning / General Use</h3>
  * FtoCubie provides two public APIs for turning the cube.
  * FtoCubie::turn() mutates the internal state.
  * FtoCubie::turnInto() leaves the internal state untouched.
@@ -29,7 +29,7 @@ import static levigibson.fto3phase.Util.*;
  *     assert(fto.equals(new FtoCubie())); // the state of fto is untouched by turnInto()
  * }</pre>
  *
- * <h2>Index Packing / Unpacking</h2>
+ * <h3>Index Packing / Unpacking</h3>
  * <p>
  * The search uses a more optimized state representation
  * where each piece type is stored in an integer, and the
@@ -39,7 +39,7 @@ import static levigibson.fto3phase.Util.*;
  * is to provide easy conversion from these packed integers
  * to state and back again. See FtoCoord for further details.
  *</p>
- * <h3>Phase 1 (G1)</h3>
+ * <h4>Phase 1 (G1)</h4>
  * <p>
  * Phase 1 solves the yellow triangles (a.k.a centers) and
  * the yellow edges. The edges do not need to be completely
@@ -63,7 +63,7 @@ import static levigibson.fto3phase.Util.*;
  * {@link  FtoCubie#g1PackTriangles()  g1PackTriangles}
  * {@link  FtoCubie#g1SetTriangles(int)  g1SetTriangles}
  *
- * <h3>Phase 2 (G2)</h3>
+ * <h4>Phase 2 (G2)</h4>
  * <p>
  * Phase 2 is the biggest search of the lot. It further
  * reduces the moveset needed to solve the Fto. This step
@@ -144,7 +144,7 @@ import static levigibson.fto3phase.Util.*;
  * {@link  FtoCubie#g2PackTripleCorners(int)  g2PackTripleCorners}
  * {@link  FtoCubie#g2SetTripleCorners(int, int)  g2SetTripleCorners}
  *
- * <h3>Phase 3 (G3)</h3>
+ * <h4>Phase 3 (G3)</h4>
  * <p>
  * Phase 3 is trivial. So trivial that a straight search with no pruning
  * runs decently fast on its own. Nonetheless, we do have an index packing
