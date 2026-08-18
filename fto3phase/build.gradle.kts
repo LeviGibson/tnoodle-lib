@@ -1,3 +1,4 @@
+import configurations.Frameworks.configureJUnit5
 import configurations.Languages.attachRemoteRepositories
 import configurations.Languages.configureJava
 import configurations.Publications.configureMavenPublication
@@ -17,11 +18,4 @@ configureSignatures(publishing)
 
 attachRemoteRepositories()
 
-dependencies {
-    testImplementation(libs.junit.jupiter.api)
-    testRuntimeOnly(libs.junit.jupiter.engine)
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
+configureJUnit5()
