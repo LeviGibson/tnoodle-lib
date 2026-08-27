@@ -254,10 +254,14 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
+        //Since the initialization process is the same every time,
+        //we know how big the frontier will get at its widest
+        int MAX_FRONTIER_SIZE = 52063;
+
         //The max size of the frontier hard-coded here to save memory
         //IntArray is growable just in case :)
-        IntArray frontier = new IntArray(52063);
-        IntArray next = new IntArray(52063);
+        IntArray frontier = new IntArray(MAX_FRONTIER_SIZE);
+        IntArray next = new IntArray(MAX_FRONTIER_SIZE);
 
         FtoCubie solved = new FtoCubie();
         frontier.add(packG1(solved.g1PackEdges(), solved.g1PackTriangles()));
@@ -298,11 +302,16 @@ class FtoCoord {
         byte[] prun = new byte[G2_TRIPLE_SIZE];
         Arrays.fill(prun, (byte) -1);
 
+        //Since the initialization process is the same every time,
+        //we know how big the frontier will get at its widest
+        int MAX_FRONTIER_SIZE = 100;
+        int RETURN_ARRAY_SIZE = 161;
+
         //The max size of the frontier hard-coded here to save memory
         //IntArray is growable just in case :)
-        IntArray all = new IntArray(161);
-        IntArray next = new IntArray(100);
-        IntArray frontier = new IntArray(100);
+        IntArray all = new IntArray(RETURN_ARRAY_SIZE);
+        IntArray next = new IntArray(MAX_FRONTIER_SIZE);
+        IntArray frontier = new IntArray(MAX_FRONTIER_SIZE);
 
         frontier.add(new FtoCubie().g2PackTriples(0));
 
@@ -335,6 +344,10 @@ class FtoCoord {
         byte[] prun = new byte[G2_TRIPLE_SIZE];
         Arrays.fill(prun, (byte) -1);
 
+        //Since the initialization process is the same every time,
+        //we know how big the frontier will get at its widest
+        int MAX_FRONTIER_SIZE = 11484;
+
         //depth=0 frontier is all the states
         //where the colors are all matching
         IntArray frontier = g2GenerateTripleFrontier();
@@ -344,7 +357,7 @@ class FtoCoord {
 
         int depth = 0;
         while (frontier.size > 0) {
-            IntArray next = new IntArray(11484);
+            IntArray next = new IntArray(MAX_FRONTIER_SIZE);
 
             for (int i = 0; i < frontier.size; i++) {
                 int idx = frontier.data[i];
@@ -393,10 +406,14 @@ class FtoCoord {
         byte[] prun = new byte[size];
         Arrays.fill(prun, (byte) -1);
 
+        //Since the initialization process is the same every time,
+        //we know how big the frontier will get at its widest
+        int MAX_FRONTIER_SIZE = 4_194_993;
+
         //The max size of the frontier hard-coded here to save memory
         //IntArray is growable just in case :)
-        IntArray frontier = new IntArray(4_194_993);
-        IntArray next = new IntArray(4_194_993);
+        IntArray frontier = new IntArray(MAX_FRONTIER_SIZE);
+        IntArray next = new IntArray(MAX_FRONTIER_SIZE);
 
         FtoCubie solved = new FtoCubie();
         frontier.add(packTxE(solved.g2PackEdges(), solved.g2PackTriangles()));
@@ -431,10 +448,14 @@ class FtoCoord {
         byte[] prun = new byte[G3_CORNERS_SIZE];
         Arrays.fill(prun, (byte) -1);
 
+        //Since the initialization process is the same every time,
+        //we know how big the frontier will get at its widest
+        int MAX_FRONTIER_SIZE = 5405;
+
         //The max size of the frontier hard-coded here to save memory
         //IntArray is growable just in case :)
-        IntArray frontier = new IntArray(5405);
-        IntArray next = new IntArray(5405);
+        IntArray frontier = new IntArray(MAX_FRONTIER_SIZE);
+        IntArray next = new IntArray(MAX_FRONTIER_SIZE);
         frontier.add(new FtoCubie().g3PackCorners());
         prun[frontier.data[0]] = 0;
 
