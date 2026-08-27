@@ -284,11 +284,7 @@ class Util {
      * @return a ^ b
      */
     public static int pow(int a, int b){
-        int c = 1;
-        for (int i = 0; i < b; i++) {
-            c *= a;
-        }
-        return c;
+        return (int) Math.pow(a, b);
     }
 
     private static synchronized int[][] computeChooseTable(){
