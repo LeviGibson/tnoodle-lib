@@ -5,7 +5,20 @@ import java.util.*;
 class Util {
 
     private static final int[] FACTORIAL = new int[] {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600};
-    private static final int[][] Cnk = computeChooseTable();
+    private static final int[][] Cnk = {
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 4, 6, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 5, 10, 10, 5, 1, 0, 0, 0, 0, 0, 0, 0},
+        {1, 6, 15, 20, 15, 6, 1, 0, 0, 0, 0, 0, 0},
+        {1, 7, 21, 35, 35, 21, 7, 1, 0, 0, 0, 0, 0},
+        {1, 8, 28, 56, 70, 56, 28, 8, 1, 0, 0, 0, 0},
+        {1, 9, 36, 84, 126, 126, 84, 36, 9, 1, 0, 0, 0},
+        {1, 10, 45, 120, 210, 252, 210, 120, 45, 10, 1, 0, 0},
+        {1, 11, 55, 165, 330, 462, 462, 330, 165, 55, 11, 1, 0},
+        {1, 12, 66, 220, 495, 792, 924, 792, 495, 220, 66, 12, 1}};
 
     /**
      * n choose k combinatorics function
@@ -287,31 +300,5 @@ class Util {
      */
     public static int pow(int a, int b){
         return (int) Math.pow(a, b);
-    }
-
-    private static synchronized int[][] computeChooseTable(){
-        int[][] table = new int[13][13];
-
-        for (int n = 0; n < 13; n++) {
-            for (int k = 0; k < 13; k++) {
-                table[n][k] = choose(n, k);
-            }
-        }
-
-        return table;
-    }
-
-    private static int choose(int n, int k){
-        if (k < 0 || k > n) return 0;
-        if (k == 0 || k == n) return 1;
-        if (k > n - k) k = n - k;
-
-        long result = 1;
-        for (int i = 1; i <= k; i++) {
-            result = result * (n - k + i) / i;
-        }
-        if (result > Integer.MAX_VALUE)
-            throw new IllegalArgumentException("choose(" + n + ", " + k + ") = " + result + " overflows int");
-        return (int) result;
     }
 }
