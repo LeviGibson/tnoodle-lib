@@ -73,7 +73,9 @@ public class Search {
 
     private int[] g2Iterate(FtoCubie cubie, ArrayList<int[]> candidates){
         int[][] states = buildStatesFromCandidates(cubie, candidates);
-        int[] lengths = buildLengthFromCandidates(candidates);
+        int[] lengths = candidates.stream()
+            .mapToInt(candidate -> candidate.length)
+            .toArray();
 
         ArrayDeque<Integer> moves = new ArrayDeque<>();
 
@@ -244,14 +246,6 @@ public class Search {
         }
 
         return states;
-    }
-
-    private static int[] buildLengthFromCandidates(ArrayList<int[]> candidates){
-        int[] lengths = new int[candidates.size()];
-        for (int i = 0; i < candidates.size(); i++) {
-            lengths[i] = candidates.get(i).length;
-        }
-        return lengths;
     }
 
     private static boolean isValidMove(int lastMove, int move){
