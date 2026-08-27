@@ -367,6 +367,12 @@ public class FtoCubie {
         cornerOri[5] = Integer.bitCount(idx) % 2;
     }
 
+    private static final int[] ALL_TRIANGLES_INDEX_COEFFICIENTS = {
+        nCr(9, 3) * nCr(6, 3),
+        nCr(6, 3),
+        1
+    };
+
     /**
      * Packs the permutation of the triangles of one orbit into a compact index.
      * This index has a bijection with possible triangle states (for one orbit)
@@ -402,9 +408,9 @@ public class FtoCubie {
                 throw new IllegalStateException("Expected found=3. Instead, found=" + found);
         }
 
-        return (packSubset(loc[0]) * nCr(9, 3) * nCr(6, 3)) +
-            packSubset(loc[1]) * nCr(6, 3) +
-            packSubset(loc[2]);
+        return (packSubset(loc[0]) * ALL_TRIANGLES_INDEX_COEFFICIENTS[0]) +
+            packSubset(loc[1]) * ALL_TRIANGLES_INDEX_COEFFICIENTS[1] +
+            packSubset(loc[2]) * ALL_TRIANGLES_INDEX_COEFFICIENTS[2];
     }
 
     /**
@@ -415,6 +421,7 @@ public class FtoCubie {
      * @param idx compact index
      * @param orbit 0 = UFBrBl, 1 = RLBD
      */
+
     public void setAllTriangles(int idx, int orbit){
         if (idx < 0 || idx >= FtoCoord.ALL_TRIANGLE_SIZE) throw new IllegalArgumentException("Index " + idx + " out of range");
 
@@ -423,17 +430,11 @@ public class FtoCubie {
 
         int[] triangles = orbit == 1 ? trianglesRLBD : trianglesUFBrBl;
 
-        final int[] coefficients = {
-            nCr(9, 3) * nCr(6, 3),
-            nCr(6, 3),
-            1
-        };
-
         int[][] loc = new int[3][3];
 
         int remaining = idx;
         for (int color = 0; color < 3; color++) {
-            int coefficient = coefficients[color];
+            int coefficient = ALL_TRIANGLES_INDEX_COEFFICIENTS[color];
             int digit = remaining / coefficient;
 
             unpackSubset(loc[color], digit);
