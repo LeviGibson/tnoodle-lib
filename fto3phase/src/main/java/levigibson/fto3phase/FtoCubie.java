@@ -762,6 +762,8 @@ public class FtoCubie {
         for (int i = 9; i < 12; i++) trianglesRLBD[i] = TOD;
     }
 
+    private static final int G2_TRIPLE_CORNER_SIZE = nCr(6, 3) * pow(2,3);
+
     /**
      * Packs the state of the triples (corners + triangles) of a single color into a compact index.
      * Index Range:
@@ -775,7 +777,7 @@ public class FtoCubie {
             throw new IllegalArgumentException("color must be U, F, BR, or BL");
         }
 
-        return (160 * g2PackTripleTris(color)) + g2PackTripleCorners(color);
+        return (G2_TRIPLE_CORNER_SIZE * g2PackTripleTris(color)) + g2PackTripleCorners(color);
     }
 
     /**
@@ -790,8 +792,8 @@ public class FtoCubie {
     public void g2SetTriples(int idx, int color){
         if (idx < 0 || idx >= FtoCoord.G2_TRIPLE_SIZE) throw new IllegalArgumentException("Index " + idx + " out of range");
 
-        int tris = idx / 160;
-        int corners = idx % 160;
+        int tris = idx / G2_TRIPLE_CORNER_SIZE;
+        int corners = idx % G2_TRIPLE_CORNER_SIZE;
 
         g2SetTripleTris(tris, color);
         g2SetTripleCorners(corners, color);

@@ -69,7 +69,9 @@ class FtoCoord {
     public static final int G1_EDGES_SIZE = nCr(12,3) * 2;
     public static final int G2_TRIANGLES_SIZE = nCr(9,3) * nCr(6,3);
     public static final int G2_EDGES_SIZE = nCr(9,3) * nCr(6,3) * 2 * 2;
-    public static final int G2_TRIPLE_SIZE = nCr(12,3) * nCr(6,3) * pow(2,3);
+    public static final int G2_TRIPLE_CORNER_SIZE = nCr(6,3) * pow(2,3);
+    public static final int G2_TRIPLE_TRIANGLE_SIZE = nCr(12,3);
+    public static final int G2_TRIPLE_SIZE = G2_TRIPLE_CORNER_SIZE * G2_TRIPLE_TRIANGLE_SIZE;
     public static final int G3_CORNERS_SIZE = (fact(6)/2) * pow(2,5);
     public static final int G3_EDGE_SIZE = pow(3,4);
 
