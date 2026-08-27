@@ -219,15 +219,17 @@ class Util {
     }
 
     private static final Map<String, Integer> MOVE_MAP = new HashMap<>();
+
+    private static final String[] FACE_NAMES = {"R", "L", "B", "U", "D", "F", "BR", "BL"};
+    private static final int[] CW_MOVES = {FtoCubie.R,  FtoCubie.L,  FtoCubie.B,  FtoCubie.U,
+        FtoCubie.D,  FtoCubie.F,  FtoCubie.BR, FtoCubie.BL};
+    private static final int[] CCW_MOVES = {FtoCubie.RP, FtoCubie.LP, FtoCubie.BP, FtoCubie.UP,
+        FtoCubie.DP, FtoCubie.FP, FtoCubie.BRP, FtoCubie.BLP};
+
     static {
-        String[] names = {"R", "L", "B", "U", "D", "F", "BR", "BL"};
-        int[] cw  = {FtoCubie.R,  FtoCubie.L,  FtoCubie.B,  FtoCubie.U,
-            FtoCubie.D,  FtoCubie.F,  FtoCubie.BR, FtoCubie.BL};
-        int[] ccw = {FtoCubie.RP, FtoCubie.LP, FtoCubie.BP, FtoCubie.UP,
-            FtoCubie.DP, FtoCubie.FP, FtoCubie.BRP, FtoCubie.BLP};
         for (int i = 0; i < 8; i++) {
-            MOVE_MAP.put(names[i], cw[i]);
-            MOVE_MAP.put(names[i] + "'", ccw[i]);
+            MOVE_MAP.put(FACE_NAMES[i], CW_MOVES[i]);
+            MOVE_MAP.put(FACE_NAMES[i] + "'", CCW_MOVES[i]);
         }
     }
 
