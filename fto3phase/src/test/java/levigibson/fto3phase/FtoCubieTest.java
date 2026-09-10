@@ -1,13 +1,30 @@
 package levigibson.fto3phase;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FtoCubieTest {
+
+    protected static long masterSeed;
+    protected static Random random;
+
+    @BeforeAll
+    public static void setupMasterSeed() {
+        String customSeed = System.getProperty("test.seed");
+
+        if (customSeed != null && !customSeed.isEmpty()) {
+            masterSeed = Long.parseLong(customSeed);
+        } else {
+            masterSeed = new Random().nextLong();
+        }
+
+        System.out.println("--> Using Master Seed: " + masterSeed);
+        random = new Random(masterSeed);
+    }
 
     private static final int[] CW_MOVES = {
         FtoCubie.R, FtoCubie.L, FtoCubie.B, FtoCubie.D,
@@ -44,11 +61,10 @@ class FtoCubieTest {
 
     @Test
     void testEdgeIndex(){
-        Random r = new Random(42);
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(r.nextInt(16));
+                ftoCubie.turn(random.nextInt(16));
             }
 
             int idx = ftoCubie.packAllEdges();
@@ -62,11 +78,10 @@ class FtoCubieTest {
 
     @Test
     void testTriangleIndex(){
-        Random r = new Random(42);
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(r.nextInt(16));
+                ftoCubie.turn(random.nextInt(16));
             }
 
             int idx = ftoCubie.packAllTriangles(0);
@@ -80,11 +95,10 @@ class FtoCubieTest {
 
     @Test
     void testCornerPermutationIndex(){
-        Random r = new Random(42);
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(r.nextInt(16));
+                ftoCubie.turn(random.nextInt(16));
             }
 
             int idx = ftoCubie.packAllCornerPermutation();
@@ -98,11 +112,10 @@ class FtoCubieTest {
 
     @Test
     void testCornerOrientationIndex(){
-        Random r = new Random(42);
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(r.nextInt(16));
+                ftoCubie.turn(random.nextInt(16));
             }
 
             int idx = ftoCubie.packAllCornerOrientation();
@@ -116,11 +129,10 @@ class FtoCubieTest {
 
     @Test
     void testG1EdgeIndex(){
-        Random r = new Random(42);
         for (int i = 0; i < 100000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(r.nextInt(16));
+                ftoCubie.turn(random.nextInt(16));
             }
 
             int idx = ftoCubie.g1PackEdges();
@@ -133,11 +145,10 @@ class FtoCubieTest {
 
     @Test
     void testPhaseOneTriangleIndex(){
-        Random r = new Random(42);
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(r.nextInt(16));
+                ftoCubie.turn(random.nextInt(16));
             }
 
             int idx = ftoCubie.g1PackTriangles();
@@ -154,7 +165,7 @@ class FtoCubieTest {
             FtoCubie state = new FtoCubie();
             Random r = new Random(trial);
             for (int i = 0; i < 50; i++) {
-                state.turn(r.nextInt(16));
+                state.turn(random.nextInt(16));
             }
 
             for (int move = 0; move < 16; move += 2) {
@@ -196,12 +207,11 @@ class FtoCubieTest {
 
     @Test
     void testPhaseTwoTrisIndex(){
-        Random r = new Random(42);
         int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; // R,RP,L,LP,B,BP,D,DP,U,UP
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
+                ftoCubie.turn(safeMoves[random.nextInt(safeMoves.length)]);
             }
 
             int idx = ftoCubie.g2PackTriangles();
@@ -215,12 +225,11 @@ class FtoCubieTest {
 
     @Test
     void testPhaseTwoEdgesIndex(){
-        Random r = new Random(42);
         int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; // R,RP,L,LP,B,BP,D,DP,U,UP
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
+                ftoCubie.turn(safeMoves[random.nextInt(safeMoves.length)]);
             }
 
             int idx = ftoCubie.g2PackEdges();
@@ -233,12 +242,11 @@ class FtoCubieTest {
 
     @Test
     void testPhaseTwoTriples(){
-        Random r = new Random(42);
         int[] safeMoves = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; // R,RP,L,LP,B,BP,D,DP,U,UP
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
+                ftoCubie.turn(safeMoves[random.nextInt(safeMoves.length)]);
             }
 
             for (int color = 0; color < 4; color++) {
@@ -254,12 +262,11 @@ class FtoCubieTest {
 
     @Test
     void testPhaseThreeCorners(){
-        Random r = new Random(42);
         int[] safeMoves = Search.G3_MOVESET;
         for (int i = 0; i < 10000; i++) {
             FtoCubie ftoCubie = new FtoCubie();
             for (int j = 0; j < 100; j++) {
-                ftoCubie.turn(safeMoves[r.nextInt(safeMoves.length)]);
+                ftoCubie.turn(safeMoves[random.nextInt(safeMoves.length)]);
             }
 
             int idx = ftoCubie.g3PackCorners();
@@ -277,7 +284,6 @@ class FtoCubieTest {
         FtoCubie solvedG2 = Util.fromAlg("R L D B U B L B R L B");
         FtoCubie solvedG3 = Util.fromAlg("");
 
-
         Search search = new Search();
         //solution() will panic if it doesn't work
         search.solution(solvedG1);
@@ -289,13 +295,12 @@ class FtoCubieTest {
     void performanceTest(){
         int n = 100;
 
-        Random r = new Random(42);
         long start = System.currentTimeMillis();
         int totalMoves = 0;
 
         Search search = new Search();
         for (int i = 0; i < n; i++) {
-            FtoCubie rs = FtoCubie.randomCube(r);
+            FtoCubie rs = FtoCubie.randomCube(random);
             String solution = search.solution(rs);
             int sollen = solution.split(" ").length;
             System.out.print(solution);
