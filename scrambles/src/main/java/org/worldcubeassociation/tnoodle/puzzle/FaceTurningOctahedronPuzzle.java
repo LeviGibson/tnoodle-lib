@@ -247,7 +247,7 @@ public class FaceTurningOctahedronPuzzle extends Puzzle {
         protected Svg drawScramble(Map<String, Color> colorScheme) {
             Dimension preferredSize = getPreferredSize();
             Svg svg = new Svg(preferredSize);
-            svg.setStroke(1, 10, "round");
+            svg.setStroke(2, 10, "round");
 
             Color[] scheme = new Color[8];
             for (int i = 0; i < scheme.length; i++) {
